@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { describeError } from "@/lib/admin";
+
 import { useBanStatus } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
