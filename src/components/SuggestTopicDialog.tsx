@@ -76,10 +76,13 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
       })
       .select("id")
       .single();
-    if (!error && data && tagIds.length > 0) {
-      await supabase
-        .from("topic_tags")
-        .insert(tagIds.map((tag_id) => ({ topic_id: data.id, tag_id })));
+    if (!error && data && tagNames.length > 0) {
+      const { data: ids } = await supabase.rpc("resolve_tag_names", { _names: tagNames });
+      if (ids && ids.length > 0) {
+        await supabase
+          .from("topic_tags")
+          .insert(ids.map((tag_id: string) => ({ topic_id: data.id, tag_id })));
+      }
     }
     setSaving(false);
     if (error) {
@@ -89,7 +92,8 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
 
     toast.success("Sent to the moderation queue 🔥");
     setForm({ title: "", description: "", choice_a: "", choice_b: "", category_id: "" });
-    setTagIds([]);
+    setTagNames([]);
+
     setOpen(false);
   }
 
