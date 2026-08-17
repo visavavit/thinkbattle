@@ -80,6 +80,15 @@ function Home() {
           <span className="absolute top-0 right-0 bg-primary px-3 py-1 text-xs font-medium tracking-wide text-primary-foreground">
             ⚡ The Headliner
           </span>
+          {headliner.cover_image_url ? (
+            <img
+              src={headliner.cover_image_url}
+              alt={headliner.title}
+              width={1200}
+              height={675}
+              className="mb-5 aspect-[21/9] w-full rounded-md object-cover"
+            />
+          ) : null}
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             {headliner.category_emoji} {headliner.category_name} · {headliner.total_votes} votes
           </p>

@@ -205,6 +205,7 @@ export type Database = {
           category_id: string | null
           choice_a: string
           choice_b: string
+          cover_image_url: string | null
           created_at: string
           description: string | null
           id: string
@@ -219,6 +220,7 @@ export type Database = {
           category_id?: string | null
           choice_a: string
           choice_b: string
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -233,6 +235,7 @@ export type Database = {
           category_id?: string | null
           choice_a?: string
           choice_b?: string
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -327,6 +330,7 @@ export type Database = {
           choice_a: string | null
           choice_b: string | null
           comments_count: number | null
+          cover_image_url: string | null
           created_at: string | null
           description: string | null
           id: string | null

@@ -8,8 +8,20 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
     <Link
       to="/topic/$id"
       params={{ id: topic.id }}
-      className="arena-panel group flex flex-col gap-3 p-4 transition-shadow hover:shadow-md"
+      className="arena-panel group flex flex-col overflow-hidden transition-shadow hover:shadow-md"
     >
+      {topic.cover_image_url ? (
+        <img
+          src={topic.cover_image_url}
+          alt={topic.title}
+          loading="lazy"
+          width={1200}
+          height={675}
+          className="aspect-[16/9] w-full object-cover"
+        />
+      ) : null}
+
+      <div className="flex flex-1 flex-col gap-3 p-4">
       <div className="flex flex-wrap items-center gap-2">
         {topic.category_name ? (
           <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
@@ -40,6 +52,7 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
         <span className="inline-flex items-center gap-1 text-side-b">
           <Flame className="h-3.5 w-3.5" /> {topic.wild_takes_count} wild
         </span>
+      </div>
       </div>
     </Link>
   );
