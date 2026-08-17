@@ -491,8 +491,8 @@ export type Database = {
         Args: {
           _limit?: number
           _only_hidden?: boolean
-          _search?: string | null
-          _topic_id?: string | null
+          _search?: string
+          _topic_id?: string
         }
         Returns: {
           author_banned: boolean
@@ -502,7 +502,7 @@ export type Database = {
           controversy_score: number
           created_at: string
           dislikes_count: number
-          hidden_reason: string | null
+          hidden_reason: string
           id: string
           is_hidden: boolean
           likes_count: number
@@ -512,10 +512,7 @@ export type Database = {
           topic_title: string
         }[]
       }
-      admin_dashboard_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      admin_dashboard_stats: { Args: never; Returns: Json }
       admin_report_queue: {
         Args: {
           _limit?: number
@@ -541,15 +538,12 @@ export type Database = {
           topic_title: string
         }[]
       }
-      admin_set_featured: {
-        Args: { _topic_id: string | null }
-        Returns: undefined
-      }
+      admin_set_featured: { Args: { _topic_id?: string }; Returns: undefined }
       admin_user_directory: {
-        Args: { _limit?: number; _search?: string | null }
+        Args: { _limit?: number; _search?: string }
         Returns: {
-          avatar_url: string | null
-          ban_reason: string | null
+          avatar_url: string
+          ban_reason: string
           comments_count: number
           created_at: string
           hidden_comments_count: number
@@ -569,10 +563,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_banned: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_banned: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
