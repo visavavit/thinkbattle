@@ -146,7 +146,6 @@ function useTopicMutations(actorId: string) {
         entityId: topic.id,
         summary: topic.title,
       });
-      });
     },
     onSuccess: (_data, variables) => {
       toast.success(variables.on ? "Pinned as the Headliner ⚡" : "Headliner cleared");
