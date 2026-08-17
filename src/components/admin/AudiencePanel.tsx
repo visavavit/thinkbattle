@@ -108,7 +108,7 @@ export function AudiencePanel({ actorId }: { actorId: string }) {
       });
       refresh();
     },
-    onError: (error) => toast.error(describeError(error)),
+    onError: (error) => toast.error(describeError(error, "Something went wrong.")),
   });
 
   const setStatus = useMutation({
@@ -120,7 +120,7 @@ export function AudiencePanel({ actorId }: { actorId: string }) {
       if (error) throw error;
     },
     onSuccess: refresh,
-    onError: (error) => toast.error(describeError(error)),
+    onError: (error) => toast.error(describeError(error, "Something went wrong.")),
   });
 
   const purge = useMutation({
@@ -133,16 +133,20 @@ export function AudiencePanel({ actorId }: { actorId: string }) {
       refresh();
       qc.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
-    onError: (error) => toast.error(describeError(error)),
+    onError: (error) => toast.error(describeError(error, "Something went wrong.")),
   });
 
   const deliverNow = useMutation({
     mutationFn: async () => await tickNow({}),
     onSuccess: (r) => {
-      toast.success(`Delivered ${r.votes ?? 0} votes, ${r.comments ?? 0} comments.`);
+      if ("skipped" in r) {
+        toast.info("Another delivery run is already in progress.");
+      } else {
+        toast.success(`Delivered ${r.votes} votes, ${r.comments} comments.`);
+      }
       refresh();
     },
-    onError: (error) => toast.error(describeError(error)),
+    onError: (error) => toast.error(describeError(error, "Something went wrong.")),
   });
 
   return (
