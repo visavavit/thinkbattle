@@ -73,7 +73,7 @@ const TABS: { key: FeedTab; label: string; icon: typeof Flame }[] = [
 function Home() {
   const { tab } = Route.useSearch();
   const { data: topics = [] } = useQuery(feedQuery(tab));
-  const { data: headliner } = useSuspenseQuery(headlinerQuery);
+  const { data: headliners = [] } = useSuspenseQuery(headlinerQuery);
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-8">
@@ -87,43 +87,59 @@ function Home() {
         </p>
       </section>
 
-      {headliner ? (
-        <section className="arena-panel relative overflow-hidden p-6">
-          <span className="absolute top-0 right-0 bg-primary px-3 py-1 text-xs font-medium tracking-wide text-primary-foreground">
-            ⚡ The Headliner
-          </span>
-          {headliner.cover_image_url ? (
-            <img
-              src={headliner.cover_image_url}
-              alt={headliner.title}
-              width={1200}
-              height={675}
-              className="mb-5 aspect-[21/9] w-full rounded-md object-cover"
-            />
+      {headliners.length > 0 ? (
+        <Carousel opts={{ loop: headliners.length > 1, align: "start" }} className="relative">
+          <CarouselContent>
+            {headliners.map((headliner) => (
+              <CarouselItem key={headliner.id}>
+                <section className="arena-panel relative overflow-hidden p-6">
+                  <span className="absolute top-0 right-0 bg-primary px-3 py-1 text-xs font-medium tracking-wide text-primary-foreground">
+                    ⚡ The Headliner
+                  </span>
+                  {headliner.cover_image_url ? (
+                    <img
+                      src={headliner.cover_image_url}
+                      alt={headliner.title}
+                      width={1200}
+                      height={675}
+                      className="mb-5 aspect-[21/9] w-full rounded-md object-cover"
+                    />
+                  ) : null}
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    {headliner.category_emoji} {headliner.category_name} · {headliner.total_votes}{" "}
+                    votes
+                  </p>
+                  <h2 className="mt-2 text-3xl sm:text-4xl">{headliner.title}</h2>
+                  <div className="mt-5 max-w-2xl">
+                    <SplitBar
+                      pctA={headliner.pct_a}
+                      countA={headliner.votes_a}
+                      countB={headliner.votes_b}
+                      labelA={headliner.choice_a}
+                      labelB={headliner.choice_b}
+                      size="lg"
+                    />
+                  </div>
+                  <Link
+                    to="/topic/$id"
+                    params={{ id: headliner.id }}
+                    className="mt-5 inline-block rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                  >
+                    Cast your vote
+                  </Link>
+                </section>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          {headliners.length > 1 ? (
+            <>
+              <CarouselPrevious className="left-3" />
+              <CarouselNext className="right-3" />
+            </>
           ) : null}
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            {headliner.category_emoji} {headliner.category_name} · {headliner.total_votes} votes
-          </p>
-          <h2 className="mt-2 text-3xl sm:text-4xl">{headliner.title}</h2>
-          <div className="mt-5 max-w-2xl">
-            <SplitBar
-              pctA={headliner.pct_a}
-              countA={headliner.votes_a}
-              countB={headliner.votes_b}
-              labelA={headliner.choice_a}
-              labelB={headliner.choice_b}
-              size="lg"
-            />
-          </div>
-          <Link
-            to="/topic/$id"
-            params={{ id: headliner.id }}
-            className="mt-5 inline-block rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-          >
-            Cast your vote
-          </Link>
-        </section>
+        </Carousel>
       ) : null}
+
 
       <div className="flex flex-wrap gap-2">
         {TABS.map(({ key, label, icon: Icon }) => (
