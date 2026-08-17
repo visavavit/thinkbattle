@@ -1,0 +1,1 @@
+ALTER VIEW public.topic_cards SET (security_invoker = true);
