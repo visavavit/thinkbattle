@@ -337,6 +337,8 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           title={`Why ${topic.choice_a}?`}
           rows={rowsA}
           authors={authors}
+          authorSides={authorSides}
+          otherLabel={topic.choice_b}
           myVote={myVote}
           user={user}
           topicId={topic.id}
@@ -351,6 +353,8 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           title={`Why ${topic.choice_b}?`}
           rows={rowsB}
           authors={authors}
+          authorSides={authorSides}
+          otherLabel={topic.choice_a}
           myVote={myVote}
           user={user}
           topicId={topic.id}
@@ -361,9 +365,42 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           isActive={activeSide === "b"}
         />
       </div>
+
+      <Dialog open={pendingSide !== null} onOpenChange={(open) => !open && setPendingSide(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Switch to {pendingSide === "a" ? topic.choice_a : topic.choice_b}?
+            </DialogTitle>
+            <DialogDescription>
+              Your vote moves to the other side and the split updates straight away.
+              {myOldTakes > 0
+                ? ` Your ${myOldTakes} take${myOldTakes === 1 ? "" : "s"} under “Why ${
+                    myVote === "a" ? topic.choice_a : topic.choice_b
+                  }?” stay published with their likes, and will be marked “Changed their mind”. You won't be able to post there any more.`
+                : " You'll be able to post in the other column instead."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingSide(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                const next = pendingSide;
+                setPendingSide(null);
+                if (next) void applyVote(next);
+              }}
+            >
+              Switch side
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 /**
  * Below lg only one column fits, so the other side would otherwise be buried
