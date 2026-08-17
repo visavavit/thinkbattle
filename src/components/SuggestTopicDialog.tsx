@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useBanStatus } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +28,7 @@ const schema = z.object({
 });
 
 export function SuggestTopicDialog({ user }: { user: User | null }) {
+  const { isBanned } = useBanStatus(user);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -86,7 +88,7 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
     setOpen(false);
   }
 
-  if (!user) return null;
+  if (!user || isBanned) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

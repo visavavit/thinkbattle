@@ -19,6 +19,7 @@ export type TopicCard = {
   cover_image_url: string | null;
   comments_count: number;
   wild_takes_count: number;
+  is_featured: boolean;
   created_at: string;
   published_at: string | null;
 };
@@ -45,8 +46,11 @@ export type FeedTab = "trending" | "neck" | "top" | "newest";
 
 export const getFeed = createServerFn({ method: "GET" })
   .inputValidator(
-    (input: { tab?: FeedTab | undefined; category?: string | undefined; tag?: string | undefined }) =>
-      input ?? {},
+    (input: {
+      tab?: FeedTab | undefined;
+      category?: string | undefined;
+      tag?: string | undefined;
+    }) => input ?? {},
   )
   .handler(async ({ data }) => {
     const supabase = publicClient();
@@ -74,6 +78,16 @@ export const getFeed = createServerFn({ method: "GET" })
 
 export const getHeadliner = createServerFn({ method: "GET" }).handler(async () => {
   const supabase = publicClient();
+
+  // an admin pin always wins; otherwise fall back to the closest fight
+  const { data: pinned } = await supabase
+    .from("topic_cards")
+    .select("*")
+    .eq("status", "published")
+    .eq("is_featured", true)
+    .maybeSingle();
+  if (pinned) return pinned as unknown as TopicCard;
+
   const { data, error } = await supabase
     .from("topic_cards")
     .select("*")

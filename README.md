@@ -20,7 +20,7 @@ Guest / Anonymous User: Can view topics, browse categories/tags, view vote break
 
 Authenticated User: Can cast/change votes, submit comments inside their chosen side's column, like/dislike comments, and submit topic suggestions.
 
-Admin: Full CRUD access over categories, tags, topics, and the user suggestion moderation queue.
+Admin: Full CRUD access over categories, tags, topics, and the user suggestion moderation queue, plus comment moderation, member management and an audit trail. See "Admin capabilities" below.
 
 4. Feature Specifications & Requirements
 
@@ -104,6 +104,44 @@ Phase 3 (Frontend Voting): Implement homepage feeds, filter tabs, topic detail v
 Phase 4 (Bifurcated Comments & Wild Takes): Build side-by-side comment columns, comment voting, and the Top Liked / Wild Takes / Newest sorting switches.
 
 Phase 5 (Community Polish): Implement user topic suggestion forms and submission moderation queues.
+
+## Admin capabilities
+
+The curator dashboard at `/admin` is organised into seven tabs.
+
+**Overview** — live counts (topics, votes, comments, reports, members, bans), a
+14-day votes and comments trend, and the published topics sitting closest to a
+50/50 split. Open reports surface as a banner that jumps straight to the queue.
+
+**Queue** — user suggestions with the suggester's name. Approve as-is, edit
+before approving, or reject with a reason.
+
+**Topics** — search and filter by status; create and fully edit topics (title,
+description, both choices, cover art, category and tags); publish, unpublish
+back into the queue, or delete behind a confirmation that names what gets
+destroyed. Any published topic can be pinned as the Headliner, which overrides
+the automatic hero pick on the homepage.
+
+**Moderation** — the reports queue members file from any comment, plus a search
+across every comment in the arena. Comments can be *hidden* (reversible: pulled
+from public view and from the Wild Takes count, still visible to their author)
+or deleted outright, and an author can be banned in one step from either view.
+Admins also get hide/delete controls inline on topic pages.
+
+**People** — member directory with per-user activity, grant/revoke admin, and
+ban/unban. A banned member keeps read access but cannot vote, comment, react or
+suggest topics.
+
+**Categories & Tags** — add, rename and remove, each showing how many topics
+would be affected.
+
+**Audit log** — every admin action, append-only. No one, including admins, can
+edit or delete entries.
+
+Three invariants are enforced by the database rather than the UI, so they hold
+no matter how a request arrives: the last admin cannot be demoted, admins cannot
+be banned, and only admins can change a comment's moderation fields — an author
+can still edit their own comment body but cannot un-hide it.
 
 This project was built with [Lovable](https://lovable.dev).
 

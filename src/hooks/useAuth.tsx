@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,28 +22,50 @@ export function useAuth() {
   return { session, user: session?.user ?? null, loading };
 }
 
+/**
+ * Cached so the header, the admin route and the discussion view share a single
+ * lookup instead of each firing their own request on every mount.
+ */
+export function useAdminRole(user: User | null) {
+  const query = useQuery({
+    queryKey: ["is-admin", user?.id ?? "anon"],
+    enabled: Boolean(user),
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (error) throw error;
+      return Boolean(data);
+    },
+  });
+  return { isAdmin: query.data ?? false, loading: query.isLoading };
+}
+
 export function useIsAdmin(user: User | null) {
-  const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => {
-    let active = true;
-    if (!user) {
-      setIsAdmin(false);
-      return;
-    }
-    supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (active) setIsAdmin(Boolean(data));
-      });
-    return () => {
-      active = false;
-    };
-  }, [user]);
-  return isAdmin;
+  return useAdminRole(user).isAdmin;
+}
+
+/** A banned user keeps read access but every write is refused by RLS. */
+export function useBanStatus(user: User | null) {
+  const query = useQuery({
+    queryKey: ["ban-status", user?.id ?? "anon"],
+    enabled: Boolean(user),
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_bans")
+        .select("reason, created_at")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  return { isBanned: Boolean(query.data), reason: query.data?.reason ?? null };
 }
 
 export async function ensureProfile(user: User) {

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          detail: Json
+          entity_id: string | null
+          entity_type: string
+          id: string
+          summary: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          detail?: Json
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          summary?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          detail?: Json
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          summary?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -70,13 +103,58 @@ export type Database = {
           },
         ]
       }
+      comment_reports: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          reason: string
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["report_status"]
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          reason: string
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reports_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           body: string
           controversy_score: number | null
           created_at: string
           dislikes_count: number
+          hidden_at: string | null
+          hidden_by: string | null
+          hidden_reason: string | null
           id: string
+          is_hidden: boolean
           likes_count: number
           side: string
           topic_id: string
@@ -87,7 +165,11 @@ export type Database = {
           controversy_score?: number | null
           created_at?: string
           dislikes_count?: number
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
           id?: string
+          is_hidden?: boolean
           likes_count?: number
           side: string
           topic_id: string
@@ -98,7 +180,11 @@ export type Database = {
           controversy_score?: number | null
           created_at?: string
           dislikes_count?: number
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
           id?: string
+          is_hidden?: boolean
           likes_count?: number
           side?: string
           topic_id?: string
@@ -209,7 +295,11 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_featured: boolean
+          moderation_note: string | null
           published_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: Database["public"]["Enums"]["topic_status"]
           submitted_by: string | null
           title: string
@@ -224,7 +314,11 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_featured?: boolean
+          moderation_note?: string | null
           published_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: Database["public"]["Enums"]["topic_status"]
           submitted_by?: string | null
           title: string
@@ -239,7 +333,11 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_featured?: boolean
+          moderation_note?: string | null
           published_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: Database["public"]["Enums"]["topic_status"]
           submitted_by?: string | null
           title?: string
@@ -255,6 +353,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_bans: {
+        Row: {
+          banned_by: string
+          created_at: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          banned_by: string
+          created_at?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          banned_by?: string
+          created_at?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -334,6 +453,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string | null
+          is_featured: boolean | null
           pct_a: number | null
           published_at: string | null
           status: Database["public"]["Enums"]["topic_status"] | null
@@ -358,6 +478,90 @@ export type Database = {
       }
     }
     Functions: {
+      admin_activity_series: {
+        Args: { _days?: number }
+        Returns: {
+          comment_count: number
+          day: string
+          signup_count: number
+          vote_count: number
+        }[]
+      }
+      admin_comment_feed: {
+        Args: {
+          _limit?: number
+          _only_hidden?: boolean
+          _search?: string | null
+          _topic_id?: string | null
+        }
+        Returns: {
+          author_banned: boolean
+          author_id: string
+          author_name: string
+          body: string
+          controversy_score: number
+          created_at: string
+          dislikes_count: number
+          hidden_reason: string | null
+          id: string
+          is_hidden: boolean
+          likes_count: number
+          open_reports: number
+          side: string
+          topic_id: string
+          topic_title: string
+        }[]
+      }
+      admin_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      admin_report_queue: {
+        Args: {
+          _limit?: number
+          _status?: Database["public"]["Enums"]["report_status"]
+        }
+        Returns: {
+          author_banned: boolean
+          author_id: string
+          author_name: string
+          comment_body: string
+          comment_dislikes: number
+          comment_id: string
+          comment_is_hidden: boolean
+          comment_likes: number
+          comment_side: string
+          created_at: string
+          reason: string
+          report_id: string
+          reporter_id: string
+          reporter_name: string
+          status: Database["public"]["Enums"]["report_status"]
+          topic_id: string
+          topic_title: string
+        }[]
+      }
+      admin_set_featured: {
+        Args: { _topic_id: string | null }
+        Returns: undefined
+      }
+      admin_user_directory: {
+        Args: { _limit?: number; _search?: string | null }
+        Returns: {
+          avatar_url: string | null
+          ban_reason: string | null
+          comments_count: number
+          created_at: string
+          hidden_comments_count: number
+          id: string
+          is_admin: boolean
+          is_banned: boolean
+          reports_against: number
+          topics_count: number
+          username: string
+          votes_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -365,9 +569,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_banned: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
+      report_status: "open" | "resolved" | "dismissed"
       topic_status: "pending" | "published" | "rejected"
     }
     CompositeTypes: {
@@ -497,6 +706,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      report_status: ["open", "resolved", "dismissed"],
       topic_status: ["pending", "published", "rejected"],
     },
   },

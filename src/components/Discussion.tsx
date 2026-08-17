@@ -1,14 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Clock, Flame, Star, ThumbsDown, ThumbsUp, Lock } from "lucide-react";
+import { Clock, Flag, Flame, Star, ThumbsDown, ThumbsUp, Lock, EyeOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useBanStatus, useIsAdmin } from "@/hooks/useAuth";
+import { describeError } from "@/lib/admin";
 import type { TopicCard } from "@/lib/public.functions";
 import { SplitBar } from "./SplitBar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Side = "a" | "b";
 type SortKey = "top" | "wild" | "newest";
@@ -22,6 +33,8 @@ type CommentRow = {
   likes_count: number;
   dislikes_count: number;
   controversy_score: number;
+  is_hidden: boolean;
+  hidden_reason: string | null;
   created_at: string;
 };
 
@@ -33,6 +46,8 @@ const SORTS: { key: SortKey; label: string; icon: typeof Star }[] = [
 
 export function Discussion({ topic, user }: { topic: TopicCard; user: User | null }) {
   const queryClient = useQueryClient();
+  const isAdmin = useIsAdmin(user);
+  const { isBanned, reason: banReason } = useBanStatus(user);
   const [votesA, setVotesA] = useState(topic.votes_a);
   const [votesB, setVotesB] = useState(topic.votes_b);
   const [myVote, setMyVote] = useState<Side | null>(null);
@@ -132,6 +147,10 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const castVote = useCallback(
     async (choice: Side) => {
       if (!user) return;
+      if (isBanned) {
+        toast.error("Your account is suspended — voting is disabled.");
+        return;
+      }
       const previous = myVote;
       if (previous === choice) return;
       setMyVote(choice);
@@ -140,7 +159,10 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
 
       const { error } = await supabase
         .from("votes")
-        .upsert({ topic_id: topic.id, user_id: user.id, choice }, { onConflict: "topic_id,user_id" });
+        .upsert(
+          { topic_id: topic.id, user_id: user.id, choice },
+          { onConflict: "topic_id,user_id" },
+        );
       if (error) {
         setMyVote(previous);
         setVotesA(topic.votes_a);
@@ -153,13 +175,17 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
       }
     },
-    [user, myVote, topic.id, topic.votes_a, topic.votes_b, queryClient],
+    [user, isBanned, myVote, topic.id, topic.votes_a, topic.votes_b, queryClient],
   );
 
   const react = useCallback(
     async (commentId: string, value: 1 | -1) => {
       if (!user) {
         toast.error("Sign in to like or dislike.");
+        return;
+      }
+      if (isBanned) {
+        toast.error("Your account is suspended — reactions are disabled.");
         return;
       }
       const current = reactionsQuery.data?.[commentId];
@@ -180,7 +206,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       queryClient.invalidateQueries({ queryKey: ["reactions", topic.id, user.id] });
       queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
     },
-    [user, reactionsQuery.data, queryClient, topic.id],
+    [user, isBanned, reactionsQuery.data, queryClient, topic.id],
   );
 
   const rows = commentsQuery.data?.rows ?? [];
@@ -188,6 +214,16 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
 
   return (
     <div className="space-y-8">
+      {isBanned ? (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm">
+          <p className="font-bold text-destructive">Your account is suspended.</p>
+          <p className="mt-1 text-muted-foreground">
+            You can still read every debate, but voting, commenting and reacting are disabled.
+            {banReason ? ` Reason: ${banReason}` : ""}
+          </p>
+        </div>
+      ) : null}
+
       <section className="arena-panel p-5">
         <SplitBar pctA={pctA} labelA={topic.choice_a} labelB={topic.choice_b} size="lg" />
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -232,6 +268,8 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           topicId={topic.id}
           reactions={reactionsQuery.data ?? {}}
           onReact={react}
+          isAdmin={isAdmin}
+          isBanned={isBanned}
         />
         <CommentColumn
           side="b"
@@ -243,6 +281,8 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           topicId={topic.id}
           reactions={reactionsQuery.data ?? {}}
           onReact={react}
+          isAdmin={isAdmin}
+          isBanned={isBanned}
         />
       </div>
     </div>
@@ -264,9 +304,7 @@ function VoteButton({
 }) {
   const base = side === "a" ? "border-side-a text-side-a" : "border-side-b text-side-b";
   const activeCls =
-    side === "a"
-      ? "bg-side-a text-side-a-foreground"
-      : "bg-side-b text-side-b-foreground";
+    side === "a" ? "bg-side-a text-side-a-foreground" : "bg-side-b text-side-b-foreground";
   return (
     <button
       type="button"
@@ -291,6 +329,8 @@ function CommentColumn({
   topicId,
   reactions,
   onReact,
+  isAdmin,
+  isBanned,
 }: {
   side: Side;
   title: string;
@@ -301,6 +341,8 @@ function CommentColumn({
   topicId: string;
   reactions: Record<string, number>;
   onReact: (id: string, value: 1 | -1) => void;
+  isAdmin: boolean;
+  isBanned: boolean;
 }) {
   const [sort, setSort] = useState<SortKey>("top");
   const [body, setBody] = useState("");
@@ -328,7 +370,7 @@ function CommentColumn({
   }, [rows, sort]);
 
   const accent = side === "a" ? "border-side-a" : "border-side-b";
-  const canComment = myVote === side;
+  const canComment = myVote === side && !isBanned;
 
   async function submit() {
     const text = body.trim();
@@ -385,11 +427,13 @@ function CommentColumn({
       ) : (
         <div className="flex items-center gap-2 rounded-sm border border-dashed border-border p-3 text-sm text-muted-foreground">
           <Lock className="h-4 w-4" />
-          {user
-            ? myVote
-              ? "You voted for the other side — this column is read-only."
-              : "Vote above to unlock this column."
-            : "Sign in and vote to join this column."}
+          {isBanned
+            ? "Your account is suspended — you can read but not post."
+            : user
+              ? myVote
+                ? "You voted for the other side — this column is read-only."
+                : "Vote above to unlock this column."
+              : "Sign in and vote to join this column."}
         </div>
       )}
 
@@ -398,21 +442,30 @@ function CommentColumn({
           <li
             key={row.id}
             className={`rounded-sm border p-3 ${
-              index < 3 && sort !== "newest" ? "border-primary/70 bg-accent/40" : "border-border"
+              row.is_hidden
+                ? "border-dashed border-destructive/50 bg-destructive/5"
+                : index < 3 && sort !== "newest"
+                  ? "border-primary/70 bg-accent/40"
+                  : "border-border"
             }`}
           >
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="font-bold text-foreground">
                 {authors.get(row.user_id) ?? "anonymous"}
               </span>
-              {index < 3 && sort !== "newest" ? (
+              {row.is_hidden ? (
+                <span className="font-medium text-destructive">
+                  Hidden by a moderator
+                  {row.hidden_reason ? ` — ${row.hidden_reason}` : ""}
+                </span>
+              ) : index < 3 && sort !== "newest" ? (
                 <span className="font-medium text-muted-foreground">
                   {sort === "wild" ? "Wild take" : "Pinned"}
                 </span>
               ) : null}
             </div>
             <p className="mt-2 text-sm leading-relaxed text-foreground">{row.body}</p>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <ReactionButton
                 active={reactions[row.id] === 1}
                 count={row.likes_count}
@@ -425,8 +478,21 @@ function CommentColumn({
                 onClick={() => onReact(row.id, -1)}
                 icon={<ThumbsDown className="h-3.5 w-3.5" />}
               />
-              <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <Flame className="h-3.5 w-3.5" /> {row.controversy_score}
+              </span>
+
+              <span className="ml-auto flex items-center gap-1">
+                {user && user.id !== row.user_id && !isBanned ? (
+                  <ReportButton commentId={row.id} />
+                ) : null}
+                {isAdmin ? (
+                  <ModeratorControls
+                    comment={row}
+                    topicId={topicId}
+                    authorName={authors.get(row.user_id) ?? "anonymous"}
+                  />
+                ) : null}
               </span>
             </div>
           </li>
@@ -438,6 +504,157 @@ function CommentColumn({
         ) : null}
       </ul>
     </section>
+  );
+}
+
+/** Lets any signed-in member push a comment into the admin moderation queue. */
+function ReportButton({ commentId }: { commentId: string }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function submit() {
+    const text = reason.trim();
+    if (text.length < 3) {
+      toast.error("Tell the moderators what's wrong with it.");
+      return;
+    }
+    setSending(true);
+    const { data: session } = await supabase.auth.getUser();
+    const { error } = await supabase.from("comment_reports").insert({
+      comment_id: commentId,
+      reporter_id: session.user!.id,
+      reason: text.slice(0, 300),
+    });
+    setSending(false);
+    if (error) {
+      toast.error(
+        error.message.includes("duplicate")
+          ? "You already reported this one."
+          : describeError(error, "Could not send that report"),
+      );
+      return;
+    }
+    toast.success("Reported — a moderator will take a look.");
+    setReason("");
+    setOpen(false);
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title="Report to moderators"
+        aria-label="Report this comment"
+        className="rounded-sm border border-transparent p-1 text-muted-foreground transition-colors hover:border-border hover:text-destructive"
+      >
+        <Flag className="h-3.5 w-3.5" />
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report this comment</DialogTitle>
+            <DialogDescription>
+              Moderators see the comment, who wrote it and your reason.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={reason}
+            maxLength={300}
+            placeholder="Harassment, spam, off-topic…"
+            onChange={(e) => setReason(e.target.value)}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submit} disabled={sending}>
+              Send report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+/** Admin-only shortcuts so moderation can happen in context, not just in /admin. */
+function ModeratorControls({
+  comment,
+  topicId,
+  authorName,
+}: {
+  comment: CommentRow;
+  topicId: string;
+  authorName: string;
+}) {
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState(false);
+
+  async function run(action: "hide" | "unhide" | "delete") {
+    if (action === "delete" && !confirm(`Delete ${authorName}'s comment permanently?`)) return;
+    setBusy(true);
+    const { data: session } = await supabase.auth.getUser();
+    const actorId = session.user!.id;
+
+    const { error } =
+      action === "delete"
+        ? await supabase.from("comments").delete().eq("id", comment.id)
+        : await supabase
+            .from("comments")
+            .update({
+              is_hidden: action === "hide",
+              hidden_by: action === "hide" ? actorId : null,
+              hidden_at: action === "hide" ? new Date().toISOString() : null,
+              hidden_reason: null,
+            })
+            .eq("id", comment.id);
+
+    if (!error) {
+      await supabase.from("admin_audit_log").insert({
+        actor_id: actorId,
+        action: `comment.${action}`,
+        entity_type: "comment",
+        entity_id: comment.id,
+        summary: comment.body.slice(0, 120),
+      });
+    }
+    setBusy(false);
+
+    if (error) {
+      toast.error(describeError(error, "Moderation failed"));
+      return;
+    }
+    toast.success(
+      action === "delete" ? "Comment deleted" : action === "hide" ? "Comment hidden" : "Restored",
+    );
+    queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => run(comment.is_hidden ? "unhide" : "hide")}
+        title={comment.is_hidden ? "Restore this comment" : "Hide from the public"}
+        aria-label={comment.is_hidden ? "Restore this comment" : "Hide this comment"}
+        className="rounded-sm border border-transparent p-1 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+      >
+        <EyeOff className="h-3.5 w-3.5" />
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => run("delete")}
+        title="Delete permanently"
+        aria-label="Delete this comment"
+        className="rounded-sm border border-transparent p-1 text-muted-foreground transition-colors hover:border-border hover:text-destructive"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </>
   );
 }
 
@@ -457,7 +674,9 @@ function ReactionButton({
       type="button"
       onClick={onClick}
       className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-xs font-bold transition-colors ${
-        active ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-accent"
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border hover:bg-accent"
       }`}
     >
       {icon}
