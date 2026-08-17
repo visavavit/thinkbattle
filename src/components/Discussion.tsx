@@ -797,7 +797,23 @@ function CommentColumn({
                 ) : null}
               </span>
             </div>
+
+            <ReplyThread
+              parent={row}
+              replies={repliesByParent[row.id] ?? []}
+              authors={authors}
+              labelA={labelA}
+              labelB={labelB}
+              myVote={myVote}
+              user={user}
+              topicId={topicId}
+              reactions={reactions}
+              onReact={onReact}
+              isAdmin={isAdmin}
+              isBanned={isBanned}
+            />
           </li>
+
           );
         })}
 
