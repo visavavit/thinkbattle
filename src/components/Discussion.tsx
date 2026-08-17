@@ -327,7 +327,7 @@ function CommentColumn({
     return copy;
   }, [rows, sort]);
 
-  const accent = side === "a" ? "text-side-a border-side-a" : "text-side-b border-side-b";
+  const accent = side === "a" ? "border-side-a" : "border-side-b";
   const canComment = myVote === side;
 
   async function submit() {
@@ -407,11 +407,11 @@ function CommentColumn({
               </span>
               {index < 3 && sort !== "newest" ? (
                 <span className="font-medium text-muted-foreground">
-                  {sort === "wild" ? "📌 wild take" : "📌 pinned"}
+                  {sort === "wild" ? "Wild take" : "Pinned"}
                 </span>
               ) : null}
             </div>
-            <p className="mt-2 text-sm leading-relaxed">{row.body}</p>
+            <p className="mt-2 text-sm leading-relaxed text-foreground">{row.body}</p>
             <div className="mt-3 flex items-center gap-2">
               <ReactionButton
                 active={reactions[row.id] === 1}
