@@ -333,6 +333,7 @@ export type Database = {
           is_hidden: boolean
           is_synthetic: boolean
           likes_count: number
+          parent_id: string | null
           side: string
           topic_id: string
           user_id: string
@@ -349,6 +350,7 @@ export type Database = {
           is_hidden?: boolean
           is_synthetic?: boolean
           likes_count?: number
+          parent_id?: string | null
           side: string
           topic_id: string
           user_id: string
@@ -365,11 +367,19 @@ export type Database = {
           is_hidden?: boolean
           is_synthetic?: boolean
           likes_count?: number
+          parent_id?: string | null
           side?: string
           topic_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "comments_topic_id_fkey"
             columns: ["topic_id"]
