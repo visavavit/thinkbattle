@@ -6,27 +6,35 @@ type Props = {
 };
 
 export function SplitBar({ pctA, labelA, labelB, size = "sm" }: Props) {
-  const pctB = 100 - pctA;
+  const a = Math.min(100, Math.max(0, Math.round(pctA)));
+  const pctB = 100 - a;
   const tall = size === "lg";
 
   return (
     <div className="w-full">
       <div
-        className={`flex w-full overflow-hidden rounded-full ${tall ? "h-7" : "h-5"}`}
+        className={`flex w-full overflow-hidden rounded-full bg-muted ${tall ? "h-7" : "h-5"}`}
       >
-        <div
-          className="flex items-center justify-start bg-side-a pl-2.5 text-side-a-foreground transition-all duration-500"
-          style={{ width: `${Math.max(pctA, 8)}%` }}
-        >
-          <span className={tall ? "text-sm font-semibold" : "text-xs font-semibold"}>{pctA}%</span>
-        </div>
-        <div
-          className="flex items-center justify-end bg-side-b pr-2.5 text-side-b-foreground transition-all duration-500"
-          style={{ width: `${Math.max(pctB, 8)}%` }}
-        >
-          <span className={tall ? "text-sm font-semibold" : "text-xs font-semibold"}>{pctB}%</span>
-        </div>
+        {a > 0 ? (
+          <div
+            className="flex min-w-0 items-center justify-start bg-side-a pl-2.5 text-side-a-foreground transition-all duration-500"
+            style={{ flex: `0 1 ${a}%` }}
+          >
+            <span className={tall ? "text-sm font-semibold" : "text-xs font-semibold"}>{a}%</span>
+          </div>
+        ) : null}
+        {pctB > 0 ? (
+          <div
+            className="flex min-w-0 items-center justify-end bg-side-b pr-2.5 text-side-b-foreground transition-all duration-500"
+            style={{ flex: `0 1 ${pctB}%` }}
+          >
+            <span className={tall ? "text-sm font-semibold" : "text-xs font-semibold"}>
+              {pctB}%
+            </span>
+          </div>
+        ) : null}
       </div>
+
       <div className="mt-1 flex justify-between gap-2 text-xs font-medium">
         <span className="truncate text-side-a">{labelA}</span>
         <span className="truncate text-side-b">{labelB}</span>
