@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Clock, Flag, Flame, Star, ThumbsDown, ThumbsUp, Lock, EyeOff, Trash2 } from "lucide-react";
+import { Clock, Flag, Flame, Star, ThumbsDown, ThumbsUp, Lock, EyeOff, Trash2, Reply } from "lucide-react";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +36,9 @@ type CommentRow = {
   is_hidden: boolean;
   hidden_reason: string | null;
   created_at: string;
+  parent_id: string | null;
 };
+
 
 const SORTS: { key: SortKey; label: string; icon: typeof Star }[] = [
   { key: "top", label: "Top Liked", icon: Star },
@@ -265,10 +267,21 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const authors = commentsQuery.data?.authors ?? new Map<string, string>();
   const authorSides = authorSidesQuery.data ?? {};
 
-  const [rowsA, rowsB] = useMemo(() => {
+  // replies live under their parent take, never in the ranked column lists
+  const [rowsA, rowsB, repliesByParent] = useMemo(() => {
     const all = commentsQuery.data?.rows ?? [];
-    return [all.filter((r) => r.side === "a"), all.filter((r) => r.side === "b")];
+    const tops = all.filter((r) => !r.parent_id);
+    const map: Record<string, CommentRow[]> = {};
+    for (const r of all) {
+      if (!r.parent_id) continue;
+      (map[r.parent_id] ??= []).push(r);
+    }
+    for (const list of Object.values(map)) {
+      list.sort((x, y) => x.created_at.localeCompare(y.created_at));
+    }
+    return [tops.filter((r) => r.side === "a"), tops.filter((r) => r.side === "b"), map];
   }, [commentsQuery.data?.rows]);
+
 
   const myOldTakes = useMemo(() => {
     if (!user || !myVote) return 0;
@@ -347,8 +360,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           side="a"
           title={`Why ${topic.choice_a}?`}
           rows={rowsA}
+          repliesByParent={repliesByParent}
           authors={authors}
           authorSides={authorSides}
+          labelA={topic.choice_a}
+          labelB={topic.choice_b}
           otherLabel={topic.choice_b}
           myVote={myVote}
           user={user}
@@ -363,8 +379,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           side="b"
           title={`Why ${topic.choice_b}?`}
           rows={rowsB}
+          repliesByParent={repliesByParent}
           authors={authors}
           authorSides={authorSides}
+          labelA={topic.choice_a}
+          labelB={topic.choice_b}
           otherLabel={topic.choice_a}
           myVote={myVote}
           user={user}
@@ -375,6 +394,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           isBanned={isBanned}
           isActive={activeSide === "b"}
         />
+
       </div>
 
       <Dialog open={pendingSide !== null} onOpenChange={(open) => !open && setPendingSide(null)}>
@@ -549,8 +569,11 @@ function CommentColumn({
   side,
   title,
   rows,
+  repliesByParent,
   authors,
   authorSides,
+  labelA,
+  labelB,
   otherLabel,
   myVote,
   user,
@@ -564,9 +587,13 @@ function CommentColumn({
   side: Side;
   title: string;
   rows: CommentRow[];
+  /** one level of replies, keyed by the take they answer */
+  repliesByParent: Record<string, CommentRow[]>;
   authors: Map<string, string>;
   /** each commenter's current vote on this topic, for the changed-mind badge */
   authorSides: Record<string, Side>;
+  labelA: string;
+  labelB: string;
   otherLabel: string;
   myVote: Side | null;
   user: User | null;
@@ -579,6 +606,7 @@ function CommentColumn({
   /** below lg only the active column is shown; both stay mounted either way */
   isActive: boolean;
 }) {
+
   const [sort, setSort] = useState<SortKey>("top");
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
@@ -769,7 +797,23 @@ function CommentColumn({
                 ) : null}
               </span>
             </div>
+
+            <ReplyThread
+              parent={row}
+              replies={repliesByParent[row.id] ?? []}
+              authors={authors}
+              labelA={labelA}
+              labelB={labelB}
+              myVote={myVote}
+              user={user}
+              topicId={topicId}
+              reactions={reactions}
+              onReact={onReact}
+              isAdmin={isAdmin}
+              isBanned={isBanned}
+            />
           </li>
+
           );
         })}
 
@@ -782,6 +826,154 @@ function CommentColumn({
     </section>
   );
 }
+
+/**
+ * One level of replies under a take. Anyone who voted on the topic can reply,
+ * from either side, so each reply is tagged with its author's own side.
+ * Replies never enter the Top/Wild ranking — they stay in posting order.
+ */
+function ReplyThread({
+  parent,
+  replies,
+  authors,
+  labelA,
+  labelB,
+  myVote,
+  user,
+  topicId,
+  reactions,
+  onReact,
+  isAdmin,
+  isBanned,
+}: {
+  parent: CommentRow;
+  replies: CommentRow[];
+  authors: Map<string, string>;
+  labelA: string;
+  labelB: string;
+  myVote: Side | null;
+  user: User | null;
+  topicId: string;
+  reactions: Record<string, number>;
+  onReact: (id: string, value: 1 | -1) => void;
+  isAdmin: boolean;
+  isBanned: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [body, setBody] = useState("");
+  const [posting, setPosting] = useState(false);
+  const canReply = Boolean(user) && myVote !== null && !isBanned && !parent.is_hidden;
+
+  async function submit() {
+    const text = body.trim();
+    if (text.length < 2 || !user || !myVote) return;
+    setPosting(true);
+    const { error } = await supabase.from("comments").insert({
+      topic_id: topicId,
+      user_id: user.id,
+      side: myVote,
+      parent_id: parent.id,
+      body: text.slice(0, 2000),
+    });
+    setPosting(false);
+    if (error) {
+      toast.error(describeError(error, "Could not post that reply."));
+      return;
+    }
+    setBody("");
+    setOpen(false);
+    toast.success("Reply posted");
+    queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
+  }
+
+  return (
+    <div className="mt-3 space-y-2 border-l-2 border-border pl-3">
+      {replies.map((reply) => {
+        const replySide = reply.side === "a" ? "a" : "b";
+        return (
+          <div key={reply.id} className="rounded-sm bg-muted/40 p-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-bold text-foreground">
+                {authors.get(reply.user_id) ?? "anonymous"}
+              </span>
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                  replySide === "a" ? "border-side-a text-side-a" : "border-side-b text-side-b"
+                }`}
+              >
+                {replySide === "a" ? labelA : labelB}
+              </span>
+              {reply.is_hidden ? (
+                <span className="font-medium text-destructive">Hidden by a moderator</span>
+              ) : null}
+            </div>
+            <p className="mt-1 text-sm leading-relaxed break-words text-foreground">{reply.body}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <ReactionButton
+                active={reactions[reply.id] === 1}
+                count={reply.likes_count}
+                onClick={() => onReact(reply.id, 1)}
+                icon={<ThumbsUp className="h-3 w-3" />}
+              />
+              <ReactionButton
+                active={reactions[reply.id] === -1}
+                count={reply.dislikes_count}
+                onClick={() => onReact(reply.id, -1)}
+                icon={<ThumbsDown className="h-3 w-3" />}
+              />
+              <span className="ml-auto flex items-center gap-1">
+                {user && user.id !== reply.user_id && !isBanned ? (
+                  <ReportButton commentId={reply.id} />
+                ) : null}
+                {isAdmin ? (
+                  <ModeratorControls
+                    comment={reply}
+                    topicId={topicId}
+                    authorName={authors.get(reply.user_id) ?? "anonymous"}
+                  />
+                ) : null}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+
+      {canReply ? (
+        open ? (
+          <div className="space-y-2">
+            <Textarea
+              value={body}
+              maxLength={1000}
+              autoFocus
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Reply to this take..."
+              className="bg-background"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={submit} disabled={posting || body.trim().length < 2}>
+                Reply
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            <Reply className="h-3.5 w-3.5" /> Reply
+          </button>
+        )
+      ) : null}
+    </div>
+  );
+}
+
+
 
 /** Lets any signed-in member push a comment into the admin moderation queue. */
 function ReportButton({ commentId }: { commentId: string }) {
