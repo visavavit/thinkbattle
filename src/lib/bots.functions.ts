@@ -83,7 +83,12 @@ export const createBotCampaign = createServerFn({ method: "POST" })
     });
 
     for (let i = 0; i < actions.length; i += 500) {
-      const chunk = actions.slice(i, i + 500).map((a) => ({ ...a, campaign_id: campaign.id }));
+      const chunk = actions.slice(i, i + 500).map((a) => ({
+        ...a,
+        payload: a.payload as never,
+        campaign_id: campaign.id,
+      }));
+
       const { error: insertError } = await supabaseAdmin.from("bot_actions").insert(chunk);
       if (insertError) throw new Error(insertError.message);
     }
