@@ -358,8 +358,8 @@ function CommentBrowser({ actorId }: { actorId: string }) {
     queryKey: adminKeys.comments(query, onlyHidden),
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_comment_feed", {
-        _search: query || null,
-        _topic_id: null,
+        _search: query || undefined,
+        _topic_id: undefined,
         _only_hidden: onlyHidden,
         _limit: 60,
       });

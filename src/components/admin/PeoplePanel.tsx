@@ -19,7 +19,7 @@ export function PeoplePanel({ actorId }: { actorId: string }) {
     queryKey: adminKeys.people(query),
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_user_directory", {
-        _search: query || null,
+        _search: query || undefined,
         _limit: 100,
       });
       if (error) throw error;
