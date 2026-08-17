@@ -656,7 +656,9 @@ function CommentColumn({
               </span>
             </div>
           </li>
-        ))}
+          );
+        })}
+
         {sorted.length === 0 ? (
           <li className="py-6 text-center text-sm text-muted-foreground">
             No takes here yet. Be the first.
