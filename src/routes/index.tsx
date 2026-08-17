@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSuspenseQuery, useQuery, queryOptions, keepPreviousData } from "@tanstack/react-query";
 import { Flame, Scale, Star, Clock } from "lucide-react";
 import { z } from "zod";
 import { getFeed, getHeadliner, type FeedTab } from "@/lib/public.functions";
@@ -14,6 +14,8 @@ const feedQuery = (tab: FeedTab) =>
   queryOptions({
     queryKey: ["feed", tab],
     queryFn: () => getFeed({ data: { tab } }),
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
   });
 
 const headlinerQuery = queryOptions({
@@ -59,8 +61,7 @@ const TABS: { key: FeedTab; label: string; icon: typeof Flame }[] = [
 
 function Home() {
   const { tab } = Route.useSearch();
-  const navigate = useNavigate({ from: "/" });
-  const { data: topics } = useSuspenseQuery(feedQuery(tab));
+  const { data: topics = [] } = useQuery(feedQuery(tab));
   const { data: headliner } = useSuspenseQuery(headlinerQuery);
 
   return (
@@ -113,10 +114,12 @@ function Home() {
 
       <div className="flex flex-wrap gap-2">
         {TABS.map(({ key, label, icon: Icon }) => (
-          <button
+          <Link
             key={key}
-            type="button"
-            onClick={() => navigate({ search: { tab: key } })}
+            to="/"
+            search={{ tab: key }}
+            resetScroll={false}
+            preload="intent"
             className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
               tab === key
                 ? "border-foreground bg-foreground text-background"
@@ -125,7 +128,7 @@ function Home() {
           >
             <Icon className="h-4 w-4" />
             {label}
-          </button>
+          </Link>
         ))}
       </div>
 
