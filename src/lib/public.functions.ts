@@ -76,17 +76,18 @@ export const getFeed = createServerFn({ method: "GET" })
     return topics;
   });
 
-export const getHeadliner = createServerFn({ method: "GET" }).handler(async () => {
+export const getHeadliners = createServerFn({ method: "GET" }).handler(async () => {
   const supabase = publicClient();
 
-  // an admin pin always wins; otherwise fall back to the closest fight
+  // admin pins always win; otherwise fall back to the closest fight
   const { data: pinned } = await supabase
     .from("topic_cards")
     .select("*")
     .eq("status", "published")
     .eq("is_featured", true)
-    .maybeSingle();
-  if (pinned) return pinned as unknown as TopicCard;
+    .order("total_votes", { ascending: false })
+    .limit(8);
+  if (pinned && pinned.length > 0) return pinned as unknown as TopicCard[];
 
   const { data, error } = await supabase
     .from("topic_cards")
@@ -96,12 +97,13 @@ export const getHeadliner = createServerFn({ method: "GET" }).handler(async () =
     .limit(30);
   if (error) throw new Error(error.message);
   const topics = (data ?? []) as unknown as TopicCard[];
-  if (topics.length === 0) return null;
+  if (topics.length === 0) return [];
   const closest = [...topics].sort(
     (a, b) => Math.abs(50 - a.pct_a) - Math.abs(50 - b.pct_a) || b.total_votes - a.total_votes,
   );
-  return closest[0] ?? null;
+  return closest.slice(0, 1);
 });
+
 
 export const getTopic = createServerFn({ method: "GET" })
   .inputValidator((input: { id: string }) => input)

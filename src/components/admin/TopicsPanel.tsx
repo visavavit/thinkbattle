@@ -135,8 +135,9 @@ function useTopicMutations(actorId: string) {
 
   const feature = useMutation({
     mutationFn: async ({ topic, on }: { topic: AdminTopic; on: boolean }) => {
-      const { error } = await supabase.rpc("admin_set_featured", {
-        ...(on ? { _topic_id: topic.id } : {}),
+      const { error } = await supabase.rpc("admin_toggle_featured", {
+        _topic_id: topic.id,
+        _on: on,
       });
       if (error) throw error;
       await recordAudit({
@@ -148,11 +149,12 @@ function useTopicMutations(actorId: string) {
       });
     },
     onSuccess: (_data, variables) => {
-      toast.success(variables.on ? "Pinned as the Headliner ⚡" : "Headliner cleared");
+      toast.success(variables.on ? "Added to the Headliners ⚡" : "Removed from the Headliners");
       invalidate();
     },
-    onError: (error) => toast.error(describeError(error, "Could not update the headliner")),
+    onError: (error) => toast.error(describeError(error, "Could not update the headliners")),
   });
+
 
   return { setStatus, remove, feature };
 }
@@ -327,7 +329,7 @@ export function TopicTable({ actorId }: { actorId: string }) {
                 <Button
                   size="sm"
                   variant="outline"
-                  title={t.is_featured ? "Remove from the hero slot" : "Pin to the hero slot"}
+                  title={t.is_featured ? "Remove from the headliners" : "Add to the headliners"}
                   onClick={() => feature.mutate({ topic: t, on: !t.is_featured })}
                   disabled={feature.isPending}
                 >
