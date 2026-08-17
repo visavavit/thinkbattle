@@ -585,6 +585,13 @@ export type Database = {
         Returns: boolean
       }
       is_banned: { Args: { _user_id: string }; Returns: boolean }
+      topic_comment_authors: {
+        Args: { _topic_id: string }
+        Returns: {
+          choice: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"

@@ -117,7 +117,22 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     },
   });
 
+  // who has since voted for the other side — powers the "Changed their mind" badge
+  const authorSidesQuery = useQuery({
+    queryKey: ["comment-author-sides", topic.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("topic_comment_authors", {
+        _topic_id: topic.id,
+      });
+      if (error) throw error;
+      const map: Record<string, Side> = {};
+      for (const row of data ?? []) map[row.user_id] = row.choice as Side;
+      return map;
+    },
+  });
+
   const reactionsQuery = useQuery({
+
     queryKey: ["reactions", topic.id, user?.id ?? "anon"],
     enabled: Boolean(user),
     queryFn: async () => {
@@ -140,7 +155,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "comments", filter: `topic_id=eq.${topic.id}` },
-        () => queryClient.invalidateQueries({ queryKey: ["comments", topic.id] }),
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
+          queryClient.invalidateQueries({ queryKey: ["comment-author-sides", topic.id] });
+        },
+
       )
       .on(
         "postgres_changes",
@@ -160,7 +179,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const total = votesA + votesB;
   const pctA = total === 0 ? 50 : Math.round((100 * votesA) / total);
 
-  const castVote = useCallback(
+  const applyVote = useCallback(
     async (choice: Side) => {
       if (!user) return;
       if (isBanned) {
@@ -186,13 +205,31 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         toast.error("Vote failed. Try again.");
         return;
       }
+      queryClient.invalidateQueries({ queryKey: ["comment-author-sides", topic.id] });
       if (previous && previous !== choice) {
-        toast.success("Vote switched — your old comments moved out of that column.");
+        toast.success("Side switched — your earlier takes stay up, marked as changed their mind.");
         queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
       }
     },
     [user, isBanned, myVote, topic.id, topic.votes_a, topic.votes_b, queryClient],
   );
+
+  // switching sides is not reversible for the reader's own history, so it is
+  // always confirmed rather than fired straight off the vote button
+  const [pendingSide, setPendingSide] = useState<Side | null>(null);
+
+  const castVote = useCallback(
+    (choice: Side) => {
+      if (!user) return;
+      if (myVote && myVote !== choice) {
+        setPendingSide(choice);
+        return;
+      }
+      void applyVote(choice);
+    },
+    [user, myVote, applyVote],
+  );
+
 
   const react = useCallback(
     async (commentId: string, value: 1 | -1) => {
@@ -226,11 +263,20 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   );
 
   const authors = commentsQuery.data?.authors ?? new Map<string, string>();
+  const authorSides = authorSidesQuery.data ?? {};
 
   const [rowsA, rowsB] = useMemo(() => {
     const all = commentsQuery.data?.rows ?? [];
     return [all.filter((r) => r.side === "a"), all.filter((r) => r.side === "b")];
   }, [commentsQuery.data?.rows]);
+
+  const myOldTakes = useMemo(() => {
+    if (!user || !myVote) return 0;
+    return (commentsQuery.data?.rows ?? []).filter(
+      (r) => r.user_id === user.id && r.side === myVote,
+    ).length;
+  }, [commentsQuery.data?.rows, user, myVote]);
+
 
   return (
     <div className="space-y-8">
@@ -295,6 +341,8 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           title={`Why ${topic.choice_a}?`}
           rows={rowsA}
           authors={authors}
+          authorSides={authorSides}
+          otherLabel={topic.choice_b}
           myVote={myVote}
           user={user}
           topicId={topic.id}
@@ -309,6 +357,8 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           title={`Why ${topic.choice_b}?`}
           rows={rowsB}
           authors={authors}
+          authorSides={authorSides}
+          otherLabel={topic.choice_a}
           myVote={myVote}
           user={user}
           topicId={topic.id}
@@ -319,9 +369,42 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           isActive={activeSide === "b"}
         />
       </div>
+
+      <Dialog open={pendingSide !== null} onOpenChange={(open) => !open && setPendingSide(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Switch to {pendingSide === "a" ? topic.choice_a : topic.choice_b}?
+            </DialogTitle>
+            <DialogDescription>
+              Your vote moves to the other side and the split updates straight away.
+              {myOldTakes > 0
+                ? ` Your ${myOldTakes} take${myOldTakes === 1 ? "" : "s"} under “Why ${
+                    myVote === "a" ? topic.choice_a : topic.choice_b
+                  }?” stay published with their likes, and will be marked “Changed their mind”. You won't be able to post there any more.`
+                : " You'll be able to post in the other column instead."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingSide(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                const next = pendingSide;
+                setPendingSide(null);
+                if (next) void applyVote(next);
+              }}
+            >
+              Switch side
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 /**
  * Below lg only one column fits, so the other side would otherwise be buried
@@ -460,6 +543,8 @@ function CommentColumn({
   title,
   rows,
   authors,
+  authorSides,
+  otherLabel,
   myVote,
   user,
   topicId,
@@ -473,8 +558,12 @@ function CommentColumn({
   title: string;
   rows: CommentRow[];
   authors: Map<string, string>;
+  /** each commenter's current vote on this topic, for the changed-mind badge */
+  authorSides: Record<string, Side>;
+  otherLabel: string;
   myVote: Side | null;
   user: User | null;
+
   topicId: string;
   reactions: Record<string, number>;
   onReact: (id: string, value: 1 | -1) => void;
@@ -602,6 +691,8 @@ function CommentColumn({
           const highlighted =
             index < 3 &&
             (sort === "top" ? netScore > 0 : sort === "wild" ? controversy > 0 : false);
+          // the author argued this side, then voted for the other one
+          const switched = Boolean(authorSides[row.user_id]) && authorSides[row.user_id] !== side;
           return (
           <li
             key={row.id}
@@ -613,9 +704,19 @@ function CommentColumn({
                   : "border-border"
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-bold text-foreground">
-                {authors.get(row.user_id) ?? "anonymous"}
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-foreground">
+                  {authors.get(row.user_id) ?? "anonymous"}
+                </span>
+                {switched ? (
+                  <span
+                    title={`This reader has since switched to ${otherLabel}.`}
+                    className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                  >
+                    Changed their mind
+                  </span>
+                ) : null}
               </span>
               {row.is_hidden ? (
                 <span className="font-medium text-destructive">
@@ -628,6 +729,7 @@ function CommentColumn({
                 </span>
               ) : null}
             </div>
+
 
             <p className="mt-2 text-sm leading-relaxed break-words text-foreground">{row.body}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
