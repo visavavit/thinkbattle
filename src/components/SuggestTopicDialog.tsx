@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { describeError } from "@/lib/admin";
+
 import { useBanStatus } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,9 +81,10 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
     }
     setSaving(false);
     if (error) {
-      toast.error("Could not submit your idea.");
+      toast.error(describeError(error, "Could not submit your idea."));
       return;
     }
+
     toast.success("Sent to the moderation queue 🔥");
     setForm({ title: "", description: "", choice_a: "", choice_b: "", category_id: "" });
     setTagIds([]);

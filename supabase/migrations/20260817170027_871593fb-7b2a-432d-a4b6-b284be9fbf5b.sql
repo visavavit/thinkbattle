@@ -1,0 +1,10 @@
+revoke all on function public.guard_comment_spam() from public, anon, authenticated;
+revoke all on function public.guard_topic_spam() from public, anon, authenticated;
+revoke all on function public.guard_report_spam() from public, anon, authenticated;
+revoke all on function public.guard_reaction_spam() from public, anon, authenticated;
+revoke all on function public.guard_comment_moderation() from public, anon, authenticated;
+revoke all on function public.sync_comment_reactions() from public, anon, authenticated;
+revoke all on function public.sync_topic_votes() from public, anon, authenticated;
+revoke all on function public.protect_admin_from_ban() from public, anon, authenticated;
+revoke all on function public.protect_last_admin() from public, anon, authenticated;
+revoke all on function public.touch_vote() from public, anon, authenticated;

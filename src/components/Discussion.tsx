@@ -514,19 +514,24 @@ function CommentColumn({
   async function submit() {
     const text = body.trim();
     if (text.length < 2 || !user) return;
+    if (text.length > 2000) {
+      toast.error("That take is too long (2000 characters max).");
+      return;
+    }
     setPosting(true);
     const { error } = await supabase
       .from("comments")
-      .insert({ topic_id: topicId, user_id: user.id, side, body: text.slice(0, 1000) });
+      .insert({ topic_id: topicId, user_id: user.id, side, body: text.slice(0, 2000) });
     setPosting(false);
     if (error) {
-      toast.error("Could not post that take.");
+      toast.error(describeError(error, "Could not post that take."));
       return;
     }
     setBody("");
     toast.success("Take posted 🔥");
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
   }
+
 
   return (
     // `flex` is supplied by the display class below, never in the base string:
