@@ -329,7 +329,7 @@ export function TopicTable({ actorId }: { actorId: string }) {
                 <Button
                   size="sm"
                   variant="outline"
-                  title={t.is_featured ? "Remove from the hero slot" : "Pin to the hero slot"}
+                  title={t.is_featured ? "Remove from the headliners" : "Add to the headliners"}
                   onClick={() => feature.mutate({ topic: t, on: !t.is_featured })}
                   disabled={feature.isPending}
                 >
