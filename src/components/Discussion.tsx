@@ -175,7 +175,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const total = votesA + votesB;
   const pctA = total === 0 ? 50 : Math.round((100 * votesA) / total);
 
-  const castVote = useCallback(
+  const applyVote = useCallback(
     async (choice: Side) => {
       if (!user) return;
       if (isBanned) {
@@ -201,13 +201,31 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         toast.error("Vote failed. Try again.");
         return;
       }
+      queryClient.invalidateQueries({ queryKey: ["comment-author-sides", topic.id] });
       if (previous && previous !== choice) {
-        toast.success("Vote switched — your old comments moved out of that column.");
+        toast.success("Side switched — your earlier takes stay up, marked as changed their mind.");
         queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
       }
     },
     [user, isBanned, myVote, topic.id, topic.votes_a, topic.votes_b, queryClient],
   );
+
+  // switching sides is not reversible for the reader's own history, so it is
+  // always confirmed rather than fired straight off the vote button
+  const [pendingSide, setPendingSide] = useState<Side | null>(null);
+
+  const castVote = useCallback(
+    (choice: Side) => {
+      if (!user) return;
+      if (myVote && myVote !== choice) {
+        setPendingSide(choice);
+        return;
+      }
+      void applyVote(choice);
+    },
+    [user, myVote, applyVote],
+  );
+
 
   const react = useCallback(
     async (commentId: string, value: 1 | -1) => {
