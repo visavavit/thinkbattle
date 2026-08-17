@@ -291,7 +291,14 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       ) : null}
 
       <section className="arena-panel p-5">
-        <SplitBar pctA={pctA} labelA={topic.choice_a} labelB={topic.choice_b} size="lg" />
+        <SplitBar
+          pctA={pctA}
+          countA={votesA}
+          countB={votesB}
+          labelA={topic.choice_a}
+          labelB={topic.choice_b}
+          size="lg"
+        />
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <VoteButton
             side="a"
