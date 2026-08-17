@@ -66,7 +66,7 @@ function Home() {
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-8">
       <section className="text-center">
-        <h1 className="font-display text-5xl leading-none sm:text-7xl">
+        <h1 className="font-display text-4xl leading-tight sm:text-5xl">
           Pick a side.<span className="text-side-b"> Defend it.</span>
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
@@ -77,10 +77,10 @@ function Home() {
 
       {headliner ? (
         <section className="arena-panel relative overflow-hidden p-6">
-          <span className="absolute top-0 right-0 bg-primary px-3 py-1 font-display text-sm text-primary-foreground">
+          <span className="absolute top-0 right-0 bg-primary px-3 py-1 text-xs font-medium tracking-wide text-primary-foreground">
             ⚡ The Headliner
           </span>
-          <p className="text-xs font-bold text-muted-foreground uppercase">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             {headliner.category_emoji} {headliner.category_name} · {headliner.total_votes} votes
           </p>
           <h2 className="mt-2 text-3xl sm:text-4xl">{headliner.title}</h2>
@@ -95,7 +95,7 @@ function Home() {
           <Link
             to="/topic/$id"
             params={{ id: headliner.id }}
-            className="mt-5 inline-block rounded-sm bg-primary px-5 py-2 font-display text-lg text-primary-foreground"
+            className="mt-5 inline-block rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
           >
             Cast your vote
           </Link>
@@ -108,9 +108,9 @@ function Home() {
             key={key}
             type="button"
             onClick={() => navigate({ search: { tab: key } })}
-            className={`inline-flex items-center gap-2 rounded-sm border-2 px-4 py-2 text-sm font-bold uppercase transition-colors ${
+            className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
               tab === key
-                ? "border-primary bg-primary text-primary-foreground"
+                ? "border-foreground bg-foreground text-background"
                 : "border-border text-muted-foreground hover:text-foreground"
             }`}
           >

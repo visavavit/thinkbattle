@@ -66,14 +66,14 @@ function TopicPage() {
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-sm font-bold text-muted-foreground uppercase hover:text-primary"
+        className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" /> Feed
       </Link>
 
       <div className="flex flex-wrap items-center gap-2">
         {topic.category_name ? (
-          <span className="rounded-sm bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground uppercase">
+          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
             {topic.category_emoji} {topic.category_name}
           </span>
         ) : null}

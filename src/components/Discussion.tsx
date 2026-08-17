@@ -272,7 +272,7 @@ function VoteButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-sm border-4 px-4 py-5 font-display text-2xl uppercase transition-all disabled:cursor-not-allowed disabled:opacity-50 ${base} ${
+      className={`rounded-md border-2 px-4 py-4 font-display text-xl transition-all disabled:cursor-not-allowed disabled:opacity-50 ${base} ${
         active ? activeCls : "hover:-translate-y-0.5"
       }`}
     >
@@ -348,7 +348,7 @@ function CommentColumn({
   }
 
   return (
-    <section className={`arena-panel flex flex-col gap-4 border-t-8 p-4 ${accent}`}>
+    <section className={`arena-panel flex flex-col gap-4 border-t-4 p-4 ${accent}`}>
       <h2 className={`text-2xl ${side === "a" ? "text-side-a" : "text-side-b"}`}>{title}</h2>
 
       <div className="flex flex-wrap gap-2">
@@ -357,7 +357,7 @@ function CommentColumn({
             key={key}
             type="button"
             onClick={() => setSort(key)}
-            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold uppercase transition-colors ${
+            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
               sort === key
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border text-muted-foreground hover:text-foreground"
@@ -406,7 +406,7 @@ function CommentColumn({
                 {authors.get(row.user_id) ?? "anonymous"}
               </span>
               {index < 3 && sort !== "newest" ? (
-                <span className="font-bold text-primary uppercase">
+                <span className="font-medium text-muted-foreground">
                   {sort === "wild" ? "📌 wild take" : "📌 pinned"}
                 </span>
               ) : null}
