@@ -53,6 +53,7 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
           <Flame className="h-3.5 w-3.5" /> {topic.wild_takes_count} wild
         </span>
       </div>
+      </div>
     </Link>
   );
 }
