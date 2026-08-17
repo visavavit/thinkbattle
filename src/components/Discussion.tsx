@@ -569,8 +569,11 @@ function CommentColumn({
   side,
   title,
   rows,
+  repliesByParent,
   authors,
   authorSides,
+  labelA,
+  labelB,
   otherLabel,
   myVote,
   user,
@@ -584,9 +587,13 @@ function CommentColumn({
   side: Side;
   title: string;
   rows: CommentRow[];
+  /** one level of replies, keyed by the take they answer */
+  repliesByParent: Record<string, CommentRow[]>;
   authors: Map<string, string>;
   /** each commenter's current vote on this topic, for the changed-mind badge */
   authorSides: Record<string, Side>;
+  labelA: string;
+  labelB: string;
   otherLabel: string;
   myVote: Side | null;
   user: User | null;
@@ -599,6 +606,7 @@ function CommentColumn({
   /** below lg only the active column is shown; both stay mounted either way */
   isActive: boolean;
 }) {
+
   const [sort, setSort] = useState<SortKey>("top");
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
