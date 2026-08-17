@@ -757,6 +757,7 @@ export type Database = {
           hidden_reason: string
           id: string
           is_hidden: boolean
+          is_synthetic: boolean
           likes_count: number
           open_reports: number
           side: string
