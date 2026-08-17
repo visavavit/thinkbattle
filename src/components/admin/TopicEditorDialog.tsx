@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/TagInput";
+import { ImageUploadButton } from "@/components/ImageUploadButton";
+
 
 import {
   Dialog,
@@ -259,13 +261,22 @@ export function TopicEditorDialog({
             </div>
           </div>
           <div>
-            <Label htmlFor="editor-cover">Cover image URL</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="editor-cover">Cover image</Label>
+              <ImageUploadButton
+                folder="covers"
+                label="Upload cover"
+                onUploaded={(url) => setForm({ ...form, cover_image_url: url })}
+              />
+            </div>
             <Input
               id="editor-cover"
+              className="mt-1"
               value={form.cover_image_url}
-              placeholder="/covers/pineapple.jpg"
+              placeholder="https://cdn.example.com/covers/pineapple.jpg"
               onChange={(e) => setForm({ ...form, cover_image_url: e.target.value })}
             />
+
             {form.cover_image_url ? (
               <img
                 src={form.cover_image_url}
