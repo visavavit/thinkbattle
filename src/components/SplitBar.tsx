@@ -2,8 +2,11 @@ type Props = {
   pctA: number;
   labelA: string;
   labelB: string;
+  countA?: number;
+  countB?: number;
   size?: "sm" | "lg";
 };
+
 
 export function SplitBar({ pctA, labelA, labelB, size = "sm" }: Props) {
   const a = Math.min(100, Math.max(0, Math.round(pctA)));
