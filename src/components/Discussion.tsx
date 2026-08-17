@@ -117,7 +117,22 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     },
   });
 
+  // who has since voted for the other side — powers the "Changed their mind" badge
+  const authorSidesQuery = useQuery({
+    queryKey: ["comment-author-sides", topic.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("topic_comment_authors", {
+        _topic_id: topic.id,
+      });
+      if (error) throw error;
+      const map: Record<string, Side> = {};
+      for (const row of data ?? []) map[row.user_id] = row.choice as Side;
+      return map;
+    },
+  });
+
   const reactionsQuery = useQuery({
+
     queryKey: ["reactions", topic.id, user?.id ?? "anon"],
     enabled: Boolean(user),
     queryFn: async () => {
