@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Clock, Flag, Flame, Star, ThumbsDown, ThumbsUp, Lock, EyeOff, Trash2 } from "lucide-react";
@@ -51,11 +51,27 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const [votesA, setVotesA] = useState(topic.votes_a);
   const [votesB, setVotesB] = useState(topic.votes_b);
   const [myVote, setMyVote] = useState<Side | null>(null);
+  // which column is on screen below lg, where only one fits at a time
+  const [activeSide, setActiveSide] = useState<Side>("a");
+  const columnsRef = useRef<HTMLDivElement>(null);
+
+  const selectSide = useCallback((side: Side) => {
+    setActiveSide(side);
+    // both columns share one document scroll, so swapping a long column for a
+    // short one can strand the reader past the end of the new list
+    const el = columnsRef.current;
+    if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: "start" });
+  }, []);
 
   useEffect(() => {
     setVotesA(topic.votes_a);
     setVotesB(topic.votes_b);
   }, [topic.votes_a, topic.votes_b]);
+
+  // open on the side the reader voted for — it's the only one they can post in
+  useEffect(() => {
+    if (myVote) setActiveSide(myVote);
+  }, [myVote]);
 
   useEffect(() => {
     if (!user) {
@@ -209,8 +225,12 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     [user, isBanned, reactionsQuery.data, queryClient, topic.id],
   );
 
-  const rows = commentsQuery.data?.rows ?? [];
   const authors = commentsQuery.data?.authors ?? new Map<string, string>();
+
+  const [rowsA, rowsB] = useMemo(() => {
+    const all = commentsQuery.data?.rows ?? [];
+    return [all.filter((r) => r.side === "a"), all.filter((r) => r.side === "b")];
+  }, [commentsQuery.data?.rows]);
 
   return (
     <div className="space-y-8">
@@ -257,11 +277,23 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         </p>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <SideSwitcher
+        labelA={topic.choice_a}
+        labelB={topic.choice_b}
+        countA={rowsA.length}
+        countB={rowsB.length}
+        showCounts={commentsQuery.isSuccess}
+        activeSide={activeSide}
+        onSelect={selectSide}
+      />
+
+      {/* the sections are the grid items themselves: as direct children they
+          stretch to equal height at lg, which a wrapper div would break */}
+      <div ref={columnsRef} className="grid scroll-mt-28 gap-6 lg:grid-cols-2">
         <CommentColumn
           side="a"
           title={`Why ${topic.choice_a}?`}
-          rows={rows.filter((r) => r.side === "a")}
+          rows={rowsA}
           authors={authors}
           myVote={myVote}
           user={user}
@@ -270,11 +302,12 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           onReact={react}
           isAdmin={isAdmin}
           isBanned={isBanned}
+          isActive={activeSide === "a"}
         />
         <CommentColumn
           side="b"
           title={`Why ${topic.choice_b}?`}
-          rows={rows.filter((r) => r.side === "b")}
+          rows={rowsB}
           authors={authors}
           myVote={myVote}
           user={user}
@@ -283,9 +316,112 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           onReact={react}
           isAdmin={isAdmin}
           isBanned={isBanned}
+          isActive={activeSide === "b"}
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * Below lg only one column fits, so the other side would otherwise be buried
+ * under a full comment list. This keeps both sides visible as a choice with
+ * their counts, and collapses away entirely once both columns fit side by side.
+ *
+ * Deliberately not tab ARIA: at lg both panels show at once, which no tab
+ * pattern allows, and this is the same DOM at every width. A pressed-toggle
+ * pair is what is actually true here.
+ */
+function SideSwitcher({
+  labelA,
+  labelB,
+  countA,
+  countB,
+  showCounts,
+  activeSide,
+  onSelect,
+}: {
+  labelA: string;
+  labelB: string;
+  countA: number;
+  countB: number;
+  showCounts: boolean;
+  activeSide: Side;
+  onSelect: (side: Side) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Show one side's takes at a time"
+      className="sticky top-14 z-30 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur lg:hidden"
+    >
+      <div className="grid grid-cols-2 gap-2">
+        <SideSwitcherButton
+          side="a"
+          label={labelA}
+          count={countA}
+          showCount={showCounts}
+          active={activeSide === "a"}
+          onClick={() => onSelect("a")}
+        />
+        <SideSwitcherButton
+          side="b"
+          label={labelB}
+          count={countB}
+          showCount={showCounts}
+          active={activeSide === "b"}
+          onClick={() => onSelect("b")}
+        />
+      </div>
+      {/* swapping display:none announces nothing on its own */}
+      <p aria-live="polite" className="sr-only">
+        Showing {activeSide === "a" ? labelA : labelB}
+      </p>
+    </div>
+  );
+}
+
+function SideSwitcherButton({
+  side,
+  label,
+  count,
+  showCount,
+  active,
+  onClick,
+}: {
+  side: Side;
+  label: string;
+  count: number;
+  showCount: boolean;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const border = side === "a" ? "border-side-a" : "border-side-b";
+  const idle = side === "a" ? "text-side-a" : "text-side-b";
+  const selected =
+    side === "a" ? "bg-side-a text-side-a-foreground" : "bg-side-b text-side-b-foreground";
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`flex min-w-0 items-center justify-center gap-2 rounded-md border-2 px-3 py-2 text-sm font-bold transition-colors ${border} ${
+        active ? selected : idle
+      }`}
+    >
+      <span className="truncate">{label}</span>
+      {/* counts arrive with the client-side comments query; rendering 0 first
+          would make both pills flicker from 0 to their real value */}
+      {showCount ? (
+        <span
+          className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium tabular-nums ${
+            active ? "bg-background/25" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {count}
+        </span>
+      ) : null}
+    </button>
   );
 }
 
@@ -331,6 +467,7 @@ function CommentColumn({
   onReact,
   isAdmin,
   isBanned,
+  isActive,
 }: {
   side: Side;
   title: string;
@@ -343,6 +480,8 @@ function CommentColumn({
   onReact: (id: string, value: 1 | -1) => void;
   isAdmin: boolean;
   isBanned: boolean;
+  /** below lg only the active column is shown; both stay mounted either way */
+  isActive: boolean;
 }) {
   const [sort, setSort] = useState<SortKey>("top");
   const [body, setBody] = useState("");
@@ -390,8 +529,21 @@ function CommentColumn({
   }
 
   return (
-    <section className={`arena-panel flex flex-col gap-4 border-t-4 p-4 ${accent}`}>
-      <h2 className={`text-2xl ${side === "a" ? "text-side-a" : "text-side-b"}`}>{title}</h2>
+    // `flex` is supplied by the display class below, never in the base string:
+    // .flex and .hidden have equal specificity, so source order would decide.
+    // min-w-0 stops one unbroken comment from widening both desktop columns.
+    <section
+      aria-labelledby={`side-${side}-heading`}
+      className={`arena-panel min-w-0 flex-col gap-4 border-t-4 p-4 ${accent} ${
+        isActive ? "flex" : "hidden lg:flex"
+      }`}
+    >
+      <h2
+        id={`side-${side}-heading`}
+        className={`text-2xl ${side === "a" ? "text-side-a" : "text-side-b"}`}
+      >
+        {title}
+      </h2>
 
       <div className="flex flex-wrap gap-2">
         {SORTS.map(({ key, label, icon: Icon }) => (
@@ -464,7 +616,7 @@ function CommentColumn({
                 </span>
               ) : null}
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-foreground">{row.body}</p>
+            <p className="mt-2 text-sm leading-relaxed break-words text-foreground">{row.body}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <ReactionButton
                 active={reactions[row.id] === 1}
