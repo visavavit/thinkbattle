@@ -8,10 +8,19 @@ type Props = {
 };
 
 
-export function SplitBar({ pctA, labelA, labelB, size = "sm" }: Props) {
+export function SplitBar({
+  pctA,
+  labelA,
+  labelB,
+  countA,
+  countB,
+  size = "sm",
+}: Props) {
   const a = Math.min(100, Math.max(0, Math.round(pctA)));
   const pctB = 100 - a;
   const tall = size === "lg";
+  const countText = (n: number | undefined) =>
+    n === undefined ? null : `${n.toLocaleString()} vote${n === 1 ? "" : "s"}`;
 
   return (
     <div className="w-full">
@@ -39,9 +48,20 @@ export function SplitBar({ pctA, labelA, labelB, size = "sm" }: Props) {
       </div>
 
       <div className="mt-1 flex justify-between gap-2 text-xs font-medium">
-        <span className="truncate text-side-a">{labelA}</span>
-        <span className="truncate text-side-b">{labelB}</span>
+        <span className="truncate text-side-a">
+          {labelA}
+          {countA !== undefined ? (
+            <span className="ml-1.5 font-normal text-muted-foreground">· {countText(countA)}</span>
+          ) : null}
+        </span>
+        <span className="truncate text-side-b">
+          {countB !== undefined ? (
+            <span className="mr-1.5 font-normal text-muted-foreground">{countText(countB)} ·</span>
+          ) : null}
+          {labelB}
+        </span>
       </div>
     </div>
   );
 }
+
