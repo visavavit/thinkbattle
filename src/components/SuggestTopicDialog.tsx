@@ -79,9 +79,10 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
     }
     setSaving(false);
     if (error) {
-      toast.error("Could not submit your idea.");
+      toast.error(describeError(error, "Could not submit your idea."));
       return;
     }
+
     toast.success("Sent to the moderation queue 🔥");
     setForm({ title: "", description: "", choice_a: "", choice_b: "", category_id: "" });
     setTagIds([]);
