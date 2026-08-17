@@ -538,7 +538,7 @@ export type Database = {
           topic_title: string
         }[]
       }
-      admin_set_featured: { Args: { _topic_id: string }; Returns: undefined }
+      admin_set_featured: { Args: { _topic_id?: string }; Returns: undefined }
       admin_user_directory: {
         Args: { _limit?: number; _search?: string }
         Returns: {
