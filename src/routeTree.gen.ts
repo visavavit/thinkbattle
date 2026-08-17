@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as TopicIdRouteImport } from './routes/topic.$id'
+import { Route as ApiPublicBotsTickRouteImport } from './routes/api/public/bots/tick'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,6 +46,11 @@ const TopicIdRoute = TopicIdRouteImport.update({
   path: '/topic/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicBotsTickRoute = ApiPublicBotsTickRouteImport.update({
+  id: '/api/public/bots/tick',
+  path: '/api/public/bots/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/browse': typeof BrowseRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/topic/$id': typeof TopicIdRoute
+  '/api/public/bots/tick': typeof ApiPublicBotsTickRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/browse': typeof BrowseRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/topic/$id': typeof TopicIdRoute
+  '/api/public/bots/tick': typeof ApiPublicBotsTickRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +76,25 @@ export interface FileRoutesById {
   '/browse': typeof BrowseRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/topic/$id': typeof TopicIdRoute
+  '/api/public/bots/tick': typeof ApiPublicBotsTickRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/browse' | '/admin' | '/topic/$id'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/browse'
+    | '/admin'
+    | '/topic/$id'
+    | '/api/public/bots/tick'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/browse' | '/admin' | '/topic/$id'
+  to:
+    | '/'
+    | '/auth'
+    | '/browse'
+    | '/admin'
+    | '/topic/$id'
+    | '/api/public/bots/tick'
   id:
     | '__root__'
     | '/'
@@ -82,6 +103,7 @@ export interface FileRouteTypes {
     | '/browse'
     | '/_authenticated/admin'
     | '/topic/$id'
+    | '/api/public/bots/tick'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -90,6 +112,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BrowseRoute: typeof BrowseRoute
   TopicIdRoute: typeof TopicIdRoute
+  ApiPublicBotsTickRoute: typeof ApiPublicBotsTickRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -136,6 +159,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TopicIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/bots/tick': {
+      id: '/api/public/bots/tick'
+      path: '/api/public/bots/tick'
+      fullPath: '/api/public/bots/tick'
+      preLoaderRoute: typeof ApiPublicBotsTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -156,6 +186,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BrowseRoute: BrowseRoute,
   TopicIdRoute: TopicIdRoute,
+  ApiPublicBotsTickRoute: ApiPublicBotsTickRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

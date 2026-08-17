@@ -47,6 +47,182 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_actions: {
+        Row: {
+          attempts: number
+          campaign_id: string
+          choice: string | null
+          claimed_at: string | null
+          done_at: string | null
+          error: string | null
+          id: number
+          kind: string
+          payload: Json
+          persona_id: string
+          run_at: string
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          campaign_id: string
+          choice?: string | null
+          claimed_at?: string | null
+          done_at?: string | null
+          error?: string | null
+          id?: number
+          kind: string
+          payload?: Json
+          persona_id: string
+          run_at: string
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          campaign_id?: string
+          choice?: string | null
+          claimed_at?: string | null
+          done_at?: string | null
+          error?: string | null
+          id?: number
+          kind?: string
+          payload?: Json
+          persona_id?: string
+          run_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_actions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "bot_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_actions_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "bot_personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_campaigns: {
+        Row: {
+          comments_target: number
+          created_at: string
+          created_by: string
+          delivered_comments: number
+          delivered_reactions: number
+          delivered_votes: number
+          duration_minutes: number
+          ends_at: string
+          error_message: string | null
+          id: string
+          jitter: number
+          reactions_target: number
+          starts_at: string
+          status: string
+          target_pct_a: number
+          tone: string
+          topic_id: string
+          total_votes: number
+          updated_at: string
+        }
+        Insert: {
+          comments_target?: number
+          created_at?: string
+          created_by: string
+          delivered_comments?: number
+          delivered_reactions?: number
+          delivered_votes?: number
+          duration_minutes: number
+          ends_at: string
+          error_message?: string | null
+          id?: string
+          jitter?: number
+          reactions_target?: number
+          starts_at?: string
+          status?: string
+          target_pct_a: number
+          tone?: string
+          topic_id: string
+          total_votes: number
+          updated_at?: string
+        }
+        Update: {
+          comments_target?: number
+          created_at?: string
+          created_by?: string
+          delivered_comments?: number
+          delivered_reactions?: number
+          delivered_votes?: number
+          duration_minutes?: number
+          ends_at?: string
+          error_message?: string | null
+          id?: string
+          jitter?: number
+          reactions_target?: number
+          starts_at?: string
+          status?: string
+          target_pct_a?: number
+          tone?: string
+          topic_id?: string
+          total_votes?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_campaigns_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topic_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_campaigns_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_personas: {
+        Row: {
+          activity: number
+          created_at: string
+          id: string
+          profile_id: string
+          tone: string
+          verbosity: number
+        }
+        Insert: {
+          activity?: number
+          created_at?: string
+          id?: string
+          profile_id: string
+          tone?: string
+          verbosity?: number
+        }
+        Update: {
+          activity?: number
+          created_at?: string
+          id?: string
+          profile_id?: string
+          tone?: string
+          verbosity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_personas_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -155,6 +331,7 @@ export type Database = {
           hidden_reason: string | null
           id: string
           is_hidden: boolean
+          is_synthetic: boolean
           likes_count: number
           side: string
           topic_id: string
@@ -170,6 +347,7 @@ export type Database = {
           hidden_reason?: string | null
           id?: string
           is_hidden?: boolean
+          is_synthetic?: boolean
           likes_count?: number
           side: string
           topic_id: string
@@ -185,6 +363,7 @@ export type Database = {
           hidden_reason?: string | null
           id?: string
           is_hidden?: boolean
+          is_synthetic?: boolean
           likes_count?: number
           side?: string
           topic_id?: string
@@ -207,23 +386,44 @@ export type Database = {
           },
         ]
       }
+      job_locks: {
+        Row: {
+          locked_until: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          locked_until: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          locked_until?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           id: string
+          is_synthetic: boolean
           username: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           id: string
+          is_synthetic?: boolean
           username: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           id?: string
+          is_synthetic?: boolean
           username?: string
         }
         Relationships: []
@@ -422,6 +622,7 @@ export type Database = {
           choice: string
           created_at: string
           id: string
+          is_synthetic: boolean
           topic_id: string
           updated_at: string
           user_id: string
@@ -430,6 +631,7 @@ export type Database = {
           choice: string
           created_at?: string
           id?: string
+          is_synthetic?: boolean
           topic_id: string
           updated_at?: string
           user_id: string
@@ -438,6 +640,7 @@ export type Database = {
           choice?: string
           created_at?: string
           id?: string
+          is_synthetic?: boolean
           topic_id?: string
           updated_at?: string
           user_id?: string
@@ -508,6 +711,34 @@ export type Database = {
           vote_count: number
         }[]
       }
+      admin_campaign_overview: {
+        Args: never
+        Returns: {
+          comments_target: number
+          delivered_comments: number
+          delivered_reactions: number
+          delivered_votes: number
+          ends_at: string
+          error_message: string
+          id: string
+          jitter: number
+          live_pct_a: number
+          next_run_at: string
+          pending_actions: number
+          reactions_target: number
+          real_comments: number
+          real_votes: number
+          starts_at: string
+          status: string
+          synthetic_comments: number
+          synthetic_votes: number
+          target_pct_a: number
+          tone: string
+          topic_id: string
+          topic_title: string
+          total_votes: number
+        }[]
+      }
       admin_comment_feed: {
         Args: {
           _limit?: number
@@ -526,6 +757,7 @@ export type Database = {
           hidden_reason: string
           id: string
           is_hidden: boolean
+          is_synthetic: boolean
           likes_count: number
           open_reports: number
           side: string
@@ -534,6 +766,10 @@ export type Database = {
         }[]
       }
       admin_dashboard_stats: { Args: never; Returns: Json }
+      admin_purge_campaign: {
+        Args: { _campaign_id: string }
+        Returns: undefined
+      }
       admin_report_queue: {
         Args: {
           _limit?: number

@@ -6,6 +6,7 @@ import { useAdminRole, useAuth } from "@/hooks/useAuth";
 import { adminKeys, type AdminStats } from "@/lib/admin";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminOverview } from "@/components/admin/AdminOverview";
+import { AudiencePanel } from "@/components/admin/AudiencePanel";
 import { AuditLogPanel } from "@/components/admin/AuditLogPanel";
 import { ModerationPanel } from "@/components/admin/ModerationPanel";
 import { PeoplePanel } from "@/components/admin/PeoplePanel";
@@ -77,6 +78,7 @@ function AdminPage() {
             Moderation{reports > 0 ? ` (${reports})` : ""}
           </TabsTrigger>
           <TabsTrigger value="people">People</TabsTrigger>
+          <TabsTrigger value="audience">Audience</TabsTrigger>
           <TabsTrigger value="taxonomy">Categories &amp; Tags</TabsTrigger>
           <TabsTrigger value="audit">Audit log</TabsTrigger>
         </TabsList>
@@ -95,6 +97,9 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="people" className="pt-4">
           <PeoplePanel actorId={user.id} />
+        </TabsContent>
+        <TabsContent value="audience" className="pt-4">
+          <AudiencePanel actorId={user.id} />
         </TabsContent>
         <TabsContent value="taxonomy" className="pt-4">
           <TaxonomyPanel actorId={user.id} />

@@ -419,6 +419,8 @@ function CommentBrowser({ actorId }: { actorId: string }) {
               {c.topic_title}
             </Link>
             <span>{formatWhen(c.created_at)}</span>
+            {c.is_synthetic ? <Badge variant="outline">synthetic</Badge> : null}
+
             {c.is_hidden ? (
               <Badge variant="secondary">
                 hidden{c.hidden_reason ? `: ${c.hidden_reason}` : ""}
