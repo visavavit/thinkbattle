@@ -36,7 +36,9 @@ type CommentRow = {
   is_hidden: boolean;
   hidden_reason: string | null;
   created_at: string;
+  parent_id: string | null;
 };
+
 
 const SORTS: { key: SortKey; label: string; icon: typeof Star }[] = [
   { key: "top", label: "Top Liked", icon: Star },
