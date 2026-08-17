@@ -146,11 +146,6 @@ function useTopicMutations(actorId: string) {
         entityId: topic.id,
         summary: topic.title,
       });
-        actorId,
-        action: on ? "topic.feature" : "topic.unfeature",
-        entityType: "topic",
-        entityId: topic.id,
-        summary: topic.title,
       });
     },
     onSuccess: (_data, variables) => {
