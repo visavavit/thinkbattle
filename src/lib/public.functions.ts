@@ -43,7 +43,10 @@ function publicClient() {
 export type FeedTab = "trending" | "neck" | "top" | "newest";
 
 export const getFeed = createServerFn({ method: "GET" })
-  .inputValidator((input: { tab?: FeedTab; category?: string; tag?: string }) => input ?? {})
+  .inputValidator(
+    (input: { tab?: FeedTab | undefined; category?: string | undefined; tag?: string | undefined }) =>
+      input ?? {},
+  )
   .handler(async ({ data }) => {
     const supabase = publicClient();
     let query = supabase.from("topic_cards").select("*").eq("status", "published").limit(60);

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as TopicIdRouteImport } from './routes/topic.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BrowseRoute = BrowseRouteImport.update({
+  id: '/browse',
+  path: '/browse',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TopicIdRoute = TopicIdRouteImport.update({
   id: '/topic/$id',
   path: '/topic/$id',
@@ -32,30 +38,34 @@ const TopicIdRoute = TopicIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/browse': typeof BrowseRoute
   '/topic/$id': typeof TopicIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/browse': typeof BrowseRoute
   '/topic/$id': typeof TopicIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/browse': typeof BrowseRoute
   '/topic/$id': typeof TopicIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/topic/$id'
+  fullPaths: '/' | '/auth' | '/browse' | '/topic/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/topic/$id'
-  id: '__root__' | '/' | '/auth' | '/topic/$id'
+  to: '/' | '/auth' | '/browse' | '/topic/$id'
+  id: '__root__' | '/' | '/auth' | '/browse' | '/topic/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  BrowseRoute: typeof BrowseRoute
   TopicIdRoute: typeof TopicIdRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/browse': {
+      id: '/browse'
+      path: '/browse'
+      fullPath: '/browse'
+      preLoaderRoute: typeof BrowseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/topic/$id': {
       id: '/topic/$id'
       path: '/topic/$id'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  BrowseRoute: BrowseRoute,
   TopicIdRoute: TopicIdRoute,
 }
 export const routeTree = rootRouteImport
