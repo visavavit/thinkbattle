@@ -806,6 +806,10 @@ export type Database = {
         }[]
       }
       admin_set_featured: { Args: { _topic_id?: string }; Returns: undefined }
+      admin_toggle_featured: {
+        Args: { _on?: boolean; _topic_id: string }
+        Returns: undefined
+      }
       admin_user_directory: {
         Args: { _limit?: number; _search?: string }
         Returns: {
