@@ -136,10 +136,16 @@ function useTopicMutations(actorId: string) {
   const feature = useMutation({
     mutationFn: async ({ topic, on }: { topic: AdminTopic; on: boolean }) => {
       const { error } = await supabase.rpc("admin_set_featured", {
-        _topic_id: on ? topic.id : undefined,
+        ...(on ? { _topic_id: topic.id } : {}),
       });
       if (error) throw error;
       await recordAudit({
+        actorId,
+        action: on ? "topic.feature" : "topic.unfeature",
+        entityType: "topic",
+        entityId: topic.id,
+        summary: topic.title,
+      });
         actorId,
         action: on ? "topic.feature" : "topic.unfeature",
         entityType: "topic",
