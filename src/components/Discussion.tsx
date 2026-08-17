@@ -259,11 +259,20 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   );
 
   const authors = commentsQuery.data?.authors ?? new Map<string, string>();
+  const authorSides = authorSidesQuery.data ?? {};
 
   const [rowsA, rowsB] = useMemo(() => {
     const all = commentsQuery.data?.rows ?? [];
     return [all.filter((r) => r.side === "a"), all.filter((r) => r.side === "b")];
   }, [commentsQuery.data?.rows]);
+
+  const myOldTakes = useMemo(() => {
+    if (!user || !myVote) return 0;
+    return (commentsQuery.data?.rows ?? []).filter(
+      (r) => r.user_id === user.id && r.side === myVote,
+    ).length;
+  }, [commentsQuery.data?.rows, user, myVote]);
+
 
   return (
     <div className="space-y-8">
