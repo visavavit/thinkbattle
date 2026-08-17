@@ -113,9 +113,9 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-sm border-2 px-3 py-1 text-sm font-bold ${
+      className={`rounded-full border px-3 py-1 text-sm font-medium ${
         active
-          ? "border-primary bg-primary text-primary-foreground"
+          ? "border-foreground bg-foreground text-background"
           : "border-border text-muted-foreground hover:text-foreground"
       }`}
     >

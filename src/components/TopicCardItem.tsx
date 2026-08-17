@@ -8,11 +8,11 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
     <Link
       to="/topic/$id"
       params={{ id: topic.id }}
-      className="arena-panel group flex flex-col gap-3 p-4 transition-transform hover:-translate-y-1"
+      className="arena-panel group flex flex-col gap-3 p-4 transition-shadow hover:shadow-md"
     >
       <div className="flex flex-wrap items-center gap-2">
         {topic.category_name ? (
-          <span className="rounded-sm bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground uppercase">
+          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
             {topic.category_emoji} {topic.category_name}
           </span>
         ) : null}
