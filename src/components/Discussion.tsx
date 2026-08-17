@@ -687,6 +687,8 @@ function CommentColumn({
           const highlighted =
             index < 3 &&
             (sort === "top" ? netScore > 0 : sort === "wild" ? controversy > 0 : false);
+          // the author argued this side, then voted for the other one
+          const switched = Boolean(authorSides[row.user_id]) && authorSides[row.user_id] !== side;
           return (
           <li
             key={row.id}
@@ -698,9 +700,19 @@ function CommentColumn({
                   : "border-border"
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-bold text-foreground">
-                {authors.get(row.user_id) ?? "anonymous"}
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-foreground">
+                  {authors.get(row.user_id) ?? "anonymous"}
+                </span>
+                {switched ? (
+                  <span
+                    title={`This reader has since switched to ${otherLabel}.`}
+                    className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                  >
+                    Changed their mind
+                  </span>
+                ) : null}
               </span>
               {row.is_hidden ? (
                 <span className="font-medium text-destructive">
@@ -713,6 +725,7 @@ function CommentColumn({
                 </span>
               ) : null}
             </div>
+
 
             <p className="mt-2 text-sm leading-relaxed break-words text-foreground">{row.body}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
