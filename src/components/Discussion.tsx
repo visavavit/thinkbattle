@@ -590,13 +590,20 @@ function CommentColumn({
       )}
 
       <ul className="space-y-3">
-        {sorted.map((row, index) => (
+        {sorted.map((row, index) => {
+          const netScore = (row.likes_count ?? 0) - (row.dislikes_count ?? 0);
+          const controversy =
+            (row.likes_count ?? 0) + (row.dislikes_count ?? 0) - Math.abs(netScore);
+          const highlighted =
+            index < 3 &&
+            (sort === "top" ? netScore > 0 : sort === "wild" ? controversy > 0 : false);
+          return (
           <li
             key={row.id}
             className={`rounded-sm border p-3 ${
               row.is_hidden
                 ? "border-dashed border-destructive/50 bg-destructive/5"
-                : index < 3 && sort !== "newest"
+                : highlighted
                   ? "border-primary/70 bg-accent/40"
                   : "border-border"
             }`}
@@ -610,12 +617,13 @@ function CommentColumn({
                   Hidden by a moderator
                   {row.hidden_reason ? ` — ${row.hidden_reason}` : ""}
                 </span>
-              ) : index < 3 && sort !== "newest" ? (
+              ) : highlighted ? (
                 <span className="font-medium text-muted-foreground">
-                  {sort === "wild" ? "Wild take" : "Pinned"}
+                  {sort === "wild" ? "Wild take" : "Top take"}
                 </span>
               ) : null}
             </div>
+
             <p className="mt-2 text-sm leading-relaxed break-words text-foreground">{row.body}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <ReactionButton
@@ -648,7 +656,9 @@ function CommentColumn({
               </span>
             </div>
           </li>
-        ))}
+          );
+        })}
+
         {sorted.length === 0 ? (
           <li className="py-6 text-center text-sm text-muted-foreground">
             No takes here yet. Be the first.
