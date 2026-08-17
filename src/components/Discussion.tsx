@@ -360,8 +360,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           side="a"
           title={`Why ${topic.choice_a}?`}
           rows={rowsA}
+          repliesByParent={repliesByParent}
           authors={authors}
           authorSides={authorSides}
+          labelA={topic.choice_a}
+          labelB={topic.choice_b}
           otherLabel={topic.choice_b}
           myVote={myVote}
           user={user}
@@ -376,8 +379,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           side="b"
           title={`Why ${topic.choice_b}?`}
           rows={rowsB}
+          repliesByParent={repliesByParent}
           authors={authors}
           authorSides={authorSides}
+          labelA={topic.choice_a}
+          labelB={topic.choice_b}
           otherLabel={topic.choice_a}
           myVote={myVote}
           user={user}
@@ -388,6 +394,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           isBanned={isBanned}
           isActive={activeSide === "b"}
         />
+
       </div>
 
       <Dialog open={pendingSide !== null} onOpenChange={(open) => !open && setPendingSide(null)}>
