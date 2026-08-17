@@ -155,7 +155,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "comments", filter: `topic_id=eq.${topic.id}` },
-        () => queryClient.invalidateQueries({ queryKey: ["comments", topic.id] }),
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
+          queryClient.invalidateQueries({ queryKey: ["comment-author-sides", topic.id] });
+        },
+
       )
       .on(
         "postgres_changes",
