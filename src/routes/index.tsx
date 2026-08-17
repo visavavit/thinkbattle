@@ -2,9 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, useQuery, queryOptions, keepPreviousData } from "@tanstack/react-query";
 import { Flame, Scale, Star, Clock } from "lucide-react";
 import { z } from "zod";
-import { getFeed, getHeadliner, type FeedTab } from "@/lib/public.functions";
+import { getFeed, getHeadliners, type FeedTab } from "@/lib/public.functions";
 import { TopicCardItem } from "@/components/TopicCardItem";
 import { SplitBar } from "@/components/SplitBar";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const searchSchema = z.object({
   tab: z.enum(["trending", "neck", "top", "newest"]).catch("trending"),
@@ -19,9 +26,10 @@ const feedQuery = (tab: FeedTab) =>
   });
 
 const headlinerQuery = queryOptions({
-  queryKey: ["headliner"],
-  queryFn: () => getHeadliner(),
+  queryKey: ["headliners"],
+  queryFn: () => getHeadliners(),
 });
+
 
 export const Route = createFileRoute("/")({
   validateSearch: searchSchema,
