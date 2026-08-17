@@ -40,7 +40,13 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
 
       <h3 className="text-xl leading-tight group-hover:text-primary">{topic.title}</h3>
 
-      <SplitBar pctA={topic.pct_a} labelA={topic.choice_a} labelB={topic.choice_b} />
+      <SplitBar
+        pctA={topic.pct_a}
+        countA={topic.votes_a}
+        countB={topic.votes_b}
+        labelA={topic.choice_a}
+        labelB={topic.choice_b}
+      />
 
       <div className="mt-auto flex items-center gap-4 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1">

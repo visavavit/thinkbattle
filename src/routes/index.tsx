@@ -100,6 +100,8 @@ function Home() {
           <div className="mt-5 max-w-2xl">
             <SplitBar
               pctA={headliner.pct_a}
+              countA={headliner.votes_a}
+              countB={headliner.votes_b}
               labelA={headliner.choice_a}
               labelB={headliner.choice_b}
               size="lg"
