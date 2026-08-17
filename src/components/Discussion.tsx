@@ -539,6 +539,8 @@ function CommentColumn({
   title,
   rows,
   authors,
+  authorSides,
+  otherLabel,
   myVote,
   user,
   topicId,
@@ -552,8 +554,12 @@ function CommentColumn({
   title: string;
   rows: CommentRow[];
   authors: Map<string, string>;
+  /** each commenter's current vote on this topic, for the changed-mind badge */
+  authorSides: Record<string, Side>;
+  otherLabel: string;
   myVote: Side | null;
   user: User | null;
+
   topicId: string;
   reactions: Record<string, number>;
   onReact: (id: string, value: 1 | -1) => void;
