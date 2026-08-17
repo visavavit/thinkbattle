@@ -146,7 +146,7 @@ function RootComponent() {
           <Outlet />
         </main>
         <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">
-          VS Arena · two choices, zero chill.
+          VS Arena · two choices, both sides heard.
         </footer>
       </div>
       <Toaster position="top-center" />

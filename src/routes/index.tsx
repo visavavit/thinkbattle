@@ -70,8 +70,8 @@ function Home() {
           Pick a side.<span className="text-side-b"> Defend it.</span>
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          Two choices. Two comment columns. One Wild Takes leaderboard for the most roasted opinions
-          on the internet.
+          Vote on the debates people are actually having, then read the best arguments from both
+          sides — side by side.
         </p>
       </section>
 
