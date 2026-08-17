@@ -27,11 +27,14 @@ export const Route = createFileRoute("/")({
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ tab: search.tab }),
   loader: async ({ context, deps }) => {
-    await Promise.all([
+    // A transient network blip must not blank the page: the component's own
+    // queries refetch on the client, so warm the cache best-effort only.
+    await Promise.allSettled([
       context.queryClient.ensureQueryData(feedQuery(deps.tab)),
       context.queryClient.ensureQueryData(headlinerQuery),
     ]);
   },
+
   head: () => ({
     meta: [
       { title: "VS Arena — Pick a Side, Defend It" },
