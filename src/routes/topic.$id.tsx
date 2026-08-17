@@ -88,6 +88,15 @@ function TopicPage() {
       </div>
 
       <h1 className="text-4xl sm:text-5xl">{topic.title}</h1>
+      {topic.cover_image_url ? (
+        <img
+          src={topic.cover_image_url}
+          alt={topic.title}
+          width={1200}
+          height={675}
+          className="aspect-[21/9] w-full rounded-md object-cover"
+        />
+      ) : null}
       {topic.description ? <p className="text-muted-foreground">{topic.description}</p> : null}
 
       <Discussion topic={topic} user={user} />
