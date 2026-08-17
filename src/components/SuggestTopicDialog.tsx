@@ -173,27 +173,9 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
           </div>
           <div>
             <Label>Tags</Label>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {(taxonomy.data?.tags ?? []).map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() =>
-                    setTagIds((prev) =>
-                      prev.includes(t.id) ? prev.filter((id) => id !== t.id) : [...prev, t.id],
-                    )
-                  }
-                  className={`rounded-full border px-2 py-1 text-xs ${
-                    tagIds.includes(t.id)
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border"
-                  }`}
-                >
-                  #{t.name}
-                </button>
-              ))}
-            </div>
+            <TagInput value={tagNames} onChange={setTagNames} />
           </div>
+
           <Button onClick={submit} disabled={saving} className="w-full">
             Submit for review
           </Button>
