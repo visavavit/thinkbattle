@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { describeError } from "@/lib/admin";
 
 import { useBanStatus } from "@/hooks/useAuth";
+import { TagInput } from "@/components/TagInput";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,7 +41,7 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
     choice_b: "",
     category_id: "",
   });
-  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [tagNames, setTagNames] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const taxonomy = useQuery({
