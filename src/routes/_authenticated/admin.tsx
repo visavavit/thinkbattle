@@ -141,7 +141,10 @@ function AdminPage() {
       slug: slugify(newCategory.name),
       emoji: newCategory.emoji || "🔥",
     });
-    if (error) return toast.error("Could not add category");
+    if (error) {
+      toast.error("Could not add category");
+      return;
+    }
     setNewCategory({ name: "", emoji: "🔥" });
     queryClient.invalidateQueries({ queryKey: ["admin-taxonomy"] });
   }
@@ -151,7 +154,10 @@ function AdminPage() {
     const { error } = await supabase
       .from("tags")
       .insert({ name: newTag.trim().toLowerCase(), slug: slugify(newTag) });
-    if (error) return toast.error("Could not add tag");
+    if (error) {
+      toast.error("Could not add tag");
+      return;
+    }
     setNewTag("");
     queryClient.invalidateQueries({ queryKey: ["admin-taxonomy"] });
   }
