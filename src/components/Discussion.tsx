@@ -267,10 +267,21 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const authors = commentsQuery.data?.authors ?? new Map<string, string>();
   const authorSides = authorSidesQuery.data ?? {};
 
-  const [rowsA, rowsB] = useMemo(() => {
+  // replies live under their parent take, never in the ranked column lists
+  const [rowsA, rowsB, repliesByParent] = useMemo(() => {
     const all = commentsQuery.data?.rows ?? [];
-    return [all.filter((r) => r.side === "a"), all.filter((r) => r.side === "b")];
+    const tops = all.filter((r) => !r.parent_id);
+    const map: Record<string, CommentRow[]> = {};
+    for (const r of all) {
+      if (!r.parent_id) continue;
+      (map[r.parent_id] ??= []).push(r);
+    }
+    for (const list of Object.values(map)) {
+      list.sort((x, y) => x.created_at.localeCompare(y.created_at));
+    }
+    return [tops.filter((r) => r.side === "a"), tops.filter((r) => r.side === "b"), map];
   }, [commentsQuery.data?.rows]);
+
 
   const myOldTakes = useMemo(() => {
     if (!user || !myVote) return 0;
