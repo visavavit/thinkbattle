@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { describeError } from "@/lib/admin";
 
 import { useBanStatus } from "@/hooks/useAuth";
+import { TagInput } from "@/components/TagInput";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,7 +41,7 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
     choice_b: "",
     category_id: "",
   });
-  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [tagNames, setTagNames] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const taxonomy = useQuery({
@@ -74,10 +76,13 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
       })
       .select("id")
       .single();
-    if (!error && data && tagIds.length > 0) {
-      await supabase
-        .from("topic_tags")
-        .insert(tagIds.map((tag_id) => ({ topic_id: data.id, tag_id })));
+    if (!error && data && tagNames.length > 0) {
+      const { data: ids } = await supabase.rpc("resolve_tag_names", { _names: tagNames });
+      if (ids && ids.length > 0) {
+        await supabase
+          .from("topic_tags")
+          .insert(ids.map((tag_id: string) => ({ topic_id: data.id, tag_id })));
+      }
     }
     setSaving(false);
     if (error) {
@@ -87,7 +92,8 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
 
     toast.success("Sent to the moderation queue 🔥");
     setForm({ title: "", description: "", choice_a: "", choice_b: "", category_id: "" });
-    setTagIds([]);
+    setTagNames([]);
+
     setOpen(false);
   }
 
@@ -173,27 +179,9 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
           </div>
           <div>
             <Label>Tags</Label>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {(taxonomy.data?.tags ?? []).map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() =>
-                    setTagIds((prev) =>
-                      prev.includes(t.id) ? prev.filter((id) => id !== t.id) : [...prev, t.id],
-                    )
-                  }
-                  className={`rounded-full border px-2 py-1 text-xs ${
-                    tagIds.includes(t.id)
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border"
-                  }`}
-                >
-                  #{t.name}
-                </button>
-              ))}
-            </div>
+            <TagInput value={tagNames} onChange={setTagNames} />
           </div>
+
           <Button onClick={submit} disabled={saving} className="w-full">
             Submit for review
           </Button>

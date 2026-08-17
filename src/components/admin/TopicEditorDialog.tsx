@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { TagInput } from "@/components/TagInput";
+
 import {
   Dialog,
   DialogContent,
@@ -63,7 +65,7 @@ export function TopicEditorDialog({
   const queryClient = useQueryClient();
   const [form, setForm] = useState(EMPTY);
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [tagNames, setTagNames] = useState<string[]>([]);
 
   const taxonomy = useQuery({
     queryKey: adminKeys.taxonomy,
@@ -84,10 +86,12 @@ export function TopicEditorDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("topic_tags")
-        .select("tag_id")
+        .select("tags(name)")
         .eq("topic_id", topic!.id);
       if (error) throw error;
-      return (data ?? []).map((r) => r.tag_id);
+      return (data ?? [])
+        .map((r) => (r.tags as { name: string } | null)?.name)
+        .filter((n): n is string => Boolean(n));
     },
   });
 
@@ -105,12 +109,13 @@ export function TopicEditorDialog({
         : EMPTY,
     );
     setCategoryId(topic?.category_id ?? null);
-    setTagIds([]);
+    setTagNames([]);
   }, [open, topic]);
 
   useEffect(() => {
-    if (existingTags.data) setTagIds(existingTags.data);
+    if (existingTags.data) setTagNames(existingTags.data);
   }, [existingTags.data]);
+
 
   const save = useMutation({
     mutationFn: async () => {
@@ -159,11 +164,17 @@ export function TopicEditorDialog({
 
       // replace the tag set wholesale — simpler to reason about than a diff
       await supabase.from("topic_tags").delete().eq("topic_id", topicId);
-      if (tagIds.length > 0) {
-        const { error } = await supabase
-          .from("topic_tags")
-          .insert(tagIds.map((tag_id) => ({ topic_id: topicId!, tag_id })));
-        if (error) throw error;
+      if (tagNames.length > 0) {
+        const { data: ids, error: tagError } = await supabase.rpc("resolve_tag_names", {
+          _names: tagNames,
+        });
+        if (tagError) throw tagError;
+        if (ids && ids.length > 0) {
+          const { error } = await supabase
+            .from("topic_tags")
+            .insert(ids.map((tag_id: string) => ({ topic_id: topicId!, tag_id })));
+          if (error) throw error;
+        }
       }
 
       await recordAudit({
@@ -176,7 +187,8 @@ export function TopicEditorDialog({
         entityType: "topic",
         entityId: topicId,
         summary: values.title,
-        detail: { tags: tagIds.length, category_id: categoryId },
+        detail: { tags: tagNames.length, category_id: categoryId },
+
       });
       return topicId;
     },
@@ -288,32 +300,9 @@ export function TopicEditorDialog({
 
           <div>
             <Label>Tags</Label>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {(taxonomy.data?.tags ?? []).map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() =>
-                    setTagIds((prev) =>
-                      prev.includes(t.id) ? prev.filter((id) => id !== t.id) : [...prev, t.id],
-                    )
-                  }
-                  className={`rounded-full border px-2 py-1 text-xs ${
-                    tagIds.includes(t.id)
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border"
-                  }`}
-                >
-                  #{t.name}
-                </button>
-              ))}
-              {(taxonomy.data?.tags ?? []).length === 0 ? (
-                <span className="text-xs text-muted-foreground">
-                  No tags yet — add some under Categories &amp; Tags.
-                </span>
-              ) : null}
-            </div>
+            <TagInput value={tagNames} onChange={setTagNames} />
           </div>
+
         </div>
 
         <DialogFooter>

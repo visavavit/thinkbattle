@@ -831,6 +831,7 @@ export type Database = {
         Returns: boolean
       }
       is_banned: { Args: { _user_id: string }; Returns: boolean }
+      resolve_tag_names: { Args: { _names: string[] }; Returns: string[] }
       topic_comment_authors: {
         Args: { _topic_id: string }
         Returns: {
