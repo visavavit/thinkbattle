@@ -110,7 +110,7 @@ function Home() {
                     votes
                   </p>
                   <h2 className="mt-2 text-3xl sm:text-4xl">{headliner.title}</h2>
-                  <div className="mt-5 max-w-2xl">
+                  <div className="mt-5">
                     <SplitBar
                       pctA={headliner.pct_a}
                       countA={headliner.votes_a}

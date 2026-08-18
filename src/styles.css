@@ -120,6 +120,10 @@
   --input: oklch(1 0 0 / 16%);
   --side-a: oklch(0.65 0.13 250);
   --side-b: oklch(0.65 0.16 27);
+  /* The dark fills are lightened for legibility as text on the dark card, so
+     they need dark ink on top: near-white here lands at ~3.1:1. */
+  --side-a-foreground: oklch(0.22 0.01 260);
+  --side-b-foreground: oklch(0.22 0.01 260);
 }
 
 @layer base {
