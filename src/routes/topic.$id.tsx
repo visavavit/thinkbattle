@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getTopic } from "@/lib/public.functions";
 import { Discussion } from "@/components/Discussion";
 import { useAuth } from "@/hooks/useAuth";
+import { translate as tr, useT } from "@/lib/i18n";
 
 const topicQuery = (id: string) =>
   queryOptions({
@@ -20,11 +21,11 @@ export const Route = createFileRoute("/topic/$id")({
   head: ({ loaderData }) => {
     if (!loaderData) {
       return {
-        meta: [{ title: "Debate unavailable — VS Arena" }, { name: "robots", content: "noindex" }],
+        meta: [{ title: tr("meta.topic.unavailable") }, { name: "robots", content: "noindex" }],
       };
     }
     const title = `${loaderData.title} — VS Arena`;
-    const description = `${loaderData.choiceA} vs ${loaderData.choiceB}. Vote, then defend your side in the split comment columns.`;
+    const description = tr("meta.topic.description", { a: loaderData.choiceA, b: loaderData.choiceB });
     return {
       meta: [
         { title },
@@ -36,29 +37,27 @@ export const Route = createFileRoute("/topic/$id")({
       ],
     };
   },
-  errorComponent: () => (
-    <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-      <h1 className="text-3xl">This debate didn't load</h1>
-      <Link to="/" className="mt-4 inline-block font-bold text-primary underline">
-        Back to the feed
-      </Link>
-    </div>
-  ),
-  notFoundComponent: () => (
-    <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-      <h1 className="text-3xl">Debate not found</h1>
-      <Link to="/" className="mt-4 inline-block font-bold text-primary underline">
-        Back to the feed
-      </Link>
-    </div>
-  ),
+  errorComponent: () => <TopicFallback titleKey="topic.loadFailed" />,
+  notFoundComponent: () => <TopicFallback titleKey="topic.notFound" />,
   component: TopicPage,
 });
+
+function TopicFallback({ titleKey }: { titleKey: "topic.loadFailed" | "topic.notFound" }) {
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <h1 className="text-3xl">{tr(titleKey)}</h1>
+      <Link to="/" className="mt-4 inline-block font-bold text-primary underline">
+        {tr("topic.backToFeed")}
+      </Link>
+    </div>
+  );
+}
 
 function TopicPage() {
   const { id } = Route.useParams();
   const { data: topic } = useSuspenseQuery(topicQuery(id));
   const { user } = useAuth();
+  const t = useT();
 
   if (!topic) return null;
 
@@ -68,7 +67,7 @@ function TopicPage() {
         to="/"
         className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> Feed
+        <ArrowLeft className="h-4 w-4" /> {t("nav.feed")}
       </Link>
 
       <div className="flex flex-wrap items-center gap-2">
