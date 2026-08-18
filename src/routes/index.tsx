@@ -59,10 +59,10 @@ export const Route = createFileRoute("/")({
 });
 
 const TABS: { key: FeedTab; labelKey: TranslationKey; icon: typeof Flame }[] = [
-  { key: "trending", labelKey: "feed.tab.trending", icon: Flame },
-  { key: "neck", labelKey: "feed.tab.neck", icon: Scale },
-  { key: "top", labelKey: "feed.tab.top", icon: Star },
-  { key: "newest", labelKey: "feed.tab.newest", icon: Clock },
+  { key: "trending", labelKey: "tab.trending", icon: Flame },
+  { key: "neck", labelKey: "tab.neck", icon: Scale },
+  { key: "top", labelKey: "tab.top", icon: Star },
+  { key: "newest", labelKey: "tab.newest", icon: Clock },
 ];
 
 function Home() {
@@ -75,10 +75,10 @@ function Home() {
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-8">
       <section className="text-center">
         <h1 className="font-display text-4xl leading-tight sm:text-5xl">
-          {t("home.hero.titleLead")}
-          <span className="text-side-b"> {t("home.hero.titleAccent")}</span>
+          {t("home.heroLead")}
+          <span className="text-side-b"> {t("home.heroAccent")}</span>
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">{t("home.hero.subtitle")}</p>
+        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">{t("home.heroSub")}</p>
       </section>
 
       {headliners.length > 0 ? (
@@ -88,7 +88,7 @@ function Home() {
               <CarouselItem key={headliner.id}>
                 <section className="arena-panel relative overflow-hidden p-6">
                   <span className="absolute top-0 right-0 bg-primary px-3 py-1 text-xs font-medium tracking-wide text-primary-foreground">
-                    {t("home.headliner.badge")}
+                    {t("home.headliner")}
                   </span>
                   {headliner.cover_image_url ? (
                     <img
@@ -101,7 +101,7 @@ function Home() {
                   ) : null}
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     {headliner.category_emoji} {headliner.category_name} ·{" "}
-                    {t("common.votesCount", { count: headliner.total_votes })}
+                    {t("vote.countMany", { n: headliner.total_votes })}
                   </p>
                   <h2 className="mt-2 text-3xl sm:text-4xl">{headliner.title}</h2>
                   <div className="mt-5">
@@ -119,7 +119,7 @@ function Home() {
                     params={{ id: headliner.id }}
                     className="mt-5 inline-block rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                   >
-                    {t("home.headliner.cta")}
+                    {t("home.castVote")}
                   </Link>
                 </section>
               </CarouselItem>
@@ -161,7 +161,7 @@ function Home() {
         ))}
       </div>
       {topics.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">{t("feed.empty")}</p>
+        <p className="py-12 text-center text-muted-foreground">{t("home.emptyTab")}</p>
       ) : null}
 
     </div>
