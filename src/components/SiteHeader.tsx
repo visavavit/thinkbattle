@@ -3,7 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Swords } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, useIsAdmin } from "@/hooks/useAuth";
+import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { LanguageToggle } from "./LanguageToggle";
 import { SuggestTopicDialog } from "./SuggestTopicDialog";
 
 export function SiteHeader() {
@@ -11,6 +13,7 @@ export function SiteHeader() {
   const isAdmin = useIsAdmin(user);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const t = useT();
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -27,20 +30,20 @@ export function SiteHeader() {
           <span className="font-display text-xl font-semibold tracking-tight">
             <span className="text-side-a">V</span>
             <span className="text-side-b">S</span>
-            <span className="ml-1 text-foreground">Arena</span>
+            <span className="ml-1 text-foreground">{t("brand.arena")}</span>
           </span>
         </Link>
 
         <nav className="ml-4 hidden gap-4 text-sm font-medium text-muted-foreground sm:flex">
           <Link to="/" className="hover:text-primary" activeProps={{ className: "text-primary" }}>
-            Feed
+            {t("nav.feed")}
           </Link>
           <Link
             to="/browse"
             className="hover:text-primary"
             activeProps={{ className: "text-primary" }}
           >
-            Browse
+            {t("nav.browse")}
           </Link>
           {isAdmin ? (
             <Link
@@ -48,20 +51,21 @@ export function SiteHeader() {
               className="hover:text-primary"
               activeProps={{ className: "text-primary" }}
             >
-              Admin
+              {t("nav.admin")}
             </Link>
           ) : null}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <LanguageToggle />
           <SuggestTopicDialog user={user} />
           {user ? (
             <Button variant="outline" size="sm" onClick={signOut}>
-              Sign out
+              {t("nav.signOut")}
             </Button>
           ) : (
             <Button asChild size="sm">
-              <Link to="/auth">Sign in</Link>
+              <Link to="/auth">{t("nav.signIn")}</Link>
             </Button>
           )}
         </div>
