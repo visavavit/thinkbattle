@@ -23,8 +23,8 @@ export const th: Dictionary = {
   "common.cancel": "ยกเลิก",
 
   // ---- home
-  "home.heroLead": "เลือกฝ่ายของคุณ",
-  "home.heroAccent": " แล้วอธิบายเหตุผล",
+  "home.heroLead": "เลือกแล้วอธิบายเหตุผล",
+  "home.heroAccent": "แล้อธิบายเหตุผล",
   "home.heroSub":
     "ร่วมโหวตประเด็นที่สังคมกำลังถกเถียง แล้วอ่านเหตุผลที่ดีที่สุดจากทั้งสองฝ่ายเคียงข้างกัน",
   "home.headliner": "⚡ ประเด็นเด่น",

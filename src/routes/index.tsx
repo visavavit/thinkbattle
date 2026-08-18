@@ -76,7 +76,6 @@ function Home() {
       <section className="text-center">
         <h1 className="font-display text-4xl leading-tight sm:text-5xl">
           {t("home.heroLead")}
-          <span className="text-side-b"> {t("home.heroAccent")}</span>
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">{t("home.heroSub")}</p>
       </section>
