@@ -958,10 +958,10 @@ function ReplyThread({
             />
             <div className="flex gap-2">
               <Button size="sm" onClick={submit} disabled={posting || body.trim().length < 2}>
-                Reply
+                {t("reply.action")}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </div>
@@ -971,7 +971,7 @@ function ReplyThread({
             onClick={() => setOpen(true)}
             className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
-            <Reply className="h-3.5 w-3.5" /> Reply
+            <Reply className="h-3.5 w-3.5" /> {t("reply.action")}
           </button>
         )
       ) : null}
@@ -983,6 +983,7 @@ function ReplyThread({
 
 /** Lets any signed-in member push a comment into the admin moderation queue. */
 function ReportButton({ commentId }: { commentId: string }) {
+  const { t, tError } = useI18n();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [sending, setSending] = useState(false);
@@ -990,7 +991,7 @@ function ReportButton({ commentId }: { commentId: string }) {
   async function submit() {
     const text = reason.trim();
     if (text.length < 3) {
-      toast.error("Tell the moderators what's wrong with it.");
+      toast.error(t("report.needReason"));
       return;
     }
     setSending(true);
@@ -1004,12 +1005,12 @@ function ReportButton({ commentId }: { commentId: string }) {
     if (error) {
       toast.error(
         error.message.includes("duplicate")
-          ? "You already reported this one."
-          : describeError(error, "Could not send that report"),
+          ? t("report.duplicate")
+          : tError(describeError(error, t("report.failed"))),
       );
       return;
     }
-    toast.success("Reported — a moderator will take a look.");
+    toast.success(t("report.sent"));
     setReason("");
     setOpen(false);
   }
@@ -1019,8 +1020,8 @@ function ReportButton({ commentId }: { commentId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        title="Report to moderators"
-        aria-label="Report this comment"
+        title={t("report.tooltip")}
+        aria-label={t("report.aria")}
         className="rounded-sm border border-transparent p-1 text-muted-foreground transition-colors hover:border-border hover:text-destructive"
       >
         <Flag className="h-3.5 w-3.5" />
@@ -1028,23 +1029,23 @@ function ReportButton({ commentId }: { commentId: string }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Report this comment</DialogTitle>
+            <DialogTitle>{t("report.title")}</DialogTitle>
             <DialogDescription>
-              Moderators see the comment, who wrote it and your reason.
+              {t("report.body")}
             </DialogDescription>
           </DialogHeader>
           <Input
             value={reason}
             maxLength={300}
-            placeholder="Harassment, spam, off-topic…"
+            placeholder={t("report.placeholder")}
             onChange={(e) => setReason(e.target.value)}
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={submit} disabled={sending}>
-              Send report
+              {t("report.send")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1064,10 +1065,11 @@ function ModeratorControls({
   authorName: string;
 }) {
   const queryClient = useQueryClient();
+  const { t, tError } = useI18n();
   const [busy, setBusy] = useState(false);
 
   async function run(action: "hide" | "unhide" | "delete") {
-    if (action === "delete" && !confirm(`Delete ${authorName}'s comment permanently?`)) return;
+    if (action === "delete" && !confirm(t("mod.confirmDelete", { name: authorName }))) return;
     setBusy(true);
     const { data: session } = await supabase.auth.getUser();
     const actorId = session.user!.id;
@@ -1097,11 +1099,11 @@ function ModeratorControls({
     setBusy(false);
 
     if (error) {
-      toast.error(describeError(error, "Moderation failed"));
+      toast.error(tError(describeError(error, t("mod.failed"))));
       return;
     }
     toast.success(
-      action === "delete" ? "Comment deleted" : action === "hide" ? "Comment hidden" : "Restored",
+      action === "delete" ? t("mod.deleted") : action === "hide" ? t("mod.hidden") : t("mod.restored"),
     );
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
   }
@@ -1112,8 +1114,8 @@ function ModeratorControls({
         type="button"
         disabled={busy}
         onClick={() => run(comment.is_hidden ? "unhide" : "hide")}
-        title={comment.is_hidden ? "Restore this comment" : "Hide from the public"}
-        aria-label={comment.is_hidden ? "Restore this comment" : "Hide this comment"}
+        title={comment.is_hidden ? t("mod.restore") : t("mod.hide")}
+        aria-label={comment.is_hidden ? t("mod.restore") : t("mod.hideAria")}
         className="rounded-sm border border-transparent p-1 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
       >
         <EyeOff className="h-3.5 w-3.5" />
@@ -1122,8 +1124,8 @@ function ModeratorControls({
         type="button"
         disabled={busy}
         onClick={() => run("delete")}
-        title="Delete permanently"
-        aria-label="Delete this comment"
+        title={t("mod.delete")}
+        aria-label={t("mod.deleteAria")}
         className="rounded-sm border border-transparent p-1 text-muted-foreground transition-colors hover:border-border hover:text-destructive"
       >
         <Trash2 className="h-3.5 w-3.5" />
