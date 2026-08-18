@@ -47,17 +47,10 @@ export const Route = createFileRoute("/")({
 
   head: () => ({
     meta: [
-      { title: "VS Arena — Pick a Side, Defend It" },
-      {
-        name: "description",
-        content:
-          "Binary debates with bifurcated comment columns and a Wild Takes ranking that surfaces the most controversial arguments on both sides.",
-      },
-      { property: "og:title", content: "VS Arena — Pick a Side, Defend It" },
-      {
-        property: "og:description",
-        content: "Vote on 2-choice showdowns and fight it out in split comment columns.",
-      },
+      { title: tr("meta.home.title") },
+      { name: "description", content: tr("meta.home.description") },
+      { property: "og:title", content: tr("meta.home.title") },
+      { property: "og:description", content: tr("meta.home.description") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -65,15 +58,16 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const TABS: { key: FeedTab; label: string; icon: typeof Flame }[] = [
-  { key: "trending", label: "Trending", icon: Flame },
-  { key: "neck", label: "Neck-and-Neck", icon: Scale },
-  { key: "top", label: "Top Voted", icon: Star },
-  { key: "newest", label: "Newest", icon: Clock },
+const TABS: { key: FeedTab; labelKey: TranslationKey; icon: typeof Flame }[] = [
+  { key: "trending", labelKey: "feed.tab.trending", icon: Flame },
+  { key: "neck", labelKey: "feed.tab.neck", icon: Scale },
+  { key: "top", labelKey: "feed.tab.top", icon: Star },
+  { key: "newest", labelKey: "feed.tab.newest", icon: Clock },
 ];
 
 function Home() {
   const { tab } = Route.useSearch();
+  const t = useT();
   const { data: topics = [] } = useQuery(feedQuery(tab));
   const { data: headliners = [] } = useSuspenseQuery(headlinerQuery);
 
@@ -81,12 +75,10 @@ function Home() {
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-8">
       <section className="text-center">
         <h1 className="font-display text-4xl leading-tight sm:text-5xl">
-          Pick a side.<span className="text-side-b"> Defend it.</span>
+          {t("home.hero.titleLead")}
+          <span className="text-side-b"> {t("home.hero.titleAccent")}</span>
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          Vote on the debates people are actually having, then read the best arguments from both
-          sides — side by side.
-        </p>
+        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">{t("home.hero.subtitle")}</p>
       </section>
 
       {headliners.length > 0 ? (
@@ -96,7 +88,7 @@ function Home() {
               <CarouselItem key={headliner.id}>
                 <section className="arena-panel relative overflow-hidden p-6">
                   <span className="absolute top-0 right-0 bg-primary px-3 py-1 text-xs font-medium tracking-wide text-primary-foreground">
-                    ⚡ The Headliner
+                    {t("home.headliner.badge")}
                   </span>
                   {headliner.cover_image_url ? (
                     <img
@@ -108,8 +100,8 @@ function Home() {
                     />
                   ) : null}
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    {headliner.category_emoji} {headliner.category_name} · {headliner.total_votes}{" "}
-                    votes
+                    {headliner.category_emoji} {headliner.category_name} ·{" "}
+                    {t("common.votesCount", { count: headliner.total_votes })}
                   </p>
                   <h2 className="mt-2 text-3xl sm:text-4xl">{headliner.title}</h2>
                   <div className="mt-5">
@@ -127,7 +119,7 @@ function Home() {
                     params={{ id: headliner.id }}
                     className="mt-5 inline-block rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                   >
-                    Cast your vote
+                    {t("home.headliner.cta")}
                   </Link>
                 </section>
               </CarouselItem>
@@ -144,7 +136,7 @@ function Home() {
 
 
       <div className="flex flex-wrap gap-2">
-        {TABS.map(({ key, label, icon: Icon }) => (
+        {TABS.map(({ key, labelKey, icon: Icon }) => (
           <Link
             key={key}
             to="/"
@@ -158,7 +150,7 @@ function Home() {
             }`}
           >
             <Icon className="h-4 w-4" />
-            {label}
+            {t(labelKey)}
           </Link>
         ))}
       </div>
@@ -169,10 +161,9 @@ function Home() {
         ))}
       </div>
       {topics.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">
-          Nothing in this tab yet — try another filter.
-        </p>
+        <p className="py-12 text-center text-muted-foreground">{t("feed.empty")}</p>
       ) : null}
+
     </div>
   );
 }
