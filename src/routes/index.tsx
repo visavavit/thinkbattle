@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getFeed, getHeadliners, type FeedTab } from "@/lib/public.functions";
 import { TopicCardItem } from "@/components/TopicCardItem";
 import { SplitBar } from "@/components/SplitBar";
+import { translate as tr, useT, type TranslationKey } from "@/lib/i18n";
 import {
   Carousel,
   CarouselContent,
@@ -12,6 +13,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+
 
 const searchSchema = z.object({
   tab: z.enum(["trending", "neck", "top", "newest"]).catch("trending"),
