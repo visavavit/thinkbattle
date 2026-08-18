@@ -2,8 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { Flame, MessageSquare, Users } from "lucide-react";
 import type { TopicCard } from "@/lib/public.functions";
 import { SplitBar } from "./SplitBar";
+import { useT } from "@/lib/i18n";
 
 export function TopicCardItem({ topic }: { topic: TopicCard }) {
+  const t = useT();
   return (
     <Link
       to="/topic/$id"
@@ -50,13 +52,13 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
 
       <div className="mt-auto flex items-center gap-4 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1">
-          <Users className="h-3.5 w-3.5" /> {topic.total_votes} votes
+          <Users className="h-3.5 w-3.5" /> {t("card.votes", { n: topic.total_votes })}
         </span>
         <span className="inline-flex items-center gap-1">
           <MessageSquare className="h-3.5 w-3.5" /> {topic.comments_count}
         </span>
         <span className="inline-flex items-center gap-1 text-side-b">
-          <Flame className="h-3.5 w-3.5" /> {topic.wild_takes_count} wild
+          <Flame className="h-3.5 w-3.5" /> {t("card.wild", { n: topic.wild_takes_count })}
         </span>
       </div>
       </div>

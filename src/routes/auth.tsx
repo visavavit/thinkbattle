@@ -8,14 +8,15 @@ import { ensureProfile, useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { translate as tr, useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — VS Arena" },
-      { name: "description", content: "Sign in to vote on debates and post takes in VS Arena." },
-      { property: "og:title", content: "Sign in — VS Arena" },
-      { property: "og:description", content: "Vote and debate in VS Arena." },
+      { title: tr("meta.auth.title") },
+      { name: "description", content: tr("meta.auth.description") },
+      { property: "og:title", content: tr("meta.auth.title") },
+      { property: "og:description", content: tr("meta.auth.description") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -24,8 +25,8 @@ export const Route = createFileRoute("/auth")({
 });
 
 const schema = z.object({
-  email: z.string().trim().email("Enter a valid email").max(255),
-  password: z.string().min(6, "Password must be at least 6 characters").max(72),
+  email: z.string().trim().email("auth.errEmail").max(255),
+  password: z.string().min(6, "auth.errPassword").max(72),
 });
 
 function AuthPage() {
@@ -35,6 +36,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const t = useT();
 
   useEffect(() => {
     if (user) {
@@ -46,7 +48,10 @@ function AuthPage() {
   async function submit() {
     const parsed = schema.safeParse({ email, password });
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Check your details");
+      const key = parsed.error.issues[0]?.message;
+      toast.error(
+        key === "auth.errEmail" || key === "auth.errPassword" ? t(key) : t("auth.checkDetails"),
+      );
       return;
     }
     setBusy(true);
@@ -62,7 +67,7 @@ function AuthPage() {
         return;
       }
       if (!data.session) {
-        toast.success("Check your email to confirm your account.");
+        toast.success(t("auth.checkEmail"));
         return;
       }
     } else {
@@ -83,7 +88,7 @@ function AuthPage() {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
-      toast.error("Google sign-in failed.");
+      toast.error(t("auth.googleFailed"));
       return;
     }
   }
@@ -91,14 +96,12 @@ function AuthPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <div className="arena-panel space-y-5 p-6">
-        <h1 className="text-3xl">{mode === "signin" ? "Enter the arena" : "Join the arena"}</h1>
-        <p className="text-sm text-muted-foreground">
-          You need an account to vote, comment, and react.
-        </p>
+        <h1 className="text-3xl">{mode === "signin" ? t("auth.signInTitle") : t("auth.signUpTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("auth.sub")}</p>
 
         <div className="space-y-3">
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -108,7 +111,7 @@ function AuthPage() {
             />
           </div>
           <div>
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <Input
               id="password"
               type="password"
@@ -118,16 +121,16 @@ function AuthPage() {
             />
           </div>
           <Button className="w-full" onClick={submit} disabled={busy}>
-            {mode === "signin" ? "Sign in" : "Create account"}
+            {mode === "signin" ? t("auth.signIn") : t("auth.createAccount")}
           </Button>
         </div>
 
         <div className="flex items-center gap-3 text-xs text-muted-foreground uppercase">
-          <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+          <span className="h-px flex-1 bg-border" /> {t("auth.or")} <span className="h-px flex-1 bg-border" />
         </div>
 
         <Button variant="outline" className="w-full" onClick={google}>
-          Continue with Google
+          {t("auth.google")}
         </Button>
 
         <button
@@ -135,7 +138,7 @@ function AuthPage() {
           className="w-full text-sm text-muted-foreground underline"
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
         >
-          {mode === "signin" ? "No account? Sign up" : "Already have an account? Sign in"}
+          {mode === "signin" ? t("auth.toSignUp") : t("auth.toSignIn")}
         </button>
       </div>
     </div>
