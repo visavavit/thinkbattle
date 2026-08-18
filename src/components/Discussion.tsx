@@ -7,6 +7,7 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useBanStatus, useIsAdmin } from "@/hooks/useAuth";
 import { describeError } from "@/lib/admin";
+import { useI18n, useT, type TranslationKey } from "@/lib/i18n";
 import type { TopicCard } from "@/lib/public.functions";
 import { SplitBar } from "./SplitBar";
 import { Button } from "@/components/ui/button";
@@ -40,14 +41,15 @@ type CommentRow = {
 };
 
 
-const SORTS: { key: SortKey; label: string; icon: typeof Star }[] = [
-  { key: "top", label: "Top Liked", icon: Star },
-  { key: "wild", label: "Wild Takes", icon: Flame },
-  { key: "newest", label: "Newest", icon: Clock },
+const SORTS: { key: SortKey; labelKey: TranslationKey; icon: typeof Star }[] = [
+  { key: "top", labelKey: "sort.top", icon: Star },
+  { key: "wild", labelKey: "sort.wild", icon: Flame },
+  { key: "newest", labelKey: "sort.newest", icon: Clock },
 ];
 
 export function Discussion({ topic, user }: { topic: TopicCard; user: User | null }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const isAdmin = useIsAdmin(user);
   const { isBanned, reason: banReason } = useBanStatus(user);
   const [votesA, setVotesA] = useState(topic.votes_a);
@@ -185,7 +187,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     async (choice: Side) => {
       if (!user) return;
       if (isBanned) {
-        toast.error("Your account is suspended — voting is disabled.");
+        toast.error(t("vote.suspendedVote"));
         return;
       }
       const previous = myVote;
@@ -204,16 +206,16 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         setMyVote(previous);
         setVotesA(topic.votes_a);
         setVotesB(topic.votes_b);
-        toast.error("Vote failed. Try again.");
+        toast.error(t("vote.failed"));
         return;
       }
       queryClient.invalidateQueries({ queryKey: ["comment-author-sides", topic.id] });
       if (previous && previous !== choice) {
-        toast.success("Side switched — your earlier takes stay up, marked as changed their mind.");
+        toast.success(t("vote.switched"));
         queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
       }
     },
-    [user, isBanned, myVote, topic.id, topic.votes_a, topic.votes_b, queryClient],
+    [user, isBanned, myVote, topic.id, topic.votes_a, topic.votes_b, queryClient, t],
   );
 
   // switching sides is not reversible for the reader's own history, so it is
@@ -236,11 +238,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const react = useCallback(
     async (commentId: string, value: 1 | -1) => {
       if (!user) {
-        toast.error("Sign in to like or dislike.");
+        toast.error(t("vote.signInToReact"));
         return;
       }
       if (isBanned) {
-        toast.error("Your account is suspended — reactions are disabled.");
+        toast.error(t("vote.suspendedReact"));
         return;
       }
       const current = reactionsQuery.data?.[commentId];
@@ -295,10 +297,10 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     <div className="space-y-8">
       {isBanned ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm">
-          <p className="font-bold text-destructive">Your account is suspended.</p>
+          <p className="font-bold text-destructive">{t("ban.title")}</p>
           <p className="mt-1 text-muted-foreground">
-            You can still read every debate, but voting, commenting and reacting are disabled.
-            {banReason ? ` Reason: ${banReason}` : ""}
+            {t("ban.body")}
+            {banReason ? t("ban.reason", { reason: banReason }) : ""}
           </p>
         </div>
       ) : null}
@@ -330,15 +332,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           />
         </div>
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          {total} total votes
-          {user
-            ? myVote
-              ? " — you can switch sides any time"
-              : " — pick a side to unlock the comments"
-            : " — "}
+          {t("vote.totalVotes", { n: total })}
+          {user ? (myVote ? t("vote.canSwitch") : t("vote.pickToUnlock")) : " — "}
           {!user ? (
             <Link to="/auth" className="font-bold text-primary underline">
-              sign in to vote
+              {t("vote.signInToVote")}
             </Link>
           ) : null}
         </p>
@@ -359,7 +357,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       <div ref={columnsRef} className="grid scroll-mt-28 gap-6 lg:grid-cols-2">
         <CommentColumn
           side="a"
-          title={`Why ${topic.choice_a}?`}
+          title={t("col.why", { label: topic.choice_a })}
           rows={rowsA}
           repliesByParent={repliesByParent}
           authors={authors}
@@ -378,7 +376,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         />
         <CommentColumn
           side="b"
-          title={`Why ${topic.choice_b}?`}
+          title={t("col.why", { label: topic.choice_b })}
           rows={rowsB}
           repliesByParent={repliesByParent}
           authors={authors}
@@ -402,20 +400,23 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Switch to {pendingSide === "a" ? topic.choice_a : topic.choice_b}?
+              {t("switch.title", {
+                label: pendingSide === "a" ? topic.choice_a : topic.choice_b,
+              })}
             </DialogTitle>
             <DialogDescription>
-              Your vote moves to the other side and the split updates straight away.
+              {t("switch.body")}
               {myOldTakes > 0
-                ? ` Your ${myOldTakes} take${myOldTakes === 1 ? "" : "s"} under “Why ${
-                    myVote === "a" ? topic.choice_a : topic.choice_b
-                  }?” stay published with their likes, and will be marked “Changed their mind”. You won't be able to post there any more.`
-                : " You'll be able to post in the other column instead."}
+                ? t("switch.bodyWithTakes", {
+                    n: myOldTakes,
+                    label: myVote === "a" ? topic.choice_a : topic.choice_b,
+                  })
+                : t("switch.bodyNoTakes")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPendingSide(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={() => {
@@ -424,7 +425,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
                 if (next) void applyVote(next);
               }}
             >
-              Switch side
+              {t("switch.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -460,10 +461,11 @@ function SideSwitcher({
   activeSide: Side;
   onSelect: (side: Side) => void;
 }) {
+  const t = useT();
   return (
     <div
       role="group"
-      aria-label="Show one side's takes at a time"
+      aria-label={t("col.showOneSide")}
       className="sticky top-14 z-30 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur lg:hidden"
     >
       <div className="grid grid-cols-2 gap-2">
@@ -486,7 +488,7 @@ function SideSwitcher({
       </div>
       {/* swapping display:none announces nothing on its own */}
       <p aria-live="polite" className="sr-only">
-        Showing {activeSide === "a" ? labelA : labelB}
+        {t("col.showing", { label: activeSide === "a" ? labelA : labelB })}
       </p>
     </div>
   );
@@ -633,6 +635,8 @@ function CommentColumn({
     return copy;
   }, [rows, sort]);
 
+  const t = useT();
+  const tError = useI18n().tError;
   const accent = side === "a" ? "border-side-a" : "border-side-b";
   const canComment = myVote === side && !isBanned;
 
@@ -640,7 +644,7 @@ function CommentColumn({
     const text = body.trim();
     if (text.length < 2 || !user) return;
     if (text.length > 2000) {
-      toast.error("That take is too long (2000 characters max).");
+      toast.error(t("comment.tooLong"));
       return;
     }
     setPosting(true);
@@ -649,11 +653,11 @@ function CommentColumn({
       .insert({ topic_id: topicId, user_id: user.id, side, body: text.slice(0, 2000) });
     setPosting(false);
     if (error) {
-      toast.error(describeError(error, "Could not post that take."));
+      toast.error(tError(describeError(error, t("comment.failed"))));
       return;
     }
     setBody("");
-    toast.success("Take posted 🔥");
+    toast.success(t("comment.posted"));
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
   }
 
@@ -676,7 +680,7 @@ function CommentColumn({
       </h2>
 
       <div className="flex flex-wrap gap-2">
-        {SORTS.map(({ key, label, icon: Icon }) => (
+        {SORTS.map(({ key, labelKey, icon: Icon }) => (
           <button
             key={key}
             type="button"
@@ -688,7 +692,7 @@ function CommentColumn({
             }`}
           >
             <Icon className="h-3.5 w-3.5" />
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </div>
@@ -699,23 +703,23 @@ function CommentColumn({
             value={body}
             maxLength={1000}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Defend your side..."
+            placeholder={t("comment.placeholder")}
             className="bg-background"
           />
           <Button onClick={submit} disabled={posting || body.trim().length < 2} className="w-full">
-            Post your take
+            {t("comment.post")}
           </Button>
         </div>
       ) : (
         <div className="flex items-center gap-2 rounded-sm border border-dashed border-border p-3 text-sm text-muted-foreground">
           <Lock className="h-4 w-4" />
           {isBanned
-            ? "Your account is suspended — you can read but not post."
+            ? t("comment.lockedBanned")
             : user
               ? myVote
-                ? "You voted for the other side — this column is read-only."
-                : "Vote above to unlock this column."
-              : "Sign in and vote to join this column."}
+                ? t("comment.lockedOtherSide")
+                : t("comment.lockedVote")
+              : t("comment.lockedSignIn")}
         </div>
       )}
 
@@ -743,25 +747,25 @@ function CommentColumn({
             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs text-muted-foreground">
               <span className="flex flex-wrap items-center gap-2">
                 <span className="font-bold text-foreground">
-                  {authors.get(row.user_id) ?? "anonymous"}
+                  {authors.get(row.user_id) ?? t("comment.anonymous")}
                 </span>
                 {switched ? (
                   <span
-                    title={`This reader has since switched to ${otherLabel}.`}
+                    title={t("comment.changedMindTitle", { label: otherLabel })}
                     className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
                   >
-                    Changed their mind
+                    {t("comment.changedMind")}
                   </span>
                 ) : null}
               </span>
               {row.is_hidden ? (
                 <span className="font-medium text-destructive">
-                  Hidden by a moderator
+                  {t("comment.hidden")}
                   {row.hidden_reason ? ` — ${row.hidden_reason}` : ""}
                 </span>
               ) : highlighted ? (
                 <span className="font-medium text-muted-foreground">
-                  {sort === "wild" ? "Wild take" : "Top take"}
+                  {sort === "wild" ? t("comment.wildTake") : t("comment.topTake")}
                 </span>
               ) : null}
             </div>
@@ -793,7 +797,7 @@ function CommentColumn({
                   <ModeratorControls
                     comment={row}
                     topicId={topicId}
-                    authorName={authors.get(row.user_id) ?? "anonymous"}
+                    authorName={authors.get(row.user_id) ?? t("comment.anonymous")}
                   />
                 ) : null}
               </span>
@@ -820,7 +824,7 @@ function CommentColumn({
 
         {sorted.length === 0 ? (
           <li className="py-6 text-center text-sm text-muted-foreground">
-            No takes here yet. Be the first.
+            {t("comment.empty")}
           </li>
         ) : null}
       </ul>
@@ -861,6 +865,7 @@ function ReplyThread({
   isBanned: boolean;
 }) {
   const queryClient = useQueryClient();
+  const { t, tError } = useI18n();
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
@@ -879,12 +884,12 @@ function ReplyThread({
     });
     setPosting(false);
     if (error) {
-      toast.error(describeError(error, "Could not post that reply."));
+      toast.error(tError(describeError(error, t("reply.failed"))));
       return;
     }
     setBody("");
     setOpen(false);
-    toast.success("Reply posted");
+    toast.success(t("reply.posted"));
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
   }
 
@@ -896,7 +901,7 @@ function ReplyThread({
           <div key={reply.id} className="rounded-sm bg-muted/40 p-2">
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="font-bold text-foreground">
-                {authors.get(reply.user_id) ?? "anonymous"}
+                {authors.get(reply.user_id) ?? t("comment.anonymous")}
               </span>
               <span
                 className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
@@ -906,7 +911,7 @@ function ReplyThread({
                 {replySide === "a" ? labelA : labelB}
               </span>
               {reply.is_hidden ? (
-                <span className="font-medium text-destructive">Hidden by a moderator</span>
+                <span className="font-medium text-destructive">{t("comment.hidden")}</span>
               ) : null}
             </div>
             <p className="mt-1 text-sm leading-relaxed break-words text-foreground">{reply.body}</p>
@@ -931,7 +936,7 @@ function ReplyThread({
                   <ModeratorControls
                     comment={reply}
                     topicId={topicId}
-                    authorName={authors.get(reply.user_id) ?? "anonymous"}
+                    authorName={authors.get(reply.user_id) ?? t("comment.anonymous")}
                   />
                 ) : null}
               </span>
@@ -948,15 +953,15 @@ function ReplyThread({
               maxLength={1000}
               autoFocus
               onChange={(e) => setBody(e.target.value)}
-              placeholder="Reply to this take..."
+              placeholder={t("reply.placeholder")}
               className="bg-background"
             />
             <div className="flex gap-2">
               <Button size="sm" onClick={submit} disabled={posting || body.trim().length < 2}>
-                Reply
+                {t("reply.action")}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </div>
@@ -966,7 +971,7 @@ function ReplyThread({
             onClick={() => setOpen(true)}
             className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
-            <Reply className="h-3.5 w-3.5" /> Reply
+            <Reply className="h-3.5 w-3.5" /> {t("reply.action")}
           </button>
         )
       ) : null}
@@ -978,6 +983,7 @@ function ReplyThread({
 
 /** Lets any signed-in member push a comment into the admin moderation queue. */
 function ReportButton({ commentId }: { commentId: string }) {
+  const { t, tError } = useI18n();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [sending, setSending] = useState(false);
@@ -985,7 +991,7 @@ function ReportButton({ commentId }: { commentId: string }) {
   async function submit() {
     const text = reason.trim();
     if (text.length < 3) {
-      toast.error("Tell the moderators what's wrong with it.");
+      toast.error(t("report.needReason"));
       return;
     }
     setSending(true);
@@ -999,12 +1005,12 @@ function ReportButton({ commentId }: { commentId: string }) {
     if (error) {
       toast.error(
         error.message.includes("duplicate")
-          ? "You already reported this one."
-          : describeError(error, "Could not send that report"),
+          ? t("report.duplicate")
+          : tError(describeError(error, t("report.failed"))),
       );
       return;
     }
-    toast.success("Reported — a moderator will take a look.");
+    toast.success(t("report.sent"));
     setReason("");
     setOpen(false);
   }
@@ -1014,8 +1020,8 @@ function ReportButton({ commentId }: { commentId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        title="Report to moderators"
-        aria-label="Report this comment"
+        title={t("report.tooltip")}
+        aria-label={t("report.aria")}
         className="rounded-sm border border-transparent p-1 text-muted-foreground transition-colors hover:border-border hover:text-destructive"
       >
         <Flag className="h-3.5 w-3.5" />
@@ -1023,23 +1029,23 @@ function ReportButton({ commentId }: { commentId: string }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Report this comment</DialogTitle>
+            <DialogTitle>{t("report.title")}</DialogTitle>
             <DialogDescription>
-              Moderators see the comment, who wrote it and your reason.
+              {t("report.body")}
             </DialogDescription>
           </DialogHeader>
           <Input
             value={reason}
             maxLength={300}
-            placeholder="Harassment, spam, off-topic…"
+            placeholder={t("report.placeholder")}
             onChange={(e) => setReason(e.target.value)}
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={submit} disabled={sending}>
-              Send report
+              {t("report.send")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1059,10 +1065,11 @@ function ModeratorControls({
   authorName: string;
 }) {
   const queryClient = useQueryClient();
+  const { t, tError } = useI18n();
   const [busy, setBusy] = useState(false);
 
   async function run(action: "hide" | "unhide" | "delete") {
-    if (action === "delete" && !confirm(`Delete ${authorName}'s comment permanently?`)) return;
+    if (action === "delete" && !confirm(t("mod.confirmDelete", { name: authorName }))) return;
     setBusy(true);
     const { data: session } = await supabase.auth.getUser();
     const actorId = session.user!.id;
@@ -1092,11 +1099,11 @@ function ModeratorControls({
     setBusy(false);
 
     if (error) {
-      toast.error(describeError(error, "Moderation failed"));
+      toast.error(tError(describeError(error, t("mod.failed"))));
       return;
     }
     toast.success(
-      action === "delete" ? "Comment deleted" : action === "hide" ? "Comment hidden" : "Restored",
+      action === "delete" ? t("mod.deleted") : action === "hide" ? t("mod.hidden") : t("mod.restored"),
     );
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
   }
@@ -1107,8 +1114,8 @@ function ModeratorControls({
         type="button"
         disabled={busy}
         onClick={() => run(comment.is_hidden ? "unhide" : "hide")}
-        title={comment.is_hidden ? "Restore this comment" : "Hide from the public"}
-        aria-label={comment.is_hidden ? "Restore this comment" : "Hide this comment"}
+        title={comment.is_hidden ? t("mod.restore") : t("mod.hide")}
+        aria-label={comment.is_hidden ? t("mod.restore") : t("mod.hideAria")}
         className="rounded-sm border border-transparent p-1 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
       >
         <EyeOff className="h-3.5 w-3.5" />
@@ -1117,8 +1124,8 @@ function ModeratorControls({
         type="button"
         disabled={busy}
         onClick={() => run("delete")}
-        title="Delete permanently"
-        aria-label="Delete this comment"
+        title={t("mod.delete")}
+        aria-label={t("mod.deleteAria")}
         className="rounded-sm border border-transparent p-1 text-muted-foreground transition-colors hover:border-border hover:text-destructive"
       >
         <Trash2 className="h-3.5 w-3.5" />

@@ -3,6 +3,7 @@ import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { z } from "zod";
 import { getFeed, getTaxonomy } from "@/lib/public.functions";
 import { TopicCardItem } from "@/components/TopicCardItem";
+import { translate as tr, useT } from "@/lib/i18n";
 
 const searchSchema = z.object({
   category: z.string().optional(),
@@ -31,13 +32,10 @@ export const Route = createFileRoute("/browse")({
   },
   head: () => ({
     meta: [
-      { title: "Browse Debates by Category — VS Arena" },
-      {
-        name: "description",
-        content: "Filter binary debates by category and tag: tech, food, pop culture, life, sports.",
-      },
-      { property: "og:title", content: "Browse Debates by Category — VS Arena" },
-      { property: "og:description", content: "Filter binary debates by category and tag." },
+      { title: tr("meta.browse.title") },
+      { name: "description", content: tr("meta.browse.description") },
+      { property: "og:title", content: tr("meta.browse.title") },
+      { property: "og:description", content: tr("meta.browse.description") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -48,18 +46,19 @@ export const Route = createFileRoute("/browse")({
 function BrowsePage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/browse" });
+  const t = useT();
   const { data: taxonomy } = useSuspenseQuery(taxonomyQuery);
   const { data: topics } = useSuspenseQuery(browseQuery(search.category, search.tag));
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
-      <h1 className="text-4xl">Browse the arena</h1>
+      <h1 className="text-4xl">{t("browse.title")}</h1>
 
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
           <FilterChip
             active={!search.category}
-            label="All categories"
+            label={t("browse.allCategories")}
             onClick={() => navigate({ search: { ...search, category: undefined } })}
           />
           {taxonomy.categories.map((c) => (
@@ -74,7 +73,7 @@ function BrowsePage() {
         <div className="flex flex-wrap gap-2">
           <FilterChip
             active={!search.tag}
-            label="All tags"
+            label={t("browse.allTags")}
             onClick={() => navigate({ search: { ...search, tag: undefined } })}
           />
           {taxonomy.tags.map((t) => (
@@ -94,7 +93,7 @@ function BrowsePage() {
         ))}
       </div>
       {topics.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">No debates match these filters.</p>
+        <p className="py-12 text-center text-muted-foreground">{t("browse.empty")}</p>
       ) : null}
     </div>
   );

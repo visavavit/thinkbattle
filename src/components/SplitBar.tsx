@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   pctA: number;
@@ -27,10 +28,12 @@ export function SplitBar({
   size = "sm",
   myVote = null,
 }: Props) {
+  const t = useT();
   const a = Math.min(100, Math.max(0, Math.round(pctA)));
   const pctB = 100 - a;
   const tall = size === "lg";
-  const countText = (n: number) => `${n.toLocaleString()} vote${n === 1 ? "" : "s"}`;
+  const countText = (n: number) =>
+    t(n === 1 ? "vote.countOne" : "vote.countMany", { n: n.toLocaleString() });
 
   // The feed view reports a 50/50 split for topics nobody has voted on, which
   // would otherwise render as a confident dead heat.
@@ -42,10 +45,10 @@ export function SplitBar({
 
   const side = (label: string, pct: number, count: number | undefined, voted: boolean) =>
     `${label}: ${pct}%${count === undefined ? "" : `, ${countText(count)}`}${
-      voted ? ", your vote" : ""
+      voted ? `, ${t("vote.yourVote")}` : ""
     }`;
   const ariaLabel = noVotes
-    ? `No votes yet. ${labelA} versus ${labelB}.`
+    ? t("vote.noVotesAria", { a: labelA, b: labelB })
     : `${side(labelA, a, countA, myVote === "a")}. ${side(labelB, pctB, countB, myVote === "b")}.`;
 
   return (
@@ -53,7 +56,7 @@ export function SplitBar({
       {noVotes ? (
         <div className={`${trackClass} items-center justify-center`}>
           <span className={`${tall ? "text-sm" : "text-xs"} font-medium text-muted-foreground`}>
-            No votes yet
+            {t("vote.noVotes")}
           </span>
         </div>
       ) : (
