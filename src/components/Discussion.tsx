@@ -310,6 +310,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           countB={votesB}
           labelA={topic.choice_a}
           labelB={topic.choice_b}
+          myVote={myVote}
           size="lg"
         />
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
