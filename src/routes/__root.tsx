@@ -14,6 +14,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { LanguageProvider, translate as tr, useT } from "@/lib/i18n";
+
 
 function NotFoundComponent() {
   return (
