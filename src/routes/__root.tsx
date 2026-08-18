@@ -79,19 +79,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "VS Arena — Pick a Side, Defend It" },
-      {
-        name: "description",
-        content: "Binary debates, bifurcated comment columns, and a Wild Takes controversy ranking.",
-      },
-      { property: "og:title", content: "VS Arena — Pick a Side, Defend It" },
-      {
-        property: "og:description",
-        content: "Binary debates, bifurcated comment columns, and a Wild Takes controversy ranking.",
-      },
+      { title: tr("meta.home.title") },
+      { name: "description", content: tr("meta.home.description") },
+      { property: "og:title", content: tr("meta.home.title") },
+      { property: "og:description", content: tr("meta.home.description") },
+      { property: "og:locale", content: "th_TH" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
