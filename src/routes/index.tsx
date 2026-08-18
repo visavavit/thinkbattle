@@ -91,19 +91,38 @@ function Home() {
                     {t("home.headliner")}
                   </span>
                   {headliner.cover_image_url ? (
-                    <img
-                      src={headliner.cover_image_url}
-                      alt={headliner.title}
-                      width={1200}
-                      height={675}
-                      className="mb-5 aspect-[21/9] w-full rounded-md object-cover"
-                    />
+                    // Hidden from assistive tech: the title link right below points at
+                    // the same topic with the same text, so exposing both would only
+                    // add a duplicate stop.
+                    <Link
+                      to="/topic/$id"
+                      params={{ id: headliner.id }}
+                      aria-hidden
+                      tabIndex={-1}
+                      className="mb-5 block"
+                    >
+                      <img
+                        src={headliner.cover_image_url}
+                        alt={headliner.title}
+                        width={1200}
+                        height={675}
+                        className="aspect-[21/9] w-full rounded-md object-cover transition-opacity hover:opacity-90"
+                      />
+                    </Link>
                   ) : null}
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     {headliner.category_emoji} {headliner.category_name} ·{" "}
                     {t("vote.countMany", { n: headliner.total_votes })}
                   </p>
-                  <h2 className="mt-2 text-3xl sm:text-4xl">{headliner.title}</h2>
+                  <h2 className="mt-2 text-3xl sm:text-4xl">
+                    <Link
+                      to="/topic/$id"
+                      params={{ id: headliner.id }}
+                      className="transition-colors hover:text-primary"
+                    >
+                      {headliner.title}
+                    </Link>
+                  </h2>
                   <div className="mt-5">
                     <SplitBar
                       pctA={headliner.pct_a}
