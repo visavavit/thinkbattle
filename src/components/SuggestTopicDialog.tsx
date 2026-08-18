@@ -9,6 +9,7 @@ import { describeError } from "@/lib/admin";
 
 import { useBanStatus } from "@/hooks/useAuth";
 import { TagInput } from "@/components/TagInput";
+import { useI18n } from "@/lib/i18n";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,15 +25,16 @@ import {
 } from "@/components/ui/dialog";
 
 const schema = z.object({
-  title: z.string().trim().min(6, "Title must be at least 6 characters").max(140),
+  title: z.string().trim().min(6, "suggest.errTitle").max(140),
   description: z.string().trim().max(300).optional(),
-  choice_a: z.string().trim().min(1, "Choice A is required").max(60),
-  choice_b: z.string().trim().min(1, "Choice B is required").max(60),
-  category_id: z.string().uuid("Pick a category"),
+  choice_a: z.string().trim().min(1, "suggest.errChoiceA").max(60),
+  choice_b: z.string().trim().min(1, "suggest.errChoiceB").max(60),
+  category_id: z.string().uuid("suggest.errCategory"),
 });
 
 export function SuggestTopicDialog({ user }: { user: User | null }) {
   const { isBanned } = useBanStatus(user);
+  const { t, tError } = useI18n();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -59,7 +61,12 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
     if (!user) return;
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Check the form");
+      const key = parsed.error.issues[0]?.message;
+      const known = ["suggest.errTitle", "suggest.errChoiceA", "suggest.errChoiceB", "suggest.errCategory"] as const;
+      type Known = (typeof known)[number];
+      toast.error(
+        known.includes(key as Known) ? t(key as Known) : t("suggest.checkForm"),
+      );
       return;
     }
     setSaving(true);
@@ -86,11 +93,11 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
     }
     setSaving(false);
     if (error) {
-      toast.error(describeError(error, "Could not submit your idea."));
+      toast.error(tError(describeError(error, t("suggest.failed"))));
       return;
     }
 
-    toast.success("Sent to the moderation queue 🔥");
+    toast.success(t("suggest.sent"));
     setForm({ title: "", description: "", choice_a: "", choice_b: "", category_id: "" });
     setTagNames([]);
 
@@ -103,30 +110,28 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <Lightbulb className="mr-1 h-4 w-4" /> Suggest
+          <Lightbulb className="mr-1 h-4 w-4" /> {t("suggest.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Suggest a showdown</DialogTitle>
-          <DialogDescription>
-            Admins review every suggestion before it hits the feed.
-          </DialogDescription>
+          <DialogTitle>{t("suggest.title")}</DialogTitle>
+          <DialogDescription>{t("suggest.body")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div>
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">{t("suggest.fieldTitle")}</Label>
             <Input
               id="title"
               value={form.title}
               maxLength={140}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Cereal before milk or milk before cereal?"
+              placeholder={t("suggest.titlePlaceholder")}
             />
           </div>
           <div>
-            <Label htmlFor="description">Description (optional)</Label>
+            <Label htmlFor="description">{t("suggest.description")}</Label>
             <Textarea
               id="description"
               value={form.description}
@@ -137,7 +142,7 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="a" className="text-side-a">
-                Choice A
+                {t("suggest.choiceA")}
               </Label>
               <Input
                 id="a"
@@ -148,7 +153,7 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
             </div>
             <div>
               <Label htmlFor="b" className="text-side-b">
-                Choice B
+                {t("suggest.choiceB")}
               </Label>
               <Input
                 id="b"
@@ -159,7 +164,7 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
             </div>
           </div>
           <div>
-            <Label>Category</Label>
+            <Label>{t("suggest.category")}</Label>
             <div className="mt-1 flex flex-wrap gap-2">
               {(taxonomy.data?.categories ?? []).map((c) => (
                 <button
@@ -178,12 +183,12 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
             </div>
           </div>
           <div>
-            <Label>Tags</Label>
+            <Label>{t("suggest.tags")}</Label>
             <TagInput value={tagNames} onChange={setTagNames} />
           </div>
 
           <Button onClick={submit} disabled={saving} className="w-full">
-            Submit for review
+            {t("suggest.submit")}
           </Button>
         </div>
       </DialogContent>

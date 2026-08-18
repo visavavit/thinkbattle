@@ -1,6 +1,7 @@
 import { useState, type KeyboardEvent } from "react";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/lib/i18n";
 
 const MAX_TAGS = 6;
 const MAX_LEN = 24;
@@ -13,13 +14,15 @@ function normalize(raw: string) {
 export function TagInput({
   value,
   onChange,
-  placeholder = "Type a tag, press Enter",
+  placeholder,
 }: {
   value: string[];
   onChange: (next: string[]) => void;
   placeholder?: string;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState("");
+  const inputPlaceholder = placeholder ?? t("tags.placeholder");
 
   function commit(raw: string) {
     const tag = normalize(raw);
@@ -54,7 +57,7 @@ export function TagInput({
               #{tag}
               <button
                 type="button"
-                aria-label={`Remove ${tag}`}
+                aria-label={t("tags.remove", { tag })}
                 onClick={() => onChange(value.filter((t) => t !== tag))}
                 className="text-muted-foreground hover:text-foreground"
               >
@@ -67,7 +70,7 @@ export function TagInput({
       <Input
         value={draft}
         maxLength={MAX_LEN}
-        placeholder={value.length >= MAX_TAGS ? `Up to ${MAX_TAGS} tags` : placeholder}
+        placeholder={value.length >= MAX_TAGS ? t("tags.max", { n: MAX_TAGS }) : inputPlaceholder}
         disabled={value.length >= MAX_TAGS}
         onChange={(e) => setDraft(e.target.value.replace(/[,]/g, ""))}
         onKeyDown={handleKeyDown}
@@ -78,9 +81,7 @@ export function TagInput({
           }
         }}
       />
-      <p className="text-xs text-muted-foreground">
-        Separate with comma, space or Enter · max {MAX_TAGS} tags
-      </p>
+      <p className="text-xs text-muted-foreground">{t("tags.hint", { n: MAX_TAGS })}</p>
     </div>
   );
 }
