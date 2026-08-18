@@ -1,4 +1,5 @@
 import { AwsClient } from "aws4fetch";
+import { renditionKey } from "./images";
 
 const ALLOWED = new Map<string, string>([
   ["image/jpeg", "jpg"],
@@ -13,11 +14,17 @@ export type UploadFolder = "covers" | "avatars";
 /**
  * Uploads raw image bytes to the project's R2 bucket and returns the public URL.
  * Validates content type and size server-side.
+ *
+ * `id` and `width` let a set of renditions of the same picture land on sibling
+ * keys, which is how the srcset in the markup is derived without storing the
+ * variant list anywhere.
  */
 export async function uploadToR2(params: {
   folder: UploadFolder;
   contentType: string;
   bytes: Uint8Array;
+  id?: string | undefined;
+  width?: number | undefined;
 }): Promise<string> {
   const ext = ALLOWED.get(params.contentType);
   if (!ext) throw new Error("Only JPEG, PNG or WebP images are allowed.");
@@ -37,7 +44,7 @@ export async function uploadToR2(params: {
     throw new Error("The public image URL for the storage bucket is not configured yet.");
   }
 
-  const key = `${params.folder}/${crypto.randomUUID()}.${ext}`;
+  const key = renditionKey(params.folder, params.id ?? crypto.randomUUID(), ext, params.width);
   const client = new AwsClient({ accessKeyId, secretAccessKey, service: "s3", region: "auto" });
   const endpoint = `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${key}`;
 

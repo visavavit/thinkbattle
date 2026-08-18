@@ -3,6 +3,7 @@ import { Flame, MessageSquare, Users } from "lucide-react";
 import type { TopicCard } from "@/lib/public.functions";
 import { SplitBar } from "./SplitBar";
 import { useT } from "@/lib/i18n";
+import { coverSrcSet, COVER_SIZES } from "@/lib/images";
 
 export function TopicCardItem({ topic }: { topic: TopicCard }) {
   const t = useT();
@@ -15,6 +16,8 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
       {topic.cover_image_url ? (
         <img
           src={topic.cover_image_url}
+          srcSet={coverSrcSet(topic.cover_image_url)}
+          sizes={COVER_SIZES}
           alt={topic.title}
           loading="lazy"
           width={1200}

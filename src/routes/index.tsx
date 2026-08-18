@@ -4,6 +4,7 @@ import { Flame, Scale, Star, Clock } from "lucide-react";
 import { z } from "zod";
 import { getFeed, getHeadliners, type FeedTab } from "@/lib/public.functions";
 import { TopicCardItem } from "@/components/TopicCardItem";
+import { coverSrcSet } from "@/lib/images";
 import { SplitBar } from "@/components/SplitBar";
 import { translate as tr, useT, type TranslationKey } from "@/lib/i18n";
 import {
@@ -102,7 +103,11 @@ function Home() {
                     >
                       <img
                         src={headliner.cover_image_url}
+                        srcSet={coverSrcSet(headliner.cover_image_url)}
+                        sizes="(min-width: 1024px) 1024px, 100vw"
                         alt={headliner.title}
+                        // the hero is above the fold on every visit
+                        fetchPriority="high"
                         width={1200}
                         height={675}
                         className="aspect-[21/9] w-full rounded-md object-cover transition-opacity hover:opacity-90"

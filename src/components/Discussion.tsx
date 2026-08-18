@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Clock, Flag, Flame, Star, ThumbsDown, ThumbsUp, Lock, EyeOff, Trash2, Reply } from "lucide-react";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useBanStatus, useIsAdmin } from "@/hooks/useAuth";
 import { describeError } from "@/lib/admin";
 import { useI18n, useT, type TranslationKey } from "@/lib/i18n";
-import type { TopicCard } from "@/lib/public.functions";
+import { getTopicCounts, type TopicCard } from "@/lib/public.functions";
 import { SplitBar } from "./SplitBar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +39,21 @@ type CommentRow = {
   created_at: string;
   parent_id: string | null;
 };
+
+/** What the ["comments", topicId, limit] query holds. */
+type CommentsCache = {
+  rows: CommentRow[];
+  authors: Map<string, string>;
+  /** true when the server had a full page left, so there is more to load */
+  hasMore: boolean;
+};
+
+/**
+ * How many top-level takes a page of the discussion loads. Replies are fetched
+ * for the parents on screen, so this bounds the payload without ever splitting
+ * a take from its answers.
+ */
+const COMMENT_PAGE_SIZE = 50;
 
 
 const SORTS: { key: SortKey; labelKey: TranslationKey; icon: typeof Star }[] = [
@@ -97,17 +112,47 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     };
   }, [user, topic.id]);
 
-  const commentsQuery = useQuery({
-    queryKey: ["comments", topic.id],
+  // A viral topic can hold thousands of takes; the discussion loads a page at a
+  // time rather than the whole thread on every mount.
+  const [limit, setLimit] = useState(COMMENT_PAGE_SIZE);
+  useEffect(() => {
+    setLimit(COMMENT_PAGE_SIZE);
+  }, [topic.id]);
+
+  const commentsKey = useMemo(() => ["comments", topic.id, limit] as const, [topic.id, limit]);
+
+  const commentsQuery = useQuery<CommentsCache>({
+    queryKey: commentsKey,
+    // keeps the current page on screen while a longer one loads
+    placeholderData: keepPreviousData,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Top-level takes are the paged unit. Replies are then fetched for
+      // exactly those parents, so a reply can never load without its parent.
+      const { data: tops, error } = await supabase
         .from("comments")
         .select("*")
         .eq("topic_id", topic.id)
+        .is("parent_id", null)
         .order("created_at", { ascending: false })
-        .limit(300);
+        .limit(limit);
       if (error) throw error;
-      const rows = (data ?? []) as CommentRow[];
+      const topRows = (tops ?? []) as CommentRow[];
+
+      let replyRows: CommentRow[] = [];
+      if (topRows.length > 0) {
+        const { data: replies, error: replyError } = await supabase
+          .from("comments")
+          .select("*")
+          .eq("topic_id", topic.id)
+          .in(
+            "parent_id",
+            topRows.map((r) => r.id),
+          );
+        if (replyError) throw replyError;
+        replyRows = (replies ?? []) as CommentRow[];
+      }
+
+      const rows = [...topRows, ...replyRows];
       const ids = [...new Set(rows.map((r) => r.user_id))];
       const authors = new Map<string, string>();
       if (ids.length > 0) {
@@ -117,7 +162,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           .in("id", ids);
         for (const p of profiles ?? []) authors.set(p.id, p.username);
       }
-      return { rows, authors };
+      return { rows, authors, hasMore: topRows.length === limit };
     },
   });
 
@@ -153,32 +198,131 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     },
   });
 
+  // Vote tallies are polled from a short-lived cached endpoint rather than
+  // pushed over a subscription: that costs one database read per topic per
+  // window no matter how many readers have the page open.
+  const lastLocalVoteAt = useRef(0);
+  const countsQuery = useQuery({
+    queryKey: ["topic-counts", topic.id],
+    queryFn: () => getTopicCounts({ data: { id: topic.id } }),
+    initialData: { votes_a: topic.votes_a, votes_b: topic.votes_b },
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+    staleTime: 10_000,
+  });
+
   useEffect(() => {
+    const counts = countsQuery.data;
+    if (!counts) return;
+    // That endpoint is cached, so for a few seconds after the reader votes it
+    // can still be serving pre-vote numbers. Leave the optimistic figures in
+    // place until the cache has certainly turned over — otherwise the reader
+    // watches their own vote bounce back off the tally.
+    if (Date.now() - lastLocalVoteAt.current < 30_000) return;
+    setVotesA(counts.votes_a);
+    setVotesB(counts.votes_b);
+  }, [countsQuery.data]);
+
+  // The realtime channel writes into whichever page is currently loaded. Held
+  // in a ref so paging through the thread does not tear down the socket.
+  const commentsKeyRef = useRef(commentsKey);
+  useEffect(() => {
+    commentsKeyRef.current = commentsKey;
+  }, [commentsKey]);
+
+  // Only signed-in readers hold a socket. Anonymous scanners are the bulk of
+  // the traffic at scale, and giving each one a subscription — which then made
+  // every one of them re-download the entire thread on every new comment — is
+  // what turns a popular topic into an outage.
+  useEffect(() => {
+    if (!user) return;
+
+    const missingAuthors = new Set<string>();
+    let authorTimer: ReturnType<typeof setTimeout> | undefined;
+    let sidesTimer: ReturnType<typeof setTimeout> | undefined;
+
+    // A pushed row carries no author name. Collect the unknown ids and resolve
+    // them in one batched lookup instead of refetching the thread for a name.
+    const flushAuthors = () => {
+      authorTimer = undefined;
+      const ids = [...missingAuthors];
+      missingAuthors.clear();
+      if (ids.length === 0) return;
+      void supabase
+        .from("profiles")
+        .select("id, username")
+        .in("id", ids)
+        .then(({ data }) => {
+          if (!data || data.length === 0) return;
+          queryClient.setQueryData<CommentsCache>(commentsKeyRef.current, (prev) => {
+            if (!prev) return prev;
+            const authors = new Map(prev.authors);
+            for (const row of data) authors.set(row.id, row.username);
+            return { ...prev, authors };
+          });
+        });
+    };
+
+    const noteAuthor = (id: string) => {
+      const cache = queryClient.getQueryData<CommentsCache>(commentsKeyRef.current);
+      if (cache?.authors.has(id)) return;
+      missingAuthors.add(id);
+      authorTimer ??= setTimeout(flushAuthors, 500);
+    };
+
+    // The changed-their-mind badge is the one thing here that still needs a
+    // round trip, so it is debounced well past the rate a busy thread fires.
+    const scheduleSides = () => {
+      if (sidesTimer) return;
+      sidesTimer = setTimeout(() => {
+        sidesTimer = undefined;
+        void queryClient.invalidateQueries({ queryKey: ["comment-author-sides", topic.id] });
+      }, 5_000);
+    };
+
     const channel = supabase
       .channel(`topic-${topic.id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "comments", filter: `topic_id=eq.${topic.id}` },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
-          queryClient.invalidateQueries({ queryKey: ["comment-author-sides", topic.id] });
-        },
-
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "topics", filter: `id=eq.${topic.id}` },
         (payload) => {
-          const next = payload.new as { votes_a: number; votes_b: number };
-          setVotesA(next.votes_a);
-          setVotesB(next.votes_b);
+          const newRow = payload.new as unknown as CommentRow | null;
+          const oldRow = payload.old as unknown as { id?: string } | null;
+
+          // The event already carries the row, so apply it straight to the
+          // cache. Invalidating instead is what caused the stampede.
+          queryClient.setQueryData<CommentsCache>(commentsKeyRef.current, (prev) => {
+            if (!prev) return prev;
+
+            if (payload.eventType === "DELETE") {
+              if (!oldRow?.id) return prev;
+              return { ...prev, rows: prev.rows.filter((r) => r.id !== oldRow.id) };
+            }
+
+            if (!newRow?.id) return prev;
+            const index = prev.rows.findIndex((r) => r.id === newRow.id);
+            if (index === -1) {
+              return { ...prev, rows: [newRow, ...prev.rows] };
+            }
+            const rows = [...prev.rows];
+            rows[index] = newRow;
+            return { ...prev, rows };
+          });
+
+          if (payload.eventType === "INSERT" && newRow?.user_id) {
+            noteAuthor(newRow.user_id);
+            scheduleSides();
+          }
         },
       )
       .subscribe();
+
     return () => {
+      if (authorTimer) clearTimeout(authorTimer);
+      if (sidesTimer) clearTimeout(sidesTimer);
       supabase.removeChannel(channel);
     };
-  }, [topic.id, queryClient]);
+  }, [user, topic.id, queryClient]);
 
   const total = votesA + votesB;
   const pctA = total === 0 ? 50 : Math.round((100 * votesA) / total);
@@ -193,6 +337,9 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       const previous = myVote;
       if (previous === choice) return;
       setMyVote(choice);
+      // marks the optimistic tally as newer than anything the cached counts
+      // endpoint can currently be serving
+      lastLocalVoteAt.current = Date.now();
       setVotesA((v) => v + (choice === "a" ? 1 : 0) - (previous === "a" ? 1 : 0));
       setVotesB((v) => v + (choice === "b" ? 1 : 0) - (previous === "b" ? 1 : 0));
 
@@ -395,6 +542,18 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         />
 
       </div>
+
+      {commentsQuery.data?.hasMore ? (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            disabled={commentsQuery.isFetching}
+            onClick={() => setLimit((n) => n + COMMENT_PAGE_SIZE)}
+          >
+            {commentsQuery.isFetching ? t("comment.loading") : t("comment.loadMore")}
+          </Button>
+        </div>
+      ) : null}
 
       <Dialog open={pendingSide !== null} onOpenChange={(open) => !open && setPendingSide(null)}>
         <DialogContent>

@@ -5,6 +5,7 @@ import { getTopic } from "@/lib/public.functions";
 import { Discussion } from "@/components/Discussion";
 import { useAuth } from "@/hooks/useAuth";
 import { translate as tr, useT } from "@/lib/i18n";
+import { coverSrcSet, COVER_SIZES } from "@/lib/images";
 
 const topicQuery = (id: string) =>
   queryOptions({
@@ -90,6 +91,8 @@ function TopicPage() {
       {topic.cover_image_url ? (
         <img
           src={topic.cover_image_url}
+          srcSet={coverSrcSet(topic.cover_image_url)}
+          sizes="(min-width: 1024px) 1024px, 100vw"
           alt={topic.title}
           width={1200}
           height={675}

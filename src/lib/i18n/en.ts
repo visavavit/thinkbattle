@@ -78,6 +78,8 @@ export const en = {
   "col.why": "Why {label}?",
   "col.showOneSide": "Show one side's takes at a time",
   "col.showing": "Showing {label}",
+  "comment.loadMore": "Load more takes",
+  "comment.loading": "Loading…",
   "sort.top": "Top Liked",
   "sort.wild": "Wild Takes",
   "sort.newest": "Newest",

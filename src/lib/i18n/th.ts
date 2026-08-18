@@ -79,6 +79,8 @@ export const th: Dictionary = {
   "col.why": "ทำไมต้อง {label}",
   "col.showOneSide": "แสดงความเห็นทีละฝ่าย",
   "col.showing": "กำลังแสดงฝ่าย {label}",
+  "comment.loadMore": "โหลดความเห็นเพิ่ม",
+  "comment.loading": "กำลังโหลด…",
   "sort.top": "ถูกใจสูงสุด",
   "sort.wild": "ความเห็นสุดขั้ว",
   "sort.newest": "ล่าสุด",
