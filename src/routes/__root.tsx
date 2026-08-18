@@ -107,7 +107,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    // Thai is the default language; the client swaps this attribute on switch.
+    <html lang="th">
       <head>
         <HeadContent />
       </head>
@@ -116,6 +117,22 @@ function RootShell({ children }: { children: ReactNode }) {
         <Scripts />
       </body>
     </html>
+  );
+}
+
+function AppFrame() {
+  const t = useT();
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <SiteHeader />
+      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">
+        {t("footer.tagline")}
+      </footer>
+    </div>
   );
 }
 
@@ -134,18 +151,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen flex-col bg-background">
-        <SiteHeader />
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <main className="flex-1">
-          <Outlet />
-        </main>
-        <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">
-          VS Arena · two choices, both sides heard.
-        </footer>
-      </div>
-      <Toaster position="top-center" />
+      <LanguageProvider>
+        <AppFrame />
+        <Toaster position="top-center" />
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }
+
 
