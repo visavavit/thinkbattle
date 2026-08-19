@@ -26,7 +26,7 @@ import {
 
 const schema = z.object({
   title: z.string().trim().min(6, "suggest.errTitle").max(140),
-  description: z.string().trim().max(300).optional(),
+  description: z.string().trim().max(2000).optional(),
   choice_a: z.string().trim().min(1, "suggest.errChoiceA").max(60),
   choice_b: z.string().trim().min(1, "suggest.errChoiceB").max(60),
   category_id: z.string().uuid("suggest.errCategory"),
@@ -131,11 +131,14 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
             />
           </div>
           <div>
-            <Label htmlFor="description">{t("suggest.description")}</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="description">{t("suggest.description")}</Label>
+              <span className="text-muted-foreground text-xs">{form.description.length}/2000</span>
+            </div>
             <Textarea
               id="description"
               value={form.description}
-              maxLength={300}
+              maxLength={2000}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
