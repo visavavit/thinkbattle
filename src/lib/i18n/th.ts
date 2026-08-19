@@ -64,6 +64,8 @@ export const th: Dictionary = {
   "topic.notFound": "ไม่พบประเด็นนี้",
 
   // ---- vote / split bar
+  "vote.pickHeading": "ลงคะแนนของคุณ",
+  "vote.castAria": "โหวตให้ฝ่าย {label}",
   "vote.noVotes": "ยังไม่มีการโหวต",
   "vote.noVotesAria": "ยังไม่มีการโหวต {a} เทียบกับ {b}",
   "vote.yourVote": "คะแนนของคุณ",
@@ -95,6 +97,8 @@ export const th: Dictionary = {
   // ---- comment columns
   "col.why": "ทำไมต้อง {label}",
   "col.showOneSide": "แสดงความเห็นทีละฝ่าย",
+  "col.readingHeading": "อ่านความเห็นของฝ่าย",
+  "col.readAria": "อ่านความเห็นของฝ่าย {label}",
   "col.showing": "กำลังแสดงฝ่าย {label}",
   "comment.loadMore": "โหลดความเห็นเพิ่ม",
   "comment.loading": "กำลังโหลด…",

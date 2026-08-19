@@ -62,6 +62,8 @@ export const en = {
   "topic.notFound": "Debate not found",
 
   // ---- vote / split bar
+  "vote.pickHeading": "Cast your vote",
+  "vote.castAria": "Vote {label}",
   "vote.noVotes": "No votes yet",
   "vote.noVotesAria": "No votes yet. {a} versus {b}.",
   "vote.yourVote": "your vote",
@@ -94,6 +96,8 @@ export const en = {
   // ---- comment columns
   "col.why": "Why {label}?",
   "col.showOneSide": "Show one side's takes at a time",
+  "col.readingHeading": "Reading takes from",
+  "col.readAria": "Read {label} takes",
   "col.showing": "Showing {label}",
   "comment.loadMore": "Load more takes",
   "comment.loading": "Loading…",

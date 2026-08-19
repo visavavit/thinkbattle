@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Clock, Flag, Flame, Star, ThumbsDown, ThumbsUp, Lock, EyeOff, Trash2, Reply } from "lucide-react";
+import { Check, Clock, Flag, Flame, MessagesSquare, Star, ThumbsDown, ThumbsUp, Lock, EyeOff, Trash2, Reply } from "lucide-react";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -512,7 +512,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           myVote={myVote}
           size="lg"
         />
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {/* Below sm the vote buttons stack into the same shape as the comment
+            side switcher further down, and both carry the same two side
+            labels. This says which one of them casts the vote. */}
+        <p className="mt-5 text-sm font-bold">{t("vote.pickHeading")}</p>
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
           <VoteButton
             side="a"
             label={topic.choice_a}
@@ -677,6 +681,12 @@ function SideSwitcher({
       aria-label={t("col.showOneSide")}
       className="sticky top-14 z-30 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur lg:hidden"
     >
+      {/* these pills carry the same two labels as the vote buttons above, so
+          they say up front that they only pick which column you are reading */}
+      <p className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <MessagesSquare className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        {t("col.readingHeading")}
+      </p>
       <div className="grid grid-cols-2 gap-2">
         <SideSwitcherButton
           side="a"
@@ -718,6 +728,7 @@ function SideSwitcherButton({
   active: boolean;
   onClick: () => void;
 }) {
+  const t = useT();
   const border = side === "a" ? "border-side-a" : "border-side-b";
   const idle = side === "a" ? "text-side-a" : "text-side-b";
   const selected =
@@ -726,8 +737,9 @@ function SideSwitcherButton({
     <button
       type="button"
       aria-pressed={active}
+      aria-label={t("col.readAria", { label })}
       onClick={onClick}
-      className={`flex min-w-0 items-center justify-center gap-2 rounded-md border-2 px-3 py-2 text-sm font-bold transition-colors ${border} ${
+      className={`flex min-w-0 items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${border} ${
         active ? selected : idle
       }`}
     >
@@ -760,6 +772,7 @@ function VoteButton({
   disabled: boolean;
   onClick: () => void;
 }) {
+  const t = useT();
   const base = side === "a" ? "border-side-a text-side-a" : "border-side-b text-side-b";
   const activeCls =
     side === "a" ? "bg-side-a text-side-a-foreground" : "bg-side-b text-side-b-foreground";
@@ -767,12 +780,15 @@ function VoteButton({
     <button
       type="button"
       disabled={disabled}
+      aria-pressed={active}
+      aria-label={t("vote.castAria", { label })}
       onClick={onClick}
-      className={`rounded-md border-2 px-4 py-4 font-display text-xl transition-all disabled:cursor-not-allowed disabled:opacity-50 ${base} ${
+      className={`flex min-w-0 items-center justify-center gap-2 rounded-md border-2 px-4 py-4 font-display text-xl transition-all disabled:cursor-not-allowed disabled:opacity-50 ${base} ${
         active ? activeCls : "hover:-translate-y-0.5"
       }`}
     >
-      {label}
+      {active ? <Check className="h-5 w-5 shrink-0" /> : null}
+      <span className="truncate">{label}</span>
     </button>
   );
 }
