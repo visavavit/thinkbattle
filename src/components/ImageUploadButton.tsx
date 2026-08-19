@@ -19,44 +19,79 @@ function toBase64(blob: Blob): Promise<string> {
 }
 
 type Rendition = { width?: number; data: string };
+type Prepared = { contentType: string; renditions: Rendition[] };
+
+/** Avatars never render larger than a small circle, so one modest size is plenty. */
+const AVATAR_WIDTH = 256;
 
 function canvasToBlob(canvas: HTMLCanvasElement, type: string): Promise<Blob | null> {
   return new Promise((resolve) => canvas.toBlob(resolve, type, 0.82));
 }
 
 /**
- * Scales a cover down to each width in the ladder that the source can actually
- * fill, so the browser is never handed an upscaled rendition. Returns a single
- * unsized rendition when the picture is too small for even the narrowest step,
- * or when the browser cannot decode it here — the upload still succeeds, it
- * just gets one size and no srcset.
+ * Re-encodes to WebP when the browser can actually produce it — typically 25-35%
+ * smaller than the equivalent JPEG at the same visual quality. Falls back to the
+ * source type so an upload never fails just because encoding is unavailable.
  */
-async function buildCoverRenditions(file: File): Promise<Rendition[]> {
+async function encode(canvas: HTMLCanvasElement, fallbackType: string) {
+  const webp = await canvasToBlob(canvas, "image/webp");
+  if (webp && webp.type === "image/webp") return { blob: webp, contentType: "image/webp" };
+  const original = await canvasToBlob(canvas, fallbackType);
+  return original ? { blob: original, contentType: fallbackType } : null;
+}
+
+function drawTo(bitmap: ImageBitmap, width: number): HTMLCanvasElement | null {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = Math.round((width / bitmap.width) * bitmap.height);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+/**
+ * Scales an upload down to each width it can actually fill, so the browser is
+ * never handed an upscaled rendition. Returns the untouched original when the
+ * picture is smaller than the narrowest step, or when the browser cannot decode
+ * it here — the upload still succeeds, it just gets one size and no srcset.
+ */
+async function prepare(file: File, folder: "covers" | "avatars"): Promise<Prepared> {
+  const asIs = async (): Promise<Prepared> => ({
+    contentType: file.type,
+    renditions: [{ data: await toBase64(file) }],
+  });
+
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);
   } catch {
-    return [{ data: await toBase64(file) }];
+    return asIs();
   }
 
   try {
-    const widths = COVER_WIDTHS.filter((w) => w <= bitmap.width);
-    if (widths.length === 0) return [{ data: await toBase64(file) }];
+    const ladder =
+      folder === "covers"
+        ? COVER_WIDTHS.filter((w) => w <= bitmap.width)
+        : [Math.min(AVATAR_WIDTH, bitmap.width)];
+    if (ladder.length === 0) return asIs();
 
     const renditions: Rendition[] = [];
-    for (const width of widths) {
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = Math.round((width / bitmap.width) * bitmap.height);
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return [{ data: await toBase64(file) }];
-      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-
-      const blob = await canvasToBlob(canvas, file.type);
-      if (!blob) return [{ data: await toBase64(file) }];
-      renditions.push({ width, data: await toBase64(blob) });
+    let contentType = file.type;
+    for (const width of ladder) {
+      const canvas = drawTo(bitmap, width);
+      if (!canvas) return asIs();
+      const encoded = await encode(canvas, file.type);
+      if (!encoded) return asIs();
+      contentType = encoded.contentType;
+      // avatars are stored as a single unsized file — no srcset is needed
+      renditions.push(
+        folder === "covers"
+          ? { width, data: await toBase64(encoded.blob) }
+          : { data: await toBase64(encoded.blob) },
+      );
     }
-    return renditions;
+    return { contentType, renditions };
   } finally {
     bitmap.close();
   }
@@ -85,11 +120,10 @@ export function ImageUploadButton({
     }
     setBusy(true);
     try {
-      // Avatars render tiny and never need a ladder; covers are the heavy ones.
-      const renditions =
-        folder === "covers" ? await buildCoverRenditions(file) : [{ data: await toBase64(file) }];
+      // Covers get the full width ladder; avatars get one small re-encoded file.
+      const { contentType, renditions } = await prepare(file, folder);
       const res = await upload({
-        data: { folder, contentType: file.type, renditions },
+        data: { folder, contentType, renditions },
       });
       onUploaded(res.url);
       toast.success("Image uploaded");

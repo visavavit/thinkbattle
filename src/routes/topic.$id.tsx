@@ -94,6 +94,8 @@ function TopicPage() {
           srcSet={coverSrcSet(topic.cover_image_url)}
           sizes="(min-width: 1024px) 1024px, 100vw"
           alt={topic.title}
+          fetchPriority="high"
+          decoding="async"
           width={1200}
           height={675}
           className="aspect-[21/9] w-full rounded-md object-cover"

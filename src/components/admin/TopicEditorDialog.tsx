@@ -281,6 +281,8 @@ export function TopicEditorDialog({
               <img
                 src={form.cover_image_url}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="mt-2 aspect-[21/9] w-full rounded-md object-cover"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = "none";
