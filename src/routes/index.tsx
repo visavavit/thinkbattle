@@ -16,9 +16,16 @@ import {
 } from "@/components/ui/carousel";
 
 
+/** The default tab stays absent from the URL. Spelling it out would make
+ *  validateSearch return a search object the bare "/" does not have, and the
+ *  router would answer every visit to the home page with a redirect to
+ *  "/?tab=trending" — a wasted round trip on the most common entry point.
+ *  An unreadable value falls back the same way a missing one does. */
 const searchSchema = z.object({
-  tab: z.enum(["trending", "neck", "top", "newest"]).catch("trending"),
+  tab: z.enum(["trending", "neck", "top", "newest"]).optional().catch(undefined),
 });
+
+const DEFAULT_TAB: FeedTab = "trending";
 
 const feedQuery = (tab: FeedTab) =>
   queryOptions({
@@ -36,7 +43,7 @@ const headlinerQuery = queryOptions({
 
 export const Route = createFileRoute("/")({
   validateSearch: searchSchema,
-  loaderDeps: ({ search }) => ({ tab: search.tab }),
+  loaderDeps: ({ search }) => ({ tab: search.tab ?? DEFAULT_TAB }),
   loader: async ({ context, deps }) => {
     // A transient network blip must not blank the page: the component's own
     // queries refetch on the client, so warm the cache best-effort only.
@@ -67,7 +74,7 @@ const TABS: { key: FeedTab; labelKey: TranslationKey; icon: typeof Flame }[] = [
 ];
 
 function Home() {
-  const { tab } = Route.useSearch();
+  const { tab = DEFAULT_TAB } = Route.useSearch();
   const t = useT();
   const { data: topics = [] } = useQuery(feedQuery(tab));
   const { data: headliners = [] } = useSuspenseQuery(headlinerQuery);
@@ -166,7 +173,7 @@ function Home() {
           <Link
             key={key}
             to="/"
-            search={{ tab: key }}
+            search={{ tab: key === DEFAULT_TAB ? undefined : key }}
             resetScroll={false}
             preload="intent"
             className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
