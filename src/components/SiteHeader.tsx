@@ -28,10 +28,8 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
         <Link to="/" className="flex items-center gap-2">
           <Swords className="h-6 w-6 text-primary" />
-          <span className="font-display text-xl font-semibold tracking-tight">
-            <span className="text-side-a">V</span>
-            <span className="text-side-b">S</span>
-            <span className="ml-1 text-foreground">{t("brand.arena")}</span>
+          <span className="font-display text-xl font-semibold tracking-tight text-foreground">
+            {t("brand.arena")}
           </span>
         </Link>
 
