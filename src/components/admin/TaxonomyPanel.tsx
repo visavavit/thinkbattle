@@ -61,6 +61,7 @@ export function TaxonomyPanel({ actorId }: { actorId: string }) {
     queryClient.invalidateQueries({ queryKey: ["admin", "taxonomy-usage"] });
     queryClient.invalidateQueries({ queryKey: adminKeys.audit });
     queryClient.invalidateQueries({ queryKey: ["taxonomy"] });
+    queryClient.invalidateQueries({ queryKey: ["taxonomy-public"] });
     queryClient.invalidateQueries({ queryKey: ["feed"] });
   };
 
@@ -68,9 +69,11 @@ export function TaxonomyPanel({ actorId }: { actorId: string }) {
     mutationFn: async () => {
       const name = newCategory.name.trim();
       if (name.length < 2) throw new Error("Name is too short");
+      const slug = slugify(name);
+      if (!slug) throw new Error("Name needs letters or numbers");
       const { error } = await supabase
         .from("categories")
-        .insert({ name, slug: slugify(name), emoji: newCategory.emoji || "🔥" });
+        .insert({ name, slug, emoji: newCategory.emoji.trim() || "🔥" });
       if (error) throw error;
       await recordAudit({
         actorId,
@@ -91,7 +94,9 @@ export function TaxonomyPanel({ actorId }: { actorId: string }) {
     mutationFn: async () => {
       const name = newTag.trim().toLowerCase();
       if (name.length < 2) throw new Error("Tag is too short");
-      const { error } = await supabase.from("tags").insert({ name, slug: slugify(name) });
+      const slug = slugify(name);
+      if (!slug) throw new Error("Tag needs letters or numbers");
+      const { error } = await supabase.from("tags").insert({ name, slug });
       if (error) throw error;
       await recordAudit({ actorId, action: "tag.create", entityType: "tag", summary: name });
     },
@@ -115,11 +120,10 @@ export function TaxonomyPanel({ actorId }: { actorId: string }) {
     }) => {
       const name = kind === "tag" ? value.trim().toLowerCase() : value.trim();
       if (name.length < 2) throw new Error("Name is too short");
+      const slug = slugify(name);
+      if (!slug) throw new Error("Name needs letters or numbers");
       const table = kind === "category" ? "categories" : "tags";
-      const { error } = await supabase
-        .from(table)
-        .update({ name, slug: slugify(name) })
-        .eq("id", id);
+      const { error } = await supabase.from(table).update({ name, slug }).eq("id", id);
       if (error) throw error;
       await recordAudit({
         actorId,
@@ -182,6 +186,7 @@ export function TaxonomyPanel({ actorId }: { actorId: string }) {
             placeholder="Name"
             value={newCategory.name}
             onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+            onKeyDown={(e) => e.key === "Enter" && addCategory.mutate()}
           />
           <Button onClick={() => addCategory.mutate()} disabled={addCategory.isPending}>
             Add
@@ -247,7 +252,12 @@ export function TaxonomyPanel({ actorId }: { actorId: string }) {
       <div className="arena-panel space-y-3 p-4">
         <h2 className="text-xl">Tags</h2>
         <div className="flex gap-2">
-          <Input placeholder="tag" value={newTag} onChange={(e) => setNewTag(e.target.value)} />
+          <Input
+            placeholder="tag"
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTag.mutate()}
+          />
           <Button onClick={() => addTag.mutate()} disabled={addTag.isPending}>
             Add
           </Button>

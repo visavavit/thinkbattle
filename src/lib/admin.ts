@@ -60,12 +60,22 @@ export async function recordAudit(entry: {
   if (error) console.warn("audit log write failed", error.message);
 }
 
+/**
+ * Slug for a category or tag name. Thai letters survive as themselves: the site
+ * is Thai-first, so stripping them left every Thai name with an empty slug —
+ * unroutable on /browse, and a duplicate-key collision on the second one.
+ * The kept character range mirrors resolve_tag_names() in the database so a tag
+ * created here and one created through the topic editor land on the same slug.
+ * Returns "" when a name carries no sluggable characters (all emoji, say);
+ * callers must reject that rather than write it.
+ */
 export const slugify = (value: string) =>
   value
+    .normalize("NFC")
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9\u0e00-\u0e7f]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 export function formatWhen(iso: string) {
   const date = new Date(iso);
