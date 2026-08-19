@@ -467,6 +467,13 @@ export type Database = {
             foreignKeyName: "notifications_topic_id_fkey"
             columns: ["topic_id"]
             isOneToOne: false
+            referencedRelation: "topic_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
             referencedRelation: "topics"
             referencedColumns: ["id"]
           },
@@ -750,7 +757,36 @@ export type Database = {
           topic_title: string | null
           user_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topic_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       topic_cards: {
         Row: {
@@ -913,6 +949,10 @@ export type Database = {
         Returns: boolean
       }
       is_banned: { Args: { _user_id: string }; Returns: boolean }
+      notify_wanted: {
+        Args: { _actor: string; _recipient: string }
+        Returns: boolean
+      }
       resolve_tag_names: { Args: { _names: string[] }; Returns: string[] }
       topic_comment_authors: {
         Args: { _topic_id: string }
@@ -1055,6 +1095,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      notification_kind: ["reply", "like", "dislike", "topic_published"],
       report_status: ["open", "resolved", "dismissed"],
       topic_status: ["pending", "published", "rejected"],
     },
