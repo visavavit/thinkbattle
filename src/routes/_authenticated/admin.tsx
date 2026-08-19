@@ -16,10 +16,10 @@ import { TopicQueue, TopicTable } from "@/components/admin/TopicsPanel";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Admin — VS Arena" },
+      { title: "Admin — toktiang.com" },
       { name: "description", content: "Publish topics, moderate the arena and manage members." },
-      { property: "og:title", content: "Admin — VS Arena" },
-      { property: "og:description", content: "VS Arena curation dashboard." },
+      { property: "og:title", content: "Admin — toktiang.com" },
+      { property: "og:description", content: "toktiang.com curation dashboard." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "robots", content: "noindex" },
