@@ -120,11 +120,10 @@ export function ImageUploadButton({
     }
     setBusy(true);
     try {
-      // Avatars render tiny and never need a ladder; covers are the heavy ones.
-      const renditions =
-        folder === "covers" ? await buildCoverRenditions(file) : [{ data: await toBase64(file) }];
+      // Covers get the full width ladder; avatars get one small re-encoded file.
+      const { contentType, renditions } = await prepare(file, folder);
       const res = await upload({
-        data: { folder, contentType: file.type, renditions },
+        data: { folder, contentType, renditions },
       });
       onUploaded(res.url);
       toast.success("Image uploaded");
