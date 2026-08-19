@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { Clock, Flag, Flame, Star, ThumbsDown, ThumbsUp, Lock, EyeOff, Trash2, Reply } from "lucide-react";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
@@ -165,6 +165,56 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       return { rows, authors, hasMore: topRows.length === limit };
     },
   });
+
+  // A notification links straight at a take: /topic/$id#comment-<uuid>. The
+  // target can sit past the loaded page, or in the column that is collapsed on
+  // mobile, so resolve both before scrolling.
+  const { hash } = useLocation();
+  const targetId = hash?.startsWith("comment-") ? hash.slice("comment-".length) : null;
+  const expandedFor = useRef<{ id: string; times: number } | null>(null);
+  const revealedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    const rows = commentsQuery.data?.rows;
+    if (!targetId || !rows) return;
+
+    const target = rows.find((r) => r.id === targetId);
+    if (!target) {
+      // older than the page we hold — reach back for it, but not forever
+      if (!commentsQuery.data?.hasMore) return;
+      const seen = expandedFor.current;
+      const times = seen?.id === targetId ? seen.times : 0;
+      if (times >= 3) return;
+      expandedFor.current = { id: targetId, times: times + 1 };
+      setLimit((n) => n + COMMENT_PAGE_SIZE * 2);
+      return;
+    }
+
+    // jump once per link: a take posted live while reading must not yank the
+    // page back to the notification target
+    if (revealedFor.current === targetId) return;
+    revealedFor.current = targetId;
+
+    // a reply lives under its parent, which is what decides the column
+    const parent = target.parent_id ? rows.find((r) => r.id === target.parent_id) : target;
+    if (parent) setActiveSide(parent.side as Side);
+
+    // the column may need a paint to un-hide before it can be scrolled to
+    let tries = 8;
+    let timer: ReturnType<typeof setTimeout>;
+    const reveal = () => {
+      const el = document.getElementById(`comment-${targetId}`);
+      if (!el || el.offsetParent === null) {
+        if (tries-- > 0) timer = setTimeout(reveal, 60);
+        return;
+      }
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.classList.add("ring-2", "ring-primary");
+      timer = setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 2500);
+    };
+    timer = setTimeout(reveal, 0);
+    return () => clearTimeout(timer);
+  }, [targetId, commentsQuery.data]);
 
   // who has since voted for the other side — powers the "Changed their mind" badge
   const authorSidesQuery = useQuery({
@@ -895,7 +945,8 @@ function CommentColumn({
           return (
           <li
             key={row.id}
-            className={`rounded-sm border p-3 ${
+            id={`comment-${row.id}`}
+            className={`scroll-mt-24 rounded-sm border p-3 ${
               row.is_hidden
                 ? "border-dashed border-destructive/50 bg-destructive/5"
                 : highlighted
@@ -1057,7 +1108,11 @@ function ReplyThread({
       {replies.map((reply) => {
         const replySide = reply.side === "a" ? "a" : "b";
         return (
-          <div key={reply.id} className="rounded-sm bg-muted/40 p-2">
+          <div
+            key={reply.id}
+            id={`comment-${reply.id}`}
+            className="scroll-mt-24 rounded-sm bg-muted/40 p-2"
+          >
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="font-bold text-foreground">
                 {authors.get(reply.user_id) ?? t("comment.anonymous")}

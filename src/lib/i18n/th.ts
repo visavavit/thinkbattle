@@ -13,6 +13,23 @@ export const th: Dictionary = {
   "lang.switchToThai": "เปลี่ยนเป็นภาษาไทย",
   "lang.switchToEnglish": "เปลี่ยนเป็นภาษาอังกฤษ",
 
+  // ---- notifications
+  "notif.title": "การแจ้งเตือน",
+  "notif.open": "การแจ้งเตือน",
+  "notif.unreadBadge": "ยังไม่ได้อ่าน {n} รายการ",
+  "notif.empty": "ยังไม่มีการแจ้งเตือน ลองแสดงความเห็นแล้วรอดูปฏิกิริยา",
+  "notif.markAllRead": "ทำเครื่องหมายว่าอ่านแล้วทั้งหมด",
+  "notif.someone": "ผู้ใช้รายหนึ่ง",
+  "notif.reply": "{actor} ตอบกลับความเห็นของคุณ",
+  "notif.like": "{actor} ถูกใจความเห็นของคุณ",
+  "notif.dislike": "{actor} ไม่เห็นด้วยกับความเห็นของคุณ",
+  "notif.topicPublished": "ประเด็นที่คุณเสนอเผยแพร่แล้ว",
+  "notif.deleted": "ความเห็นนี้ถูกลบแล้ว",
+  "notif.justNow": "เมื่อสักครู่",
+  "notif.minutesAgo": "{n} นาทีที่แล้ว",
+  "notif.hoursAgo": "{n} ชั่วโมงที่แล้ว",
+  "notif.daysAgo": "{n} วันที่แล้ว",
+
   // ---- error / not found
   "notFound.title": "ไม่พบหน้าที่ต้องการ",
   "notFound.body": "หน้าที่คุณกำลังค้นหาไม่มีอยู่ หรืออาจถูกย้ายไปแล้ว",

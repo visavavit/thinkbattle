@@ -6,6 +6,7 @@ import { useAuth, useIsAdmin } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "./LanguageToggle";
+import { NotificationBell } from "./NotificationBell";
 import { SuggestTopicDialog } from "./SuggestTopicDialog";
 
 export function SiteHeader() {
@@ -58,6 +59,7 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           <LanguageToggle />
+          <NotificationBell user={user} />
           <SuggestTopicDialog user={user} />
           {user ? (
             <Button variant="outline" size="sm" onClick={signOut}>

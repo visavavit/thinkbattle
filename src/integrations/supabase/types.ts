@@ -414,6 +414,64 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          comment_id: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          parent_comment_id: string | null
+          read_at: string | null
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          parent_comment_id?: string | null
+          read_at?: string | null
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          parent_comment_id?: string | null
+          read_at?: string | null
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -674,6 +732,26 @@ export type Database = {
       }
     }
     Views: {
+      notification_feed: {
+        Row: {
+          actor_avatar: string | null
+          actor_id: string | null
+          actor_name: string | null
+          comment_id: string | null
+          context_body: string | null
+          created_at: string | null
+          id: string | null
+          kind: Database["public"]["Enums"]["notification_kind"] | null
+          parent_comment_id: string | null
+          read_at: string | null
+          subject_body: string | null
+          subject_side: string | null
+          topic_id: string | null
+          topic_title: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       topic_cards: {
         Row: {
           category_emoji: string | null
@@ -846,6 +924,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      notification_kind: "reply" | "like" | "dislike" | "topic_published"
       report_status: "open" | "resolved" | "dismissed"
       topic_status: "pending" | "published" | "rejected"
     }

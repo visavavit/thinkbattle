@@ -11,6 +11,23 @@ export const en = {
   "lang.switchToThai": "Switch to Thai",
   "lang.switchToEnglish": "Switch to English",
 
+  // ---- notifications
+  "notif.title": "Notifications",
+  "notif.open": "Notifications",
+  "notif.unreadBadge": "{n} unread",
+  "notif.empty": "Nothing yet. Post a take and see who bites.",
+  "notif.markAllRead": "Mark all read",
+  "notif.someone": "Someone",
+  "notif.reply": "{actor} replied to your take",
+  "notif.like": "{actor} liked your take",
+  "notif.dislike": "{actor} dumped on your take",
+  "notif.topicPublished": "Your topic is live",
+  "notif.deleted": "This take is gone",
+  "notif.justNow": "just now",
+  "notif.minutesAgo": "{n}m ago",
+  "notif.hoursAgo": "{n}h ago",
+  "notif.daysAgo": "{n}d ago",
+
   // ---- error / not found
   "notFound.title": "Page not found",
   "notFound.body": "The page you're looking for doesn't exist or has been moved.",
