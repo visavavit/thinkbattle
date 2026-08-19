@@ -84,7 +84,7 @@ function Home() {
       {headliners.length > 0 ? (
         <Carousel opts={{ loop: headliners.length > 1, align: "start" }} className="relative">
           <CarouselContent>
-            {headliners.map((headliner) => (
+            {headliners.map((headliner, slideIndex) => (
               <CarouselItem key={headliner.id}>
                 <section className="arena-panel relative overflow-hidden p-6">
                   <span className="absolute top-0 right-0 bg-primary px-3 py-1 text-xs font-medium tracking-wide text-primary-foreground">
@@ -106,8 +106,11 @@ function Home() {
                         srcSet={coverSrcSet(headliner.cover_image_url)}
                         sizes="(min-width: 1024px) 1024px, 100vw"
                         alt={headliner.title}
-                        // the hero is above the fold on every visit
-                        fetchPriority="high"
+                        // only the first slide is visible on load — the rest are
+                        // off-screen and must not compete with it for bandwidth
+                        fetchPriority={slideIndex === 0 ? "high" : "low"}
+                        loading={slideIndex === 0 ? "eager" : "lazy"}
+                        decoding="async"
                         width={1200}
                         height={675}
                         className="aspect-[21/9] w-full rounded-md object-cover transition-opacity hover:opacity-90"

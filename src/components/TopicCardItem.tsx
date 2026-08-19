@@ -20,6 +20,7 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
           sizes={COVER_SIZES}
           alt={topic.title}
           loading="lazy"
+          decoding="async"
           width={1200}
           height={675}
           className="aspect-[16/9] w-full object-cover"
