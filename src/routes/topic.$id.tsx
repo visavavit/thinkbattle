@@ -25,7 +25,7 @@ export const Route = createFileRoute("/topic/$id")({
         meta: [{ title: tr("meta.topic.unavailable") }, { name: "robots", content: "noindex" }],
       };
     }
-    const title = `${loaderData.title} — VS Arena`;
+    const title = `${loaderData.title} — ถกเถียง`;
     const description = tr("meta.topic.description", { a: loaderData.choiceA, b: loaderData.choiceB });
     return {
       meta: [
