@@ -1,13 +1,13 @@
 /** English dictionary — the source of truth for the key set. */
 export const en = {
   // ---- brand / shell
-  "brand.arena": "Arena",
+  "brand.arena": "toktiang.com",
   "nav.feed": "Feed",
   "nav.browse": "Browse",
   "nav.admin": "Admin",
   "nav.signIn": "Sign in",
   "nav.signOut": "Sign out",
-  "footer.tagline": "VS Arena · two choices, both sides heard.",
+  "footer.tagline": "toktiang.com · two choices, both sides heard.",
   "lang.switchToThai": "Switch to Thai",
   "lang.switchToEnglish": "Switch to English",
 
@@ -204,17 +204,17 @@ export const en = {
   "card.wild": "{n} wild",
 
   // ---- head metadata
-  "meta.home.title": "VS Arena — Pick a Side, Defend It",
+  "meta.home.title": "toktiang.com — Pick a Side, Defend It",
   "meta.home.description":
     "Binary debates with bifurcated comment columns and a Wild Takes ranking that surfaces the most controversial arguments on both sides.",
   "meta.home.ogDescription":
     "Vote on 2-choice showdowns and fight it out in split comment columns.",
-  "meta.browse.title": "Browse Debates by Category — VS Arena",
+  "meta.browse.title": "Browse Debates by Category — toktiang.com",
   "meta.browse.description":
     "Filter binary debates by category and tag: tech, food, pop culture, life, sports.",
-  "meta.auth.title": "Sign in — VS Arena",
-  "meta.auth.description": "Sign in to vote on debates and post takes in VS Arena.",
-  "meta.topic.unavailable": "Debate unavailable — VS Arena",
+  "meta.auth.title": "Sign in — toktiang.com",
+  "meta.auth.description": "Sign in to vote on debates and post takes in toktiang.com.",
+  "meta.topic.unavailable": "Debate unavailable — toktiang.com",
   "meta.topic.description":
     "{a} vs {b}. Vote, then defend your side in the split comment columns.",
 } as const;

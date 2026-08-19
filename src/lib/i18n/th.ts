@@ -3,13 +3,13 @@ import type { Dictionary } from "./en";
 /** Thai dictionary — formal news-desk register. */
 export const th: Dictionary = {
   // ---- brand / shell
-  "brand.arena": "อารีนา",
+  "brand.arena": "ถกเถียง",
   "nav.feed": "หน้าแรก",
   "nav.browse": "หมวดหมู่",
   "nav.admin": "ผู้ดูแล",
   "nav.signIn": "เข้าสู่ระบบ",
   "nav.signOut": "ออกจากระบบ",
-  "footer.tagline": "VS Arena · สองทางเลือก รับฟังทั้งสองฝ่าย",
+  "footer.tagline": "ถกเถียง · สองทางเลือก รับฟังทั้งสองฝ่าย",
   "lang.switchToThai": "เปลี่ยนเป็นภาษาไทย",
   "lang.switchToEnglish": "เปลี่ยนเป็นภาษาอังกฤษ",
 
@@ -205,15 +205,15 @@ export const th: Dictionary = {
   "card.wild": "สุดขั้ว {n}",
 
   // ---- head metadata
-  "meta.home.title": "VS Arena — เลือกฝ่าย แล้วอธิบายเหตุผล",
+  "meta.home.title": "ถกเถียง — เลือกฝ่าย แล้วอธิบายเหตุผล",
   "meta.home.description":
     "เวทีถกเถียงแบบสองทางเลือก พร้อมคอลัมน์ความเห็นแยกฝ่าย และการจัดอันดับความเห็นสุดขั้วจากทั้งสองฝั่ง",
   "meta.home.ogDescription": "ร่วมโหวตประเด็นสองทางเลือก และถกเถียงในคอลัมน์ความเห็นแยกฝ่าย",
-  "meta.browse.title": "สำรวจประเด็นตามหมวดหมู่ — VS Arena",
+  "meta.browse.title": "สำรวจประเด็นตามหมวดหมู่ — ถกเถียง",
   "meta.browse.description":
     "กรองประเด็นถกเถียงตามหมวดหมู่และแท็ก ทั้งเทคโนโลยี อาหาร วัฒนธรรมป็อป ไลฟ์สไตล์ และกีฬา",
-  "meta.auth.title": "เข้าสู่ระบบ — VS Arena",
-  "meta.auth.description": "เข้าสู่ระบบเพื่อโหวตและร่วมแสดงความเห็นใน VS Arena",
-  "meta.topic.unavailable": "ไม่พบประเด็นนี้ — VS Arena",
+  "meta.auth.title": "เข้าสู่ระบบ — ถกเถียง",
+  "meta.auth.description": "เข้าสู่ระบบเพื่อโหวตและร่วมแสดงความเห็นใน ถกเถียง",
+  "meta.topic.unavailable": "ไม่พบประเด็นนี้ — ถกเถียง",
   "meta.topic.description": "{a} เทียบกับ {b} ร่วมโหวต แล้วอธิบายเหตุผลในคอลัมน์ความเห็นแยกฝ่าย",
 };
