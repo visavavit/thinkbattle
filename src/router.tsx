@@ -12,6 +12,10 @@ export const getRouter = () => {
         retry: 2,
         retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
         refetchOnWindowFocus: false,
+        // Data rendered on the server stays trusted for a moment after
+        // hydration, so the first paint does not immediately refetch
+        // everything it just received.
+        staleTime: 30_000,
       },
     },
   });
@@ -21,8 +25,14 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    defaultPreloadStaleTime: 0,
+    defaultPreloadStaleTime: 30_000,
   });
 
+  // Ships the server's query cache to the browser with the HTML. Without it
+  // every loader query runs twice — once during SSR, once again on hydration —
+  // which both slows the first paint and makes the two renders disagree.
+  setupRouterSsrQueryIntegration({ router, queryClient });
+
   return router;
+
 };
