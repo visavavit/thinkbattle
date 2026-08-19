@@ -23,7 +23,7 @@ import {
 
 const topicSchema = z.object({
   title: z.string().trim().min(6, "Title needs at least 6 characters").max(140),
-  description: z.string().trim().max(300).optional(),
+  description: z.string().trim().max(2000).optional(),
   choice_a: z.string().trim().min(1, "Choice A is required").max(60),
   choice_b: z.string().trim().min(1, "Choice B is required").max(60),
   cover_image_url: z.string().trim().max(500).optional(),
@@ -228,11 +228,14 @@ export function TopicEditorDialog({
             />
           </div>
           <div>
-            <Label htmlFor="editor-desc">Description</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="editor-desc">Description</Label>
+              <span className="text-muted-foreground text-xs">{form.description.length}/2000</span>
+            </div>
             <Textarea
               id="editor-desc"
               value={form.description}
-              maxLength={300}
+              maxLength={2000}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
