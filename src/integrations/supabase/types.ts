@@ -587,6 +587,7 @@ export type Database = {
           category_id: string | null
           choice_a: string
           choice_b: string
+          comments_count: number
           cover_image_url: string | null
           created_at: string
           description: string | null
@@ -599,13 +600,17 @@ export type Database = {
           status: Database["public"]["Enums"]["topic_status"]
           submitted_by: string | null
           title: string
+          total_votes: number | null
+          trending_score: number
           votes_a: number
           votes_b: number
+          wild_takes_count: number
         }
         Insert: {
           category_id?: string | null
           choice_a: string
           choice_b: string
+          comments_count?: number
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -618,13 +623,17 @@ export type Database = {
           status?: Database["public"]["Enums"]["topic_status"]
           submitted_by?: string | null
           title: string
+          total_votes?: number | null
+          trending_score?: number
           votes_a?: number
           votes_b?: number
+          wild_takes_count?: number
         }
         Update: {
           category_id?: string | null
           choice_a?: string
           choice_b?: string
+          comments_count?: number
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -637,8 +646,11 @@ export type Database = {
           status?: Database["public"]["Enums"]["topic_status"]
           submitted_by?: string | null
           title?: string
+          total_votes?: number | null
+          trending_score?: number
           votes_a?: number
           votes_b?: number
+          wild_takes_count?: number
         }
         Relationships: [
           {
@@ -953,6 +965,7 @@ export type Database = {
         Args: { _actor: string; _recipient: string }
         Returns: boolean
       }
+      refresh_trending_scores: { Args: never; Returns: undefined }
       resolve_tag_names: { Args: { _names: string[] }; Returns: string[] }
       topic_comment_authors: {
         Args: { _topic_id: string }
