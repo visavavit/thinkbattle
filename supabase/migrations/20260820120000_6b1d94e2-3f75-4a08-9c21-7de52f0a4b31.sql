@@ -173,26 +173,45 @@ alter view public.topic_cards set (security_invoker = on);
 grant select on public.topic_cards to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- A closed debate stops trending
+-- A closed debate fades out of trending
 --
--- Otherwise a topic that no one can vote on any more keeps its velocity score
--- and sits at the top of the feed inviting votes that the guard then rejects.
--- It stays reachable everywhere else: Newest, Top Voted, Browse and its own
--- page are unchanged.
+-- A topic no one can vote on any more should not sit at the top of the feed
+-- inviting votes the guard then rejects. But dropping it to zero the instant
+-- it closes is too blunt, and the curve says why: the decay is anchored on
+-- published_at, so a week-long debate has already fallen down the tab by the
+-- time its deadline arrives — zeroing it changes almost nothing. The topic it
+-- does affect is the short one. A 24-hour debate is still scoring near its
+-- peak when it closes, and that is exactly the moment its outcome is most
+-- worth reading.
+--
+-- So closed topics are damped rather than erased: a quarter score puts them
+-- below the live debates while leaving the just-concluded ones on the page,
+-- and the ordinary age decay retires them within about a day. They stay
+-- reachable everywhere else regardless — Newest, Top Voted, Browse and their
+-- own pages are unchanged.
 -- ---------------------------------------------------------------------------
+
+-- Weight applied to a topic past its deadline. Not a hard zero; see above.
+create or replace function public.closed_trending_weight(_closes_at timestamptz)
+returns numeric
+language sql
+-- stable, not immutable: it reads now(), and an immutable label would let the
+-- planner fold the weight to a constant computed once
+stable
+as $$
+  select case when _closes_at is not null and _closes_at <= now() then 0.25 else 1 end::numeric;
+$$;
 
 create or replace function public.refresh_trending_scores() returns void
 language sql security definer set search_path = public as $$
   update public.topics t
-     set trending_score = case
-           when t.closes_at is not null and t.closes_at <= now() then 0
-           else (t.votes_a + t.votes_b + 1)::numeric
-                / power(
-                    2::numeric
-                    + extract(epoch from (now() - coalesce(t.published_at, t.created_at))) / 3600.0,
-                    1.2
-                  )
-         end
+     set trending_score = (t.votes_a + t.votes_b + 1)::numeric
+         / power(
+             2::numeric
+             + extract(epoch from (now() - coalesce(t.published_at, t.created_at))) / 3600.0,
+             1.2
+           )
+         * public.closed_trending_weight(t.closes_at)
    where t.status = 'published';
 $$;
 revoke all on function public.refresh_trending_scores() from public, anon, authenticated;
@@ -204,16 +223,13 @@ begin
      and (tg_op = 'INSERT' or old.status is distinct from new.status
           or old.published_at is distinct from new.published_at
           or old.closes_at is distinct from new.closes_at) then
-    if new.closes_at is not null and new.closes_at <= now() then
-      new.trending_score := 0;
-    else
-      new.trending_score := (new.votes_a + new.votes_b + 1)::numeric
-        / power(
-            2::numeric
-            + extract(epoch from (now() - coalesce(new.published_at, new.created_at))) / 3600.0,
-            1.2
-          );
-    end if;
+    new.trending_score := (new.votes_a + new.votes_b + 1)::numeric
+      / power(
+          2::numeric
+          + extract(epoch from (now() - coalesce(new.published_at, new.created_at))) / 3600.0,
+          1.2
+        )
+      * public.closed_trending_weight(new.closes_at);
   end if;
   return new;
 end; $$;

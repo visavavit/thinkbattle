@@ -54,7 +54,7 @@ Restricted to 1 vote per user per topic.
 
 Users are permitted to switch their vote later, which dynamically recalculates percentages and updates their comment association context.
 
-Closing Date (optional): A topic can carry a deadline, or run indefinitely. Once the deadline passes the debate is archived in place — the split, the tallies and every take on both sides stay fully readable, but voting, switching sides, commenting, replying and reacting all stop. Clearing the deadline reopens it.
+Closing Date (optional): A topic can carry a deadline, or run indefinitely. Once the deadline passes the debate is archived in place — the split, the tallies and every take on both sides stay fully readable, but voting, switching sides, commenting, replying and reacting all stop. A closed topic drops out of the Headliner rotation, since the hero exists to invite a vote, and its trending score is damped to a quarter so a just-concluded debate fades off the front page over a day rather than vanishing the moment it ends; Newest, Top Voted, Browse and its own page are unaffected. Clearing the deadline reopens it.
 
 C. The Bifurcated Comment & "Wild Takes" Engine
 
