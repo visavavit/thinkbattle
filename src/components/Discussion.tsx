@@ -275,11 +275,16 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     queryKey: ["topic-counts", topic.id],
     queryFn: () => getTopicCounts({ data: { id: topic.id } }),
     initialData: { votes_a: topic.votes_a, votes_b: topic.votes_b },
+    // The rendered document is shared and may have been cached for a while, so
+    // treat its tally as already stale: one fetch on mount corrects it before
+    // the reader has time to read the numbers off the bar.
+    initialDataUpdatedAt: 0,
     // nothing can move the tally on a closed debate, so stop asking
     refetchInterval: isClosed ? false : 15_000,
     refetchIntervalInBackground: false,
     staleTime: 10_000,
   });
+
 
   useEffect(() => {
     const counts = countsQuery.data;
