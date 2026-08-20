@@ -75,11 +75,7 @@ async function fetchFeedRows(order: FeedOrder, category?: string): Promise<Topic
 
 export const getFeed = createServerFn({ method: "GET" })
   .inputValidator(
-    (input: {
-      tab?: FeedTab | undefined;
-      category?: string | undefined;
-      tag?: string | undefined;
-    }) => input ?? {},
+    (input: { tab?: FeedTab | undefined; category?: string | undefined }) => input ?? {},
   )
   .handler(async ({ data }) => {
     setResponseHeader("cache-control", publicCacheControl(PUBLIC_READ));
@@ -87,21 +83,17 @@ export const getFeed = createServerFn({ method: "GET" })
     const tab = data.tab ?? "trending";
     const order = feedOrder(tab);
 
-    // Only the query is cached. Tag and neck-and-neck narrowing runs per call
-    // against the cached rows — it is pure array work, and keeping it outside
-    // means every tag under a category shares one database read.
+    // Only the query is cached. Neck-and-neck narrowing runs per call against
+    // the cached rows — it is pure array work, and keeping it outside means
+    // both tabs that share an ordering also share one database read.
     const rows = await cached(`feed:${order}:${data.category ?? "all"}`, PUBLIC_READ, () =>
       fetchFeedRows(order, data.category),
     );
 
-    let topics = rows;
-    if (data.tag) topics = topics.filter((t) => (t.tags ?? []).includes(data.tag!));
-    if (tab === "neck") {
-      topics = topics
-        .filter((t) => t.total_votes > 0 && t.pct_a >= 45 && t.pct_a <= 55)
-        .sort((a, b) => Math.abs(50 - a.pct_a) - Math.abs(50 - b.pct_a));
-    }
-    return topics;
+    if (tab !== "neck") return rows;
+    return rows
+      .filter((t) => t.total_votes > 0 && t.pct_a >= 45 && t.pct_a <= 55)
+      .sort((a, b) => Math.abs(50 - a.pct_a) - Math.abs(50 - b.pct_a));
   });
 
 /**

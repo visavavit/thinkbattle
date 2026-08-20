@@ -51,9 +51,23 @@ export const en = {
 
   // ---- browse
   "browse.title": "Browse the arena",
+  "browse.subtitle": "Search, sort and filter every published debate.",
+  "browse.searchLabel": "Search debates",
+  "browse.searchPlaceholder": "Search titles, sides and tags\u2026",
+  "browse.clearSearch": "Clear search",
+  "browse.categoryLabel": "Category",
   "browse.allCategories": "All categories",
-  "browse.allTags": "All tags",
+  "browse.sortLabel": "Sort by",
+  "browse.statusLabel": "Status",
+  "browse.statusAny": "Any status",
+  "browse.statusOpen": "Open for votes",
+  "browse.statusSoon": "Closing soon",
+  "browse.statusClosed": "Closed",
+  "browse.resultOne": "{n} debate",
+  "browse.resultMany": "{n} debates",
+  "browse.clearAll": "Clear filters",
   "browse.empty": "No debates match these filters.",
+  "browse.emptyHint": "Try a broader search, or clear the filters to see everything.",
 
   // ---- topic page
   "topic.backToFeed": "Back to the feed",
@@ -233,7 +247,7 @@ export const en = {
     "Vote on 2-choice showdowns and fight it out in split comment columns.",
   "meta.browse.title": "Browse Debates by Category — toktiang.com",
   "meta.browse.description":
-    "Filter binary debates by category and tag: tech, food, pop culture, life, sports.",
+    "Search and filter binary debates by category, status and popularity: tech, food, pop culture, life, sports.",
   "meta.auth.title": "Sign in — toktiang.com",
   "meta.auth.description": "Sign in to vote on debates and post takes in toktiang.com.",
   "meta.topic.unavailable": "Debate unavailable — toktiang.com",

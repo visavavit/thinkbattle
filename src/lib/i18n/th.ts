@@ -53,9 +53,23 @@ export const th: Dictionary = {
 
   // ---- browse
   "browse.title": "สำรวจประเด็นทั้งหมด",
+  "browse.subtitle": "ค้นหา จัดเรียง และกรองประเด็นถกเถียงที่เผยแพร่ทั้งหมด",
+  "browse.searchLabel": "ค้นหาประเด็น",
+  "browse.searchPlaceholder": "ค้นจากหัวข้อ ตัวเลือก หรือแท็ก\u2026",
+  "browse.clearSearch": "ล้างคำค้นหา",
+  "browse.categoryLabel": "หมวดหมู่",
   "browse.allCategories": "ทุกหมวดหมู่",
-  "browse.allTags": "ทุกแท็ก",
+  "browse.sortLabel": "จัดเรียงตาม",
+  "browse.statusLabel": "สถานะ",
+  "browse.statusAny": "ทุกสถานะ",
+  "browse.statusOpen": "เปิดให้โหวต",
+  "browse.statusSoon": "ใกล้ปิดโหวต",
+  "browse.statusClosed": "ปิดโหวตแล้ว",
+  "browse.resultOne": "{n} ประเด็น",
+  "browse.resultMany": "{n} ประเด็น",
+  "browse.clearAll": "ล้างตัวกรอง",
   "browse.empty": "ไม่พบประเด็นที่ตรงกับตัวกรองนี้",
+  "browse.emptyHint": "ลองใช้คำค้นที่กว้างขึ้น หรือล้างตัวกรองเพื่อดูทั้งหมด",
 
   // ---- topic page
   "topic.backToFeed": "กลับไปหน้าแรก",
@@ -234,7 +248,7 @@ export const th: Dictionary = {
   "meta.home.ogDescription": "ร่วมโหวตประเด็นสองทางเลือก และถกเถียงในคอลัมน์ความเห็นแยกฝ่าย",
   "meta.browse.title": "สำรวจประเด็นตามหมวดหมู่ — ถกเถียง",
   "meta.browse.description":
-    "กรองประเด็นถกเถียงตามหมวดหมู่และแท็ก ทั้งเทคโนโลยี อาหาร วัฒนธรรมป็อป ไลฟ์สไตล์ และกีฬา",
+    "ค้นหาและกรองประเด็นถกเถียงตามหมวดหมู่ สถานะ และความนิยม ทั้งเทคโนโลยี อาหาร วัฒนธรรมป็อป ไลฟ์สไตล์ และกีฬา",
   "meta.auth.title": "เข้าสู่ระบบ — ถกเถียง",
   "meta.auth.description": "เข้าสู่ระบบเพื่อโหวตและร่วมแสดงความเห็นใน ถกเถียง",
   "meta.topic.unavailable": "ไม่พบประเด็นนี้ — ถกเถียง",
