@@ -85,7 +85,7 @@ function Home() {
         <h1 className="font-display text-4xl leading-tight sm:text-5xl">
           {t("home.heroLead")}
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">{t("home.heroSub")}</p>
+        <p className="mx-auto mt-3 max-w-3xl text-muted-foreground">{t("home.heroSub")}</p>
       </section>
 
       {headliners.length > 0 ? (
