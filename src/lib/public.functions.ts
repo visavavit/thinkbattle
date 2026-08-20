@@ -178,13 +178,26 @@ async function fetchTopicCounts(id: string): Promise<TopicCounts> {
  * Just the tallies, for topic pages to poll. Deliberately narrow: this is the
  * one read that open pages repeat, so it stays a two-column lookup rather than
  * a full card.
+ *
+ * A signed-in reader skips every cache layer. The document itself is shared
+ * (CDN `s-maxage` plus this process's own copy), so after a refresh the markup
+ * can still carry pre-vote numbers — and while a synthetic audience campaign is
+ * delivering, the tally moves every few seconds. Readers who can actually vote
+ * therefore get the live figure straight from the database; anonymous traffic,
+ * which is the bulk of it, keeps the cached path.
  */
 export const getTopicCounts = createServerFn({ method: "GET" })
   .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }) => {
+    const signedIn = Boolean(getRequestHeader("authorization"));
+    if (signedIn) {
+      setResponseHeader("cache-control", "private, no-store");
+      return fetchTopicCounts(data.id);
+    }
     setResponseHeader("cache-control", publicCacheControl(COUNTS_READ));
     return cached(`counts:${data.id}`, COUNTS_READ, () => fetchTopicCounts(data.id));
   });
+
 
 async function fetchTaxonomy() {
   const supabase = publicClient();
