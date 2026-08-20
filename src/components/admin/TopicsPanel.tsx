@@ -34,11 +34,13 @@ function useAdminTopics() {
   return useQuery({
     queryKey: adminKeys.topics,
     queryFn: async () => {
+      // Deliberately "*" rather than a column list. Naming columns means a
+      // migration that has not reached this environment yet fails the whole
+      // query, and the panel renders as "no topics" rather than as broken.
+      // The admin topic set is small and this is behind an admin session.
       const { data, error } = await supabase
         .from("topics")
-        .select(
-          "id, title, description, choice_a, choice_b, status, votes_a, votes_b, created_at, published_at, category_id, cover_image_url, is_featured, submitted_by, closes_at",
-        )
+        .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
       const rows = (data ?? []) as AdminTopic[];
@@ -160,6 +162,22 @@ function useTopicMutations(actorId: string) {
   return { setStatus, remove, feature };
 }
 
+/**
+ * A failed read and an empty arena look identical once the rows are gone, and
+ * the empty copy is reassuring — which is exactly wrong when the query 400s.
+ * This says which one happened, and shows the database's own message.
+ */
+function LoadError({ error }: { error: unknown }) {
+  return (
+    <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm">
+      <p className="font-bold text-destructive">Could not load topics</p>
+      <p className="mt-1 text-muted-foreground">
+        {describeError(error, "The database rejected the request.")}
+      </p>
+    </div>
+  );
+}
+
 function StatusBadge({ status }: { status: TopicStatus }) {
   if (status === "published") return <Badge variant="default">Live</Badge>;
   if (status === "pending") return <Badge variant="secondary">Pending</Badge>;
@@ -196,6 +214,7 @@ export function TopicQueue({ actorId }: { actorId: string }) {
   const names = topics.data?.names ?? new Map<string, string>();
 
   if (topics.isLoading) return <Skeleton className="h-32" />;
+  if (topics.isError) return <LoadError error={topics.error} />;
 
   return (
     <div className="space-y-3">
@@ -322,6 +341,7 @@ export function TopicTable({ actorId }: { actorId: string }) {
       </div>
 
       {topics.isLoading ? <Skeleton className="h-40" /> : null}
+      {topics.isError ? <LoadError error={topics.error} /> : null}
 
       <div className="space-y-2">
         {rows.map((t) => (
@@ -400,7 +420,7 @@ export function TopicTable({ actorId }: { actorId: string }) {
             </div>
           </div>
         ))}
-        {rows.length === 0 && !topics.isLoading ? (
+        {rows.length === 0 && !topics.isLoading && !topics.isError ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             No topics match that filter.
           </p>
