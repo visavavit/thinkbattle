@@ -587,6 +587,7 @@ export type Database = {
           category_id: string | null
           choice_a: string
           choice_b: string
+          closes_at: string | null
           comments_count: number
           cover_image_url: string | null
           created_at: string
@@ -610,6 +611,7 @@ export type Database = {
           category_id?: string | null
           choice_a: string
           choice_b: string
+          closes_at?: string | null
           comments_count?: number
           cover_image_url?: string | null
           created_at?: string
@@ -633,6 +635,7 @@ export type Database = {
           category_id?: string | null
           choice_a?: string
           choice_b?: string
+          closes_at?: string | null
           comments_count?: number
           cover_image_url?: string | null
           created_at?: string
@@ -808,6 +811,7 @@ export type Database = {
           category_slug: string | null
           choice_a: string | null
           choice_b: string | null
+          closes_at: string | null
           comments_count: number | null
           cover_image_url: string | null
           created_at: string | null
@@ -953,6 +957,7 @@ export type Database = {
           votes_count: number
         }[]
       }
+      closed_trending_weight: { Args: { _closes_at: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -974,6 +979,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      topic_is_closed: { Args: { _topic_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"

@@ -1,0 +1,167 @@
+alter table public.topics
+  add column if not exists closes_at timestamptz;
+
+comment on column public.topics.closes_at is
+  'When voting and discussion close. NULL means the topic never expires.';
+
+create index if not exists topics_closes_at_idx
+  on public.topics (closes_at)
+  where status = 'published' and closes_at is not null;
+
+create or replace function public.topic_is_closed(_topic_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (select t.closes_at is not null and t.closes_at <= now()
+       from public.topics t
+      where t.id = _topic_id),
+    false
+  );
+$$;
+grant execute on function public.topic_is_closed(uuid) to anon, authenticated;
+
+create or replace function public.guard_topic_closed()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target uuid;
+begin
+  target := case when tg_op = 'DELETE' then old.topic_id else new.topic_id end;
+
+  if target is not null and public.topic_is_closed(target) then
+    raise exception 'This debate has closed. Voting and comments are final.'
+      using errcode = '22000';
+  end if;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function public.guard_reaction_topic_closed()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target uuid;
+begin
+  select c.topic_id into target
+    from public.comments c
+   where c.id = case when tg_op = 'DELETE' then old.comment_id else new.comment_id end;
+
+  if target is not null and public.topic_is_closed(target) then
+    raise exception 'This debate has closed. Voting and comments are final.'
+      using errcode = '22000';
+  end if;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists votes_guard_closed on public.votes;
+create trigger votes_guard_closed
+  before insert or update or delete on public.votes
+  for each row execute function public.guard_topic_closed();
+
+drop trigger if exists comments_guard_closed on public.comments;
+create trigger comments_guard_closed
+  before insert on public.comments
+  for each row execute function public.guard_topic_closed();
+
+drop trigger if exists comment_reactions_guard_closed on public.comment_reactions;
+create trigger comment_reactions_guard_closed
+  before insert or update or delete on public.comment_reactions
+  for each row execute function public.guard_reaction_topic_closed();
+
+create or replace view public.topic_cards as
+ select t.id,
+    t.title,
+    t.description,
+    t.choice_a,
+    t.choice_b,
+    t.status,
+    t.submitted_by,
+    t.votes_a,
+    t.votes_b,
+    t.created_at,
+    t.published_at,
+    c.name as category_name,
+    c.slug as category_slug,
+    c.emoji as category_emoji,
+    t.category_id,
+    t.total_votes,
+        case
+            when t.total_votes = 0 then 50::numeric
+            else round(100.0 * t.votes_a::numeric / t.total_votes::numeric)
+        end as pct_a,
+    coalesce(( select array_agg(tg.name order by tg.name) as array_agg
+           from topic_tags tt
+             join tags tg on tg.id = tt.tag_id
+          where tt.topic_id = t.id), '{}'::text[]) as tags,
+    t.comments_count::bigint as comments_count,
+    t.wild_takes_count::bigint as wild_takes_count,
+    t.trending_score,
+    t.cover_image_url,
+    t.is_featured,
+    t.closes_at
+   from topics t
+     left join categories c on c.id = t.category_id;
+
+alter view public.topic_cards set (security_invoker = on);
+grant select on public.topic_cards to anon, authenticated;
+
+create or replace function public.closed_trending_weight(_closes_at timestamptz)
+returns numeric
+language sql
+stable
+as $$
+  select case when _closes_at is not null and _closes_at <= now() then 0.25 else 1 end::numeric;
+$$;
+
+create or replace function public.refresh_trending_scores() returns void
+language sql security definer set search_path = public as $$
+  update public.topics t
+     set trending_score = (t.votes_a + t.votes_b + 1)::numeric
+         / power(
+             2::numeric
+             + extract(epoch from (now() - coalesce(t.published_at, t.created_at))) / 3600.0,
+             1.2
+           )
+         * public.closed_trending_weight(t.closes_at)
+   where t.status = 'published';
+$$;
+revoke all on function public.refresh_trending_scores() from public, anon, authenticated;
+
+create or replace function public.seed_trending_score() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if new.status = 'published'
+     and (tg_op = 'INSERT' or old.status is distinct from new.status
+          or old.published_at is distinct from new.published_at
+          or old.closes_at is distinct from new.closes_at) then
+    new.trending_score := (new.votes_a + new.votes_b + 1)::numeric
+      / power(
+          2::numeric
+          + extract(epoch from (now() - coalesce(new.published_at, new.created_at))) / 3600.0,
+          1.2
+        )
+      * public.closed_trending_weight(new.closes_at);
+  end if;
+  return new;
+end; $$;
+
+select public.refresh_trending_scores();
