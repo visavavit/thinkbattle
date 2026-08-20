@@ -1,0 +1,1 @@
+UPDATE public.categories SET slug = name WHERE slug IS NULL OR btrim(slug) = '';
