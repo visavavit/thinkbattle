@@ -1,7 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Check, Clock, Flag, Flame, MessagesSquare, Star, ThumbsDown, ThumbsUp, Lock, EyeOff, Trash2, Reply } from "lucide-react";
+import {
+  Check,
+  Clock,
+  Flag,
+  Flame,
+  MessagesSquare,
+  Star,
+  ThumbsDown,
+  ThumbsUp,
+  Lock,
+  EyeOff,
+  Trash2,
+  Reply,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
