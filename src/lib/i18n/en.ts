@@ -38,8 +38,7 @@ export const en = {
   "common.cancel": "Cancel",
 
   // ---- home
-  "home.heroLead": "Pick a side.",
-  "home.heroAccent": " Defend it.",
+  "home.heroLead": "toktiang.com",
   "home.heroSub":
     "Vote on the debates people are actually having, then read the best arguments from both sides — side by side.",
   "home.headliner": "⚡ The Headliner",
