@@ -54,6 +54,8 @@ Restricted to 1 vote per user per topic.
 
 Users are permitted to switch their vote later, which dynamically recalculates percentages and updates their comment association context.
 
+Closing Date (optional): A topic can carry a deadline, or run indefinitely. Once the deadline passes the debate is archived in place — the split, the tallies and every take on both sides stay fully readable, but voting, switching sides, commenting, replying and reacting all stop. Clearing the deadline reopens it.
+
 C. The Bifurcated Comment & "Wild Takes" Engine
 
 Mandatory Voting Gate: Users must cast their vote on a topic before unlocking the comment box for that topic.
@@ -120,7 +122,10 @@ before approving, or reject with a reason.
 description, both choices, cover art, category and tags); publish, unpublish
 back into the queue, or delete behind a confirmation that names what gets
 destroyed. Any published topic can be pinned as the Headliner, which overrides
-the automatic hero pick on the homepage.
+the automatic hero pick on the homepage. Each topic can also be given a closing
+date — free-form, or from the +24h/+3d/+7d/+30d presets — after which it becomes
+a read-only result; leaving it empty runs the debate indefinitely, and a date in
+the past closes it on the spot.
 
 **Moderation** — the reports queue members file from any comment, plus a search
 across every comment in the arena. Comments can be *hidden* (reversible: pulled
@@ -138,10 +143,13 @@ would be affected.
 **Audit log** — every admin action, append-only. No one, including admins, can
 edit or delete entries.
 
-Three invariants are enforced by the database rather than the UI, so they hold
+Four invariants are enforced by the database rather than the UI, so they hold
 no matter how a request arrives: the last admin cannot be demoted, admins cannot
-be banned, and only admins can change a comment's moderation fields — an author
-can still edit their own comment body but cannot un-hide it.
+be banned, only admins can change a comment's moderation fields — an author
+can still edit their own comment body but cannot un-hide it — and a closed topic
+takes no further votes, takes or reactions from any client, the synthetic ones
+included. Moderation still works on a closed topic; hiding and deleting a
+comment are the one thing the deadline does not freeze.
 
 This project was built with [Lovable](https://lovable.dev).
 

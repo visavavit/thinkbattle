@@ -27,6 +27,7 @@ type AdminTopic = {
   cover_image_url: string | null;
   is_featured: boolean;
   submitted_by: string | null;
+  closes_at: string | null;
 };
 
 function useAdminTopics() {
@@ -36,7 +37,7 @@ function useAdminTopics() {
       const { data, error } = await supabase
         .from("topics")
         .select(
-          "id, title, description, choice_a, choice_b, status, votes_a, votes_b, created_at, published_at, category_id, cover_image_url, is_featured, submitted_by",
+          "id, title, description, choice_a, choice_b, status, votes_a, votes_b, created_at, published_at, category_id, cover_image_url, is_featured, submitted_by, closes_at",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -163,6 +164,27 @@ function StatusBadge({ status }: { status: TopicStatus }) {
   if (status === "published") return <Badge variant="default">Live</Badge>;
   if (status === "pending") return <Badge variant="secondary">Pending</Badge>;
   return <Badge variant="outline">Unpublished</Badge>;
+}
+
+/**
+ * A published topic past its deadline is still Live — it is on the feed and
+ * readable — but it takes no more votes or takes, and that is worth saying
+ * separately from the publish status.
+ */
+function DeadlineBadge({ closesAt }: { closesAt: string | null }) {
+  if (!closesAt) return null;
+  const at = new Date(closesAt);
+  if (Number.isNaN(at.getTime())) return null;
+  // formatWhen only reads backwards, and a deadline is usually ahead
+  const minutes = Math.round((at.getTime() - Date.now()) / 60000);
+  if (minutes <= 0) return <Badge variant="outline">🔒 Closed</Badge>;
+  const left =
+    minutes < 60
+      ? `${minutes}m`
+      : minutes < 60 * 24
+        ? `${Math.round(minutes / 60)}h`
+        : `${Math.round(minutes / (60 * 24))}d`;
+  return <Badge variant="outline">⏳ Closes in {left}</Badge>;
 }
 
 export function TopicQueue({ actorId }: { actorId: string }) {
@@ -314,6 +336,7 @@ export function TopicTable({ actorId }: { actorId: string }) {
                   {t.title}
                 </Link>
                 <StatusBadge status={t.status} />
+                <DeadlineBadge closesAt={t.closes_at} />
                 {t.is_featured ? <Badge variant="secondary">⚡ Headliner</Badge> : null}
               </div>
               <p className="text-xs text-muted-foreground">

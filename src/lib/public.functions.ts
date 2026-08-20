@@ -22,6 +22,8 @@ export type TopicCard = {
   comments_count: number;
   wild_takes_count: number;
   is_featured: boolean;
+  /** deadline for voting and comments; null when the topic never expires */
+  closes_at: string | null;
   created_at: string;
   published_at: string | null;
 };
@@ -102,6 +104,17 @@ export const getFeed = createServerFn({ method: "GET" })
     return topics;
   });
 
+/**
+ * The hero invites a vote, so an expired debate has no business there. Applied
+ * to admin pins too: a pin outranks the automatic pick, not the deadline.
+ *
+ * Filtered here rather than in SQL because these rows are cached for minutes
+ * at a time — a topic that expires mid-window has to drop out on read.
+ */
+function stillOpen(topic: TopicCard): boolean {
+  return !topic.closes_at || new Date(topic.closes_at).getTime() > Date.now();
+}
+
 async function fetchHeadliners(): Promise<TopicCard[]> {
   const supabase = publicClient();
 
@@ -113,7 +126,8 @@ async function fetchHeadliners(): Promise<TopicCard[]> {
     .eq("is_featured", true)
     .order("total_votes", { ascending: false })
     .limit(8);
-  if (pinned && pinned.length > 0) return pinned as unknown as TopicCard[];
+  const openPins = ((pinned ?? []) as unknown as TopicCard[]).filter(stillOpen);
+  if (openPins.length > 0) return openPins;
 
   const { data, error } = await supabase
     .from("topic_cards")
@@ -122,7 +136,7 @@ async function fetchHeadliners(): Promise<TopicCard[]> {
     .order("total_votes", { ascending: false })
     .limit(30);
   if (error) throw new Error(error.message);
-  const topics = (data ?? []) as unknown as TopicCard[];
+  const topics = ((data ?? []) as unknown as TopicCard[]).filter(stillOpen);
   if (topics.length === 0) return [];
   const closest = [...topics].sort(
     (a, b) => Math.abs(50 - a.pct_a) - Math.abs(50 - b.pct_a) || b.total_votes - a.total_votes,

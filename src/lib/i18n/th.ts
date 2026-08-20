@@ -62,6 +62,23 @@ export const th: Dictionary = {
   "topic.loadFailed": "ไม่สามารถโหลดประเด็นนี้ได้",
   "topic.notFound": "ไม่พบประเด็นนี้",
 
+  // ---- closing / expiry
+  "closing.closed": "ปิดโหวตแล้ว",
+  "closing.final": "ผลสรุปสุดท้าย",
+  "closing.closesIn": "ปิดโหวตในอีก {time}",
+  "closing.closesOn": "ปิดโหวต {date}",
+  "closing.closedOn": "ปิดโหวตเมื่อ {date}",
+  "closing.bannerTitle": "ประเด็นนี้ปิดแล้ว",
+  "closing.bannerBody":
+    "การโหวต การแสดงความเห็น และการแสดงความรู้สึกสิ้นสุดเมื่อ {date} สัดส่วนด้านล่างคือผลสรุปสุดท้าย โดยความเห็นของทั้งสองฝ่ายยังอ่านได้ตามปกติ",
+  "closing.soonTitle": "ปิดโหวตในอีก {time}",
+  "closing.soonBody":
+    "หลังจากนั้นผลจะถือเป็นที่สิ้นสุด ไม่สามารถโหวต แสดงความเห็น หรือแสดงความรู้สึกได้อีก",
+  "time.days": "{n} วัน",
+  "time.hours": "{n} ชั่วโมง",
+  "time.minutes": "{n} นาที",
+  "time.seconds": "{n} วินาที",
+
   // ---- vote / split bar
   "vote.pickHeading": "ลงคะแนนของคุณ",
   "vote.castAria": "โหวตให้ฝ่าย {label}",
@@ -79,6 +96,8 @@ export const th: Dictionary = {
   "vote.suspendedVote": "บัญชีของคุณถูกระงับ จึงไม่สามารถโหวตได้",
   "vote.suspendedReact": "บัญชีของคุณถูกระงับ จึงไม่สามารถแสดงความรู้สึกได้",
   "vote.signInToReact": "เข้าสู่ระบบเพื่อกดถูกใจหรือไม่ถูกใจ",
+  "vote.closed": "ประเด็นนี้ปิดแล้ว ผลโหวตถือเป็นที่สิ้นสุด",
+  "vote.closedReact": "ประเด็นนี้ปิดแล้ว ไม่สามารถแสดงความรู้สึกได้อีก",
 
   // ---- side switch dialog
   "switch.title": "ต้องการเปลี่ยนไปฝ่าย {label} หรือไม่",
@@ -113,6 +132,7 @@ export const th: Dictionary = {
   "comment.lockedOtherSide": "คุณโหวตให้อีกฝ่าย คอลัมน์นี้จึงอ่านได้อย่างเดียว",
   "comment.lockedVote": "โหวตด้านบนเพื่อเปิดใช้งานคอลัมน์นี้",
   "comment.lockedSignIn": "เข้าสู่ระบบและโหวตเพื่อร่วมแสดงความเห็น",
+  "comment.lockedClosed": "ประเด็นนี้ปิดแล้ว ความเห็นด้านล่างคือบทสรุปสุดท้าย",
   "comment.empty": "ยังไม่มีความเห็นในฝ่ายนี้ เริ่มเป็นคนแรกได้เลย",
   "comment.anonymous": "ไม่ระบุชื่อ",
   "comment.changedMind": "เปลี่ยนความคิด",

@@ -37,6 +37,7 @@ export type EditableTopic = {
   choice_b: string;
   category_id: string | null;
   cover_image_url: string | null;
+  closes_at: string | null;
 };
 
 const EMPTY = {
@@ -46,6 +47,38 @@ const EMPTY = {
   choice_b: "",
   cover_image_url: "",
 };
+
+const HOUR_MS = 60 * 60 * 1000;
+
+/** Preset run lengths, measured from whenever the curator clicks them. */
+const CLOSE_PRESETS: { label: string; hours: number }[] = [
+  { label: "24 hours", hours: 24 },
+  { label: "3 days", hours: 24 * 3 },
+  { label: "7 days", hours: 24 * 7 },
+  { label: "30 days", hours: 24 * 30 },
+];
+
+/**
+ * <input type="datetime-local"> speaks local wall-clock time with no zone, so
+ * it cannot take an ISO string and the value it hands back is not one either.
+ * Both directions go through the curator's own time zone, which is what they
+ * are picking the deadline in.
+ */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours(),
+  )}:${pad(date.getMinutes())}`;
+}
+
+function fromLocalInput(value: string): string | null {
+  if (!value.trim()) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
 
 /**
  * Create or edit a topic. `topic` null means "create new".
@@ -68,6 +101,8 @@ export function TopicEditorDialog({
   const [form, setForm] = useState(EMPTY);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [tagNames, setTagNames] = useState<string[]>([]);
+  // empty string means "no closing date", which is what most topics keep
+  const [closesAt, setClosesAt] = useState("");
 
   const taxonomy = useQuery({
     queryKey: adminKeys.taxonomy,
@@ -112,11 +147,21 @@ export function TopicEditorDialog({
     );
     setCategoryId(topic?.category_id ?? null);
     setTagNames([]);
+    setClosesAt(toLocalInput(topic?.closes_at ?? null));
   }, [open, topic]);
 
   useEffect(() => {
     if (existingTags.data) setTagNames(existingTags.data);
   }, [existingTags.data]);
+
+  // A date already in the past is a legitimate choice — it is how a curator
+  // ends a debate on the spot — but it should never be a surprise, so say so.
+  const closesIso = fromLocalInput(closesAt);
+  const closesDescription = !closesIso
+    ? "This topic never expires: voting and comments stay open."
+    : new Date(closesIso).getTime() <= Date.now()
+      ? "This closes the debate immediately. The result stays readable; voting, takes and reactions stop."
+      : "At that moment voting, takes and reactions stop. The result stays readable.";
 
 
   const save = useMutation({
@@ -132,6 +177,7 @@ export function TopicEditorDialog({
         choice_b: parsed.data.choice_b,
         cover_image_url: parsed.data.cover_image_url || null,
         category_id: categoryId,
+        closes_at: fromLocalInput(closesAt),
       };
 
       let topicId = topic?.id ?? null;
@@ -189,7 +235,11 @@ export function TopicEditorDialog({
         entityType: "topic",
         entityId: topicId,
         summary: values.title,
-        detail: { tags: tagNames.length, category_id: categoryId },
+        detail: {
+          tags: tagNames.length,
+          category_id: categoryId,
+          closes_at: values.closes_at,
+        },
 
       });
       return topicId;
@@ -317,6 +367,44 @@ export function TopicEditorDialog({
           <div>
             <Label>Tags</Label>
             <TagInput value={tagNames} onChange={setTagNames} />
+          </div>
+
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label htmlFor="editor-closes">Voting closes</Label>
+              <span className="text-muted-foreground text-xs">Leave empty to run indefinitely</span>
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Input
+                id="editor-closes"
+                type="datetime-local"
+                className="w-auto min-w-56 flex-1"
+                value={closesAt}
+                onChange={(e) => setClosesAt(e.target.value)}
+              />
+              {closesAt ? (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setClosesAt("")}>
+                  Clear
+                </Button>
+              ) : null}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CLOSE_PRESETS.map((preset) => (
+                <button
+                  key={preset.hours}
+                  type="button"
+                  onClick={() =>
+                    setClosesAt(
+                      toLocalInput(new Date(Date.now() + preset.hours * HOUR_MS).toISOString()),
+                    )
+                  }
+                  className="rounded-sm border border-border px-2 py-1 text-xs font-bold"
+                >
+                  +{preset.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-muted-foreground mt-2 text-xs">{closesDescription}</p>
           </div>
 
         </div>

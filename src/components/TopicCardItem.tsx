@@ -4,6 +4,7 @@ import type { TopicCard } from "@/lib/public.functions";
 import { SplitBar } from "./SplitBar";
 import { useT } from "@/lib/i18n";
 import { coverSrcSet, COVER_SIZES } from "@/lib/images";
+import { ClosingBadge } from "./TopicDeadline";
 
 export function TopicCardItem({ topic }: { topic: TopicCard }) {
   const t = useT();
@@ -42,6 +43,7 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
             #{tag}
           </span>
         ))}
+        <ClosingBadge closesAt={topic.closes_at} />
       </div>
 
       <h3 className="text-xl leading-tight group-hover:text-primary">{topic.title}</h3>

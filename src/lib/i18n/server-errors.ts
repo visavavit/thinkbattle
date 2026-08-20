@@ -34,4 +34,6 @@ export const serverMessagesTh: Record<string, string> = {
   "Not permitted for your role.": "บัญชีของคุณไม่มีสิทธิ์ดำเนินการนี้",
   "That already exists.": "รายการนี้มีอยู่แล้ว",
   "Admins only.": "เฉพาะผู้ดูแลระบบเท่านั้น",
+  "This debate has closed. Voting and comments are final.":
+    "ประเด็นนี้ปิดแล้ว ผลโหวตและความเห็นถือเป็นที่สิ้นสุด",
 };

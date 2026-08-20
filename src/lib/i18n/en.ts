@@ -60,6 +60,22 @@ export const en = {
   "topic.loadFailed": "This debate didn't load",
   "topic.notFound": "Debate not found",
 
+  // ---- closing / expiry
+  "closing.closed": "Closed",
+  "closing.final": "Final result",
+  "closing.closesIn": "Closes in {time}",
+  "closing.closesOn": "Voting closes {date}",
+  "closing.closedOn": "Voting closed {date}",
+  "closing.bannerTitle": "This debate is closed",
+  "closing.bannerBody":
+    "Voting, takes and reactions ended {date}. The split below is the final result — every take from both sides stays readable.",
+  "closing.soonTitle": "Voting closes in {time}",
+  "closing.soonBody": "After that the result is final: no more votes, takes or reactions.",
+  "time.days": "{n} days",
+  "time.hours": "{n} hours",
+  "time.minutes": "{n} minutes",
+  "time.seconds": "{n} seconds",
+
   // ---- vote / split bar
   "vote.pickHeading": "Cast your vote",
   "vote.castAria": "Vote {label}",
@@ -77,6 +93,8 @@ export const en = {
   "vote.suspendedVote": "Your account is suspended — voting is disabled.",
   "vote.suspendedReact": "Your account is suspended — reactions are disabled.",
   "vote.signInToReact": "Sign in to like or dislike.",
+  "vote.closed": "This debate is closed — the result is final.",
+  "vote.closedReact": "This debate is closed — reactions are final.",
 
   // ---- side switch dialog
   "switch.title": "Switch to {label}?",
@@ -112,6 +130,7 @@ export const en = {
   "comment.lockedOtherSide": "You voted for the other side — this column is read-only.",
   "comment.lockedVote": "Vote above to unlock this column.",
   "comment.lockedSignIn": "Sign in and vote to join this column.",
+  "comment.lockedClosed": "This debate is closed — the takes below are the final word.",
   "comment.empty": "No takes here yet. Be the first.",
   "comment.anonymous": "anonymous",
   "comment.changedMind": "Changed their mind",

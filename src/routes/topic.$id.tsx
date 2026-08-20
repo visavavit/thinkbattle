@@ -6,6 +6,7 @@ import { Discussion } from "@/components/Discussion";
 import { useAuth } from "@/hooks/useAuth";
 import { translate as tr, useT } from "@/lib/i18n";
 import { coverSrcSet, COVER_SIZES } from "@/lib/images";
+import { ClosingBadge } from "@/components/TopicDeadline";
 
 const topicQuery = (id: string) =>
   queryOptions({
@@ -85,6 +86,7 @@ function TopicPage() {
             #{tag}
           </span>
         ))}
+        <ClosingBadge closesAt={topic.closes_at} />
       </div>
 
       <h1 className="text-4xl sm:text-5xl">{topic.title}</h1>

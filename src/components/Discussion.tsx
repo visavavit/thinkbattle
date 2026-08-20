@@ -22,6 +22,8 @@ import { useBanStatus, useIsAdmin } from "@/hooks/useAuth";
 import { describeError } from "@/lib/admin";
 import { useI18n, useT, type TranslationKey } from "@/lib/i18n";
 import { getTopicCounts, type TopicCard } from "@/lib/public.functions";
+import { useTopicClock } from "@/lib/topic-clock";
+import { ClosingNotice, DeadlineLine } from "./TopicDeadline";
 import { SplitBar } from "./SplitBar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -80,6 +82,10 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const { t } = useI18n();
   const isAdmin = useIsAdmin(user);
   const { isBanned, reason: banReason } = useBanStatus(user);
+  // flips on its own the moment the deadline passes, so a reader who has had
+  // the page open since before it closed stops being offered the vote buttons
+  const clock = useTopicClock(topic.closes_at);
+  const isClosed = clock.isClosed;
   const [votesA, setVotesA] = useState(topic.votes_a);
   const [votesB, setVotesB] = useState(topic.votes_b);
   const [myVote, setMyVote] = useState<Side | null>(null);
@@ -269,7 +275,8 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     queryKey: ["topic-counts", topic.id],
     queryFn: () => getTopicCounts({ data: { id: topic.id } }),
     initialData: { votes_a: topic.votes_a, votes_b: topic.votes_b },
-    refetchInterval: 15_000,
+    // nothing can move the tally on a closed debate, so stop asking
+    refetchInterval: isClosed ? false : 15_000,
     refetchIntervalInBackground: false,
     staleTime: 10_000,
   });
@@ -393,6 +400,10 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const applyVote = useCallback(
     async (choice: Side) => {
       if (!user) return;
+      if (isClosed) {
+        toast.error(t("vote.closed"));
+        return;
+      }
       if (isBanned) {
         toast.error(t("vote.suspendedVote"));
         return;
@@ -425,7 +436,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
       }
     },
-    [user, isBanned, myVote, topic.id, topic.votes_a, topic.votes_b, queryClient, t],
+    [user, isClosed, isBanned, myVote, topic.id, topic.votes_a, topic.votes_b, queryClient, t],
   );
 
   // switching sides is not reversible for the reader's own history, so it is
@@ -434,14 +445,14 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
 
   const castVote = useCallback(
     (choice: Side) => {
-      if (!user) return;
+      if (!user || isClosed) return;
       if (myVote && myVote !== choice) {
         setPendingSide(choice);
         return;
       }
       void applyVote(choice);
     },
-    [user, myVote, applyVote],
+    [user, isClosed, myVote, applyVote],
   );
 
 
@@ -449,6 +460,10 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     async (commentId: string, value: 1 | -1) => {
       if (!user) {
         toast.error(t("vote.signInToReact"));
+        return;
+      }
+      if (isClosed) {
+        toast.error(t("vote.closedReact"));
         return;
       }
       if (isBanned) {
@@ -473,7 +488,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       queryClient.invalidateQueries({ queryKey: ["reactions", topic.id, user.id] });
       queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
     },
-    [user, isBanned, reactionsQuery.data, queryClient, topic.id],
+    [user, isClosed, isBanned, reactionsQuery.data, queryClient, topic.id, t],
   );
 
   const authors = commentsQuery.data?.authors ?? new Map<string, string>();
@@ -515,6 +530,8 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         </div>
       ) : null}
 
+      <ClosingNotice clock={clock} />
+
       <section className="arena-panel p-5">
         <SplitBar
           pctA={pctA}
@@ -528,31 +545,49 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         {/* Below sm the vote buttons stack into the same shape as the comment
             side switcher further down, and both carry the same two side
             labels. This says which one of them casts the vote. */}
-        <p className="mt-5 text-sm font-bold">{t("vote.pickHeading")}</p>
-        <div className="mt-2 grid gap-3 sm:grid-cols-2">
-          <VoteButton
-            side="a"
-            label={topic.choice_a}
-            active={myVote === "a"}
-            disabled={!user}
-            onClick={() => castVote("a")}
-          />
-          <VoteButton
-            side="b"
-            label={topic.choice_b}
-            active={myVote === "b"}
-            disabled={!user}
-            onClick={() => castVote("b")}
-          />
-        </div>
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          {t("vote.totalVotes", { n: total })}
-          {user ? (myVote ? t("vote.canSwitch") : t("vote.pickToUnlock")) : " — "}
-          {!user ? (
-            <Link to="/auth" className="font-bold text-primary underline">
-              {t("vote.signInToVote")}
-            </Link>
-          ) : null}
+        {/* A closed debate keeps the split and the labels but drops the vote
+            buttons entirely: the reader's own choice still shows on the bar
+            above, and there is nothing left to press. */}
+        <p className="mt-5 text-sm font-bold">
+          {isClosed ? t("closing.final") : t("vote.pickHeading")}
+        </p>
+        {isClosed ? null : (
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <VoteButton
+              side="a"
+              label={topic.choice_a}
+              active={myVote === "a"}
+              disabled={!user}
+              onClick={() => castVote("a")}
+            />
+            <VoteButton
+              side="b"
+              label={topic.choice_b}
+              active={myVote === "b"}
+              disabled={!user}
+              onClick={() => castVote("b")}
+            />
+          </div>
+        )}
+        <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm text-muted-foreground">
+          <span>
+            {t("vote.totalVotes", { n: total })}
+            {isClosed ? null : user ? (
+              myVote ? (
+                t("vote.canSwitch")
+              ) : (
+                t("vote.pickToUnlock")
+              )
+            ) : (
+              <>
+                {" — "}
+                <Link to="/auth" className="font-bold text-primary underline">
+                  {t("vote.signInToVote")}
+                </Link>
+              </>
+            )}
+          </span>
+          <DeadlineLine clock={clock} />
         </p>
       </section>
 
@@ -586,6 +621,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           onReact={react}
           isAdmin={isAdmin}
           isBanned={isBanned}
+          isClosed={isClosed}
           isActive={activeSide === "a"}
         />
         <CommentColumn
@@ -605,6 +641,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           onReact={react}
           isAdmin={isAdmin}
           isBanned={isBanned}
+          isClosed={isClosed}
           isActive={activeSide === "b"}
         />
 
@@ -823,6 +860,7 @@ function CommentColumn({
   onReact,
   isAdmin,
   isBanned,
+  isClosed,
   isActive,
 }: {
   side: Side;
@@ -844,6 +882,8 @@ function CommentColumn({
   onReact: (id: string, value: 1 | -1) => void;
   isAdmin: boolean;
   isBanned: boolean;
+  /** past its deadline: the takes below are an archive, not a conversation */
+  isClosed: boolean;
   /** below lg only the active column is shown; both stay mounted either way */
   isActive: boolean;
 }) {
@@ -876,7 +916,7 @@ function CommentColumn({
   const t = useT();
   const tError = useI18n().tError;
   const accent = side === "a" ? "border-side-a" : "border-side-b";
-  const canComment = myVote === side && !isBanned;
+  const canComment = myVote === side && !isBanned && !isClosed;
 
   async function submit() {
     const text = body.trim();
@@ -951,13 +991,15 @@ function CommentColumn({
       ) : (
         <div className="flex items-center gap-2 rounded-sm border border-dashed border-border p-3 text-sm text-muted-foreground">
           <Lock className="h-4 w-4" />
-          {isBanned
-            ? t("comment.lockedBanned")
-            : user
-              ? myVote
-                ? t("comment.lockedOtherSide")
-                : t("comment.lockedVote")
-              : t("comment.lockedSignIn")}
+          {isClosed
+            ? t("comment.lockedClosed")
+            : isBanned
+              ? t("comment.lockedBanned")
+              : user
+                ? myVote
+                  ? t("comment.lockedOtherSide")
+                  : t("comment.lockedVote")
+                : t("comment.lockedSignIn")}
         </div>
       )}
 
@@ -1017,12 +1059,14 @@ function CommentColumn({
                 count={row.likes_count}
                 onClick={() => onReact(row.id, 1)}
                 icon={<ThumbsUp className="h-3.5 w-3.5" />}
+                disabled={isClosed}
               />
               <ReactionButton
                 active={reactions[row.id] === -1}
                 count={row.dislikes_count}
                 onClick={() => onReact(row.id, -1)}
                 icon={<ThumbsDown className="h-3.5 w-3.5" />}
+                disabled={isClosed}
               />
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <Flame className="h-3.5 w-3.5" /> {row.controversy_score}
@@ -1055,6 +1099,7 @@ function CommentColumn({
               onReact={onReact}
               isAdmin={isAdmin}
               isBanned={isBanned}
+              isClosed={isClosed}
             />
           </li>
 
@@ -1089,6 +1134,7 @@ function ReplyThread({
   onReact,
   isAdmin,
   isBanned,
+  isClosed,
 }: {
   parent: CommentRow;
   replies: CommentRow[];
@@ -1102,13 +1148,14 @@ function ReplyThread({
   onReact: (id: string, value: 1 | -1) => void;
   isAdmin: boolean;
   isBanned: boolean;
+  isClosed: boolean;
 }) {
   const queryClient = useQueryClient();
   const { t, tError } = useI18n();
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
-  const canReply = Boolean(user) && myVote !== null && !isBanned && !parent.is_hidden;
+  const canReply = Boolean(user) && myVote !== null && !isBanned && !isClosed && !parent.is_hidden;
 
   async function submit() {
     const text = body.trim();
@@ -1164,12 +1211,14 @@ function ReplyThread({
                 count={reply.likes_count}
                 onClick={() => onReact(reply.id, 1)}
                 icon={<ThumbsUp className="h-3 w-3" />}
+                disabled={isClosed}
               />
               <ReactionButton
                 active={reactions[reply.id] === -1}
                 count={reply.dislikes_count}
                 onClick={() => onReact(reply.id, -1)}
                 icon={<ThumbsDown className="h-3 w-3" />}
+                disabled={isClosed}
               />
               <span className="ml-auto flex items-center gap-1">
                 {user && user.id !== reply.user_id && !isBanned ? (
@@ -1382,17 +1431,21 @@ function ReactionButton({
   count,
   onClick,
   icon,
+  disabled = false,
 }: {
   active: boolean;
   count: number;
   onClick: () => void;
   icon: React.ReactNode;
+  /** a closed debate keeps its scores on screen but stops taking new ones */
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-xs font-bold transition-colors ${
+      className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-xs font-bold transition-colors disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent ${
         active
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border hover:bg-accent"
