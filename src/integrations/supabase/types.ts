@@ -47,6 +47,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       bot_actions: {
         Row: {
           attempts: number
@@ -972,6 +990,10 @@ export type Database = {
       }
       refresh_trending_scores: { Args: never; Returns: undefined }
       resolve_tag_names: { Args: { _names: string[] }; Returns: string[] }
+      set_app_setting: {
+        Args: { _key: string; _value: string }
+        Returns: undefined
+      }
       topic_comment_authors: {
         Args: { _topic_id: string }
         Returns: {
