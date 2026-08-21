@@ -53,6 +53,8 @@ type CommentRow = {
   hidden_reason: string | null;
   created_at: string;
   parent_id: string | null;
+  /** AI-generated demo account — disclosed with a badge next to the name */
+  is_synthetic?: boolean;
 };
 
 /** What the ["comments", topicId, limit] query holds. */
@@ -1035,6 +1037,14 @@ function CommentColumn({
                 <span className="font-bold text-foreground">
                   {authors.get(row.user_id) ?? t("comment.anonymous")}
                 </span>
+                {row.is_synthetic ? (
+                  <span
+                    title={t("comment.aiTitle")}
+                    className="rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground"
+                  >
+                    {t("comment.ai")}
+                  </span>
+                ) : null}
                 {switched ? (
                   <span
                     title={t("comment.changedMindTitle", { label: otherLabel })}
