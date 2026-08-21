@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getFeed, getTaxonomy, type FeedTab, type TopicCard } from "@/lib/public.functions";
 import { TopicCardItem } from "@/components/TopicCardItem";
 import { readClock } from "@/lib/topic-clock";
+import { seoTags } from "@/lib/site";
 import { translate as tr, useT, type TranslationKey } from "@/lib/i18n";
 import { Input } from "@/components/ui/input";
 import {
