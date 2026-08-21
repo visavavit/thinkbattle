@@ -77,16 +77,22 @@ export const Route = createFileRoute("/browse")({
       context.queryClient.ensureQueryData(browseQuery(deps.sort, deps.category)),
     ]);
   },
-  head: () => ({
-    meta: [
-      { title: tr("meta.browse.title") },
-      { name: "description", content: tr("meta.browse.description") },
-      { property: "og:title", content: tr("meta.browse.title") },
-      { property: "og:description", content: tr("meta.browse.description") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () => {
+    // Filters live in the query string; the canonical target is the bare page.
+    const seo = seoTags("/browse");
+    return {
+      meta: [
+        { title: tr("meta.browse.title") },
+        { name: "description", content: tr("meta.browse.description") },
+        { property: "og:title", content: tr("meta.browse.title") },
+        { property: "og:description", content: tr("meta.browse.description") },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        ...seo.meta,
+      ],
+      links: seo.links,
+    };
+  },
   component: BrowsePage,
 });
 
