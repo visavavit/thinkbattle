@@ -83,7 +83,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: tr("meta.home.description") },
       { property: "og:title", content: tr("meta.home.title") },
       { property: "og:description", content: tr("meta.home.description") },
+      { property: "og:site_name", content: "toktiang.com" },
+      // Thai is the default, but the same pages ship an English toggle — declare
+      // both so an English share isn't mislabelled as Thai-only.
       { property: "og:locale", content: "th_TH" },
+      { property: "og:locale:alternate", content: "en_US" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -130,7 +134,19 @@ function AppFrame() {
         <Outlet />
       </main>
       <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">
-        {t("footer.tagline")}
+        <p>{t("footer.tagline")}</p>
+        <nav className="mt-2 flex flex-wrap justify-center gap-4">
+          <Link to="/about" className="hover:text-foreground">
+            {t("footer.about")}
+          </Link>
+          <Link to="/terms" className="hover:text-foreground">
+            {t("footer.terms")}
+          </Link>
+          <Link to="/privacy" className="hover:text-foreground">
+            {t("footer.privacy")}
+          </Link>
+        </nav>
+        <p className="mt-2">{t("footer.aiNotice")}</p>
       </footer>
     </div>
   );

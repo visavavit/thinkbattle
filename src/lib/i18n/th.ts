@@ -10,6 +10,12 @@ export const th: Dictionary = {
   "nav.signIn": "เข้าสู่ระบบ",
   "nav.signOut": "ออกจากระบบ",
   "footer.tagline": "ถกเถียง · สองทางเลือก รับฟังทั้งสองฝ่าย",
+  "footer.about": "เกี่ยวกับเรา",
+  "footer.terms": "ข้อกำหนดการใช้งาน",
+  "footer.privacy": "ความเป็นส่วนตัว",
+  "footer.aiNotice": "บางหัวข้อใหม่มีโหวตและความเห็นที่สร้างโดย AI โดยมีป้าย “AI” กำกับเสมอ",
+  "comment.ai": "AI",
+  "comment.aiTitle": "โพสโดยบัญชีสาธิตที่สร้างโดย AI ไม่ใช่คนจริง",
   "lang.switchToThai": "เปลี่ยนเป็นภาษาไทย",
   "lang.switchToEnglish": "เปลี่ยนเป็นภาษาอังกฤษ",
 

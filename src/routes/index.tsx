@@ -7,6 +7,7 @@ import { TopicCardItem } from "@/components/TopicCardItem";
 import { coverSrcSet } from "@/lib/images";
 import { SplitBar } from "@/components/SplitBar";
 import { translate as tr, useT, type TranslationKey } from "@/lib/i18n";
+import { seoTags } from "@/lib/site";
 import {
   Carousel,
   CarouselContent,
@@ -53,16 +54,21 @@ export const Route = createFileRoute("/")({
     ]);
   },
 
-  head: () => ({
-    meta: [
-      { title: tr("meta.home.title") },
-      { name: "description", content: tr("meta.home.description") },
-      { property: "og:title", content: tr("meta.home.title") },
-      { property: "og:description", content: tr("meta.home.description") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () => {
+    const seo = seoTags("/");
+    return {
+      meta: [
+        { title: tr("meta.home.title") },
+        { name: "description", content: tr("meta.home.description") },
+        { property: "og:title", content: tr("meta.home.title") },
+        { property: "og:description", content: tr("meta.home.description") },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        ...seo.meta,
+      ],
+      links: seo.links,
+    };
+  },
   component: Home,
 });
 
