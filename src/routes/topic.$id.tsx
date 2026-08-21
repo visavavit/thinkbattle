@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { translate as tr, useT } from "@/lib/i18n";
 import { coverSrcSet, COVER_SIZES } from "@/lib/images";
 import { ClosingBadge } from "@/components/TopicDeadline";
+import { seoTags } from "@/lib/site";
 
 const topicQuery = (id: string) =>
   queryOptions({
@@ -18,7 +19,13 @@ export const Route = createFileRoute("/topic/$id")({
   loader: async ({ context, params }) => {
     const topic = await context.queryClient.ensureQueryData(topicQuery(params.id));
     if (!topic) throw notFound();
-    return { title: topic.title, choiceA: topic.choice_a, choiceB: topic.choice_b };
+    return {
+      id: topic.id,
+      title: topic.title,
+      choiceA: topic.choice_a,
+      choiceB: topic.choice_b,
+      cover: topic.cover_image_url,
+    };
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
@@ -28,6 +35,9 @@ export const Route = createFileRoute("/topic/$id")({
     }
     const title = `${loaderData.title} — ถกเถียง`;
     const description = tr("meta.topic.description", { a: loaderData.choiceA, b: loaderData.choiceB });
+    // A debate's cover is its share card; topics without one fall back to the
+    // site card so a share is never a bare text link.
+    const seo = seoTags(`/topic/${loaderData.id}`, loaderData.cover);
     return {
       meta: [
         { title },
@@ -36,7 +46,9 @@ export const Route = createFileRoute("/topic/$id")({
         { property: "og:description", content: description },
         { property: "og:type", content: "article" },
         { name: "twitter:card", content: "summary_large_image" },
+        ...seo.meta,
       ],
+      links: seo.links,
     };
   },
   errorComponent: () => <TopicFallback titleKey="topic.loadFailed" />,
