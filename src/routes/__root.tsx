@@ -146,7 +146,6 @@ function AppFrame() {
             {t("footer.privacy")}
           </Link>
         </nav>
-        <p className="mt-2">{t("footer.aiNotice")}</p>
       </footer>
     </div>
   );
