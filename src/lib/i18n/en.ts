@@ -11,9 +11,6 @@ export const en = {
   "footer.about": "About",
   "footer.terms": "Terms",
   "footer.privacy": "Privacy",
-  "footer.aiNotice": "Some new topics include AI-generated votes and comments, always labelled \u201cAI\u201d.",
-  "comment.ai": "AI",
-  "comment.aiTitle": "Posted by an AI-generated demo account, not a real person.",
   "lang.switchToThai": "Switch to Thai",
   "lang.switchToEnglish": "Switch to English",
 
