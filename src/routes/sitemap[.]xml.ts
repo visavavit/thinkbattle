@@ -42,7 +42,7 @@ async function publishedTopics(): Promise<Row[]> {
   return (data ?? []) as Row[];
 }
 
-export const Route = createFileRoute("/sitemap[.]xml")({
+export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
