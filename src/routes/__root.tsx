@@ -134,7 +134,19 @@ function AppFrame() {
         <Outlet />
       </main>
       <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">
-        {t("footer.tagline")}
+        <p>{t("footer.tagline")}</p>
+        <nav className="mt-2 flex flex-wrap justify-center gap-4">
+          <Link to="/about" className="hover:text-foreground">
+            {t("footer.about")}
+          </Link>
+          <Link to="/terms" className="hover:text-foreground">
+            {t("footer.terms")}
+          </Link>
+          <Link to="/privacy" className="hover:text-foreground">
+            {t("footer.privacy")}
+          </Link>
+        </nav>
+        <p className="mt-2">{t("footer.aiNotice")}</p>
       </footer>
     </div>
   );
