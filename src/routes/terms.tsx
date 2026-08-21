@@ -4,7 +4,7 @@ import { seoTags } from "@/lib/site";
 
 const TITLE = "ข้อกำหนดการใช้งาน — Terms of Use | toktiang.com";
 const DESCRIPTION =
-  "Terms of use for toktiang.com: accounts, acceptable content, moderation, bans, and the AI-generated audience policy.";
+  "Terms of use for toktiang.com: accounts, acceptable content, moderation, and bans.";
 
 export const Route = createFileRoute("/terms")({
   head: () => {
@@ -57,23 +57,17 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         ],
       },
       {
-        heading: "5. ผู้ชมที่สร้างโดย AI",
-        body: [
-          "เว็บไซต์อาจแสดงโหวตและความเห็นที่สร้างโดย AI เพื่อเปิดหัวข้อใหม่ ความเห็นเหล่านี้จะมีป้ายกำกับ “AI” เสมอ อ่านรายละเอียดได้ที่หน้าเกี่ยวกับเรา",
-        ],
-      },
-      {
-        heading: "6. ข้อจำกัดความรับผิด",
+        heading: "5. ข้อจำกัดความรับผิด",
         body: [
           "เว็บไซต์ให้บริการ “ตามสภาพ” เนื้อหาส่วนใหญ่มาจากผู้ใช้และไม่ได้สะท้อนความเห็นของเรา เราไม่รับผิดต่อความเสียหายที่เกิดจากการใช้งานเว็บไซต์",
         ],
       },
       {
-        heading: "7. การเปลี่ยนแปลง",
+        heading: "6. การเปลี่ยนแปลง",
         body: ["เราอาจปรับปรุงข้อกำหนดนี้เป็นครั้งคราว การใช้งานต่อถือว่ายอมรับฉบับล่าสุด"],
       },
       {
-        heading: "8. ติดต่อ",
+        heading: "7. ติดต่อ",
         body: ["สอบถามหรือแจ้งปัญหา: hello@toktiang.com"],
       },
     ],
@@ -107,23 +101,17 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         ],
       },
       {
-        heading: "5. AI-generated audience",
-        body: [
-          "The site may display AI-generated votes and comments to open up new topics. Those comments always carry an “AI” label. See the About page for details.",
-        ],
-      },
-      {
-        heading: "6. Disclaimer",
+        heading: "5. Disclaimer",
         body: [
           "The service is provided “as is”. Most content is user-generated and does not represent our views. We are not liable for damages arising from use of the site.",
         ],
       },
       {
-        heading: "7. Changes",
+        heading: "6. Changes",
         body: ["We may update these terms. Continued use means you accept the current version."],
       },
       {
-        heading: "8. Contact",
+        heading: "7. Contact",
         body: ["Questions or reports: hello@toktiang.com"],
       },
     ],

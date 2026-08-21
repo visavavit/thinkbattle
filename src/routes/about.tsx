@@ -4,7 +4,7 @@ import { seoTags } from "@/lib/site";
 
 const TITLE = "เกี่ยวกับถกเถียง — About toktiang.com";
 const DESCRIPTION =
-  "How toktiang.com works, how debates are ranked, and our disclosure about AI-generated demo accounts.";
+  "How toktiang.com works and how debates are ranked on toktiang.com.";
 
 export const Route = createFileRoute("/about")({
   head: () => {
@@ -38,14 +38,6 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         ],
       },
       {
-        heading: "การเปิดเผยเรื่องบัญชีที่สร้างโดย AI",
-        body: [
-          "บางหัวข้อ โดยเฉพาะช่วงเปิดตัวหรือหัวข้อใหม่ อาจมีโหวตและความเห็นจาก “ผู้ชมสังเคราะห์” ที่สร้างด้วย AI เพื่อให้หน้าหัวข้อไม่ว่างเปล่าและเห็นภาพว่าการถกเถียงหน้าตาเป็นอย่างไร",
-          "ความเห็นเหล่านี้จะมีป้ายกำกับ “AI” ติดอยู่เสมอ ผู้ดูแลเป็นผู้เปิดใช้เท่านั้น และบัญชีเหล่านี้จะไม่ส่งการแจ้งเตือนถึงคุณ",
-          "เราจะไม่ใช้บัญชีเหล่านี้ปลอมเป็นคนจริง ไม่นำไปใช้คุกคามผู้ใช้ และคุณสามารถกรองดูเฉพาะความเห็นของคนจริงได้จากป้ายกำกับ",
-        ],
-      },
-      {
         heading: "การดูแลชุมชน",
         body: [
           "มีระบบจำกัดการโพสต์ถี่ ระบบรายงานความเห็น และผู้ดูแลสามารถซ่อนความเห็นหรือระงับบัญชีที่ละเมิดกติกาได้ รายละเอียดอยู่ในหน้าข้อกำหนดการใช้งาน",
@@ -62,14 +54,6 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         body: [
           "toktiang.com is a binary voting arena. Every topic has exactly two sides: pick one, then argue for it in that side's column.",
           "Comments can be ranked by top, newest, or “Wild Takes” — the ranking that surfaces comments people liked and disliked in roughly equal measure, because that is where the actual debate is.",
-        ],
-      },
-      {
-        heading: "Disclosure: AI-generated accounts",
-        body: [
-          "Some topics — especially new or launch-period ones — carry votes and comments from an AI-generated “synthetic audience”, so a fresh topic isn't an empty room.",
-          "Those comments always carry an “AI” label. Only admins can run them, and they never send you notifications.",
-          "We do not use these accounts to impersonate specific real people or to harass anyone, and the label lets you tell them apart at a glance.",
         ],
       },
       {
