@@ -1215,6 +1215,14 @@ function ReplyThread({
               >
                 {replySide === "a" ? labelA : labelB}
               </span>
+              {reply.is_synthetic ? (
+                <span
+                  title={t("comment.aiTitle")}
+                  className="rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground"
+                >
+                  {t("comment.ai")}
+                </span>
+              ) : null}
               {reply.is_hidden ? (
                 <span className="font-medium text-destructive">{t("comment.hidden")}</span>
               ) : null}
