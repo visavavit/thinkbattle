@@ -83,7 +83,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: tr("meta.home.description") },
       { property: "og:title", content: tr("meta.home.title") },
       { property: "og:description", content: tr("meta.home.description") },
+      { property: "og:site_name", content: "toktiang.com" },
+      // Thai is the default, but the same pages ship an English toggle — declare
+      // both so an English share isn't mislabelled as Thai-only.
       { property: "og:locale", content: "th_TH" },
+      { property: "og:locale:alternate", content: "en_US" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
