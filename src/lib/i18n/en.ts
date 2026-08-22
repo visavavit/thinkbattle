@@ -256,10 +256,7 @@ export const en = {
   "meta.topic.unavailable": "Debate unavailable — toktiang.com",
   "meta.topic.description":
     "{a} vs {b}. Vote, then defend your side in the split comment columns.",
-} as const;
-
-export type TranslationKey = keyof typeof en;
-export type Dictionary = Record<TranslationKey, string>;  // ---- account panel
+  // ---- account panel
   "account.title": "Your account",
   "account.profileTitle": "Profile",
   "account.profileHint": "Your display name and avatar appear on every take you post.",
@@ -291,4 +288,7 @@ export type Dictionary = Record<TranslationKey, string>;  // ---- account panel
   "account.errAdminDelete": "Admin accounts cannot be deleted here.",
   "account.errDeleteFailed": "Could not delete your account. Try again.",
   "nav.account": "Account",
+} as const;
 
+export type TranslationKey = keyof typeof en;
+export type Dictionary = Record<TranslationKey, string>;
