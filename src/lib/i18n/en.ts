@@ -259,4 +259,36 @@ export const en = {
 } as const;
 
 export type TranslationKey = keyof typeof en;
-export type Dictionary = Record<TranslationKey, string>;
+export type Dictionary = Record<TranslationKey, string>;  // ---- account panel
+  "account.title": "Your account",
+  "account.profileTitle": "Profile",
+  "account.profileHint": "Your display name and avatar appear on every take you post.",
+  "account.displayName": "Display name",
+  "account.uploadAvatar": "Upload avatar",
+  "account.removeAvatar": "Remove",
+  "account.save": "Save changes",
+  "account.savedProfile": "Profile updated",
+  "account.errNameLength": "Display name must be 3-24 characters.",
+  "account.errNameTaken": "That display name is already taken.",
+  "account.errSaveFailed": "Could not save your profile. Try again.",
+  "account.passwordTitle": "Password",
+  "account.passwordHint": "Set a new password for signing in with email.",
+  "account.passwordGoogle": "You sign in with Google, so there is no password to change.",
+  "account.newPassword": "New password",
+  "account.confirmPassword": "Confirm new password",
+  "account.updatePassword": "Update password",
+  "account.savedPassword": "Password updated",
+  "account.errPasswordShort": "Password must be at least 6 characters.",
+  "account.errPasswordMismatch": "The two passwords do not match.",
+  "account.deleteTitle": "Delete account",
+  "account.deleteHint": "Your login is removed for good. Past takes stay in their threads under a deleted-user name.",
+  "account.deleteButton": "Delete account",
+  "account.deleteConfirmTitle": "Delete your account?",
+  "account.deleteConfirmBody": "This cannot be undone. Your sign-in, notifications and profile are removed. Comments and votes remain, shown as a deleted user.",
+  "account.deleteConfirmLabel": "Type DELETE to confirm",
+  "account.deleted": "Your account has been deleted.",
+  "account.cancel": "Cancel",
+  "account.errAdminDelete": "Admin accounts cannot be deleted here.",
+  "account.errDeleteFailed": "Could not delete your account. Try again.",
+  "nav.account": "Account",
+
