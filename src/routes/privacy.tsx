@@ -47,7 +47,7 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
       {
         heading: "การจัดเก็บและผู้ให้บริการ",
         body: [
-          "ข้อมูลจัดเก็บบนโครงสร้างพื้นฐานฐานข้อมูลและโฮสติ้งของผู้ให้บริการภายนอก (Supabase และ Cloudflare) รูปภาพจัดเก็บบน Cloudflare R2 ความเห็นที่สร้างโดย AI ประมวลผลผ่านผู้ให้บริการโมเดล AI",
+          "ข้อมูลจัดเก็บบนโครงสร้างพื้นฐานฐานข้อมูลและโฮสติ้งของผู้ให้บริการภายนอก (Supabase และ Cloudflare) รูปภาพจัดเก็บบน Cloudflare R2",
         ],
       },
       {
@@ -85,7 +85,7 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
       {
         heading: "Storage and processors",
         body: [
-          "Data is stored with third-party database and hosting providers (Supabase and Cloudflare). Images are stored in Cloudflare R2. AI-generated comments are produced via an AI model provider.",
+          "Data is stored with third-party database and hosting providers (Supabase and Cloudflare). Images are stored in Cloudflare R2.",
         ],
       },
       {
