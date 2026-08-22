@@ -60,9 +60,14 @@ export function SiteHeader() {
           <NotificationBell user={user} />
           <SuggestTopicDialog user={user} />
           {user ? (
-            <Button variant="outline" size="sm" onClick={signOut}>
-              {t("nav.signOut")}
-            </Button>
+            <>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/account">{t("nav.account")}</Link>
+              </Button>
+              <Button variant="outline" size="sm" onClick={signOut}>
+                {t("nav.signOut")}
+              </Button>
+            </>
           ) : (
             <Button asChild size="sm">
               <Link to="/auth">{t("nav.signIn")}</Link>
