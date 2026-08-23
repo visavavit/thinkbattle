@@ -111,25 +111,25 @@ function Home() {
                     {t("home.headliner")}
                   </span>
                   {headliner.cover_image_url ? (
-                    // The title link below is the only interactive stop for this
-                    // slide; keeping the image as a plain image avoids a duplicate
-                    // focus target and prevents aria-hidden/focus conflicts.
-                    <div className="mb-5">
+                    <Link
+                      to="/topic/$id"
+                      params={{ id: headliner.id }}
+                      aria-label={t("home.readTopic", { title: headliner.title })}
+                      className="mb-5 block"
+                    >
                       <img
                         src={headliner.cover_image_url}
                         srcSet={coverSrcSet(headliner.cover_image_url)}
                         sizes="(min-width: 1024px) 1024px, 100vw"
-                        alt={headliner.title}
-                        // only the first slide is visible on load — the rest are
-                        // off-screen and must not compete with it for bandwidth
+                        alt=""
                         fetchPriority={slideIndex === 0 ? "high" : "low"}
                         loading={slideIndex === 0 ? "eager" : "lazy"}
                         decoding="async"
                         width={1200}
                         height={675}
-                        className="aspect-[21/9] w-full rounded-md object-cover"
+                        className="aspect-[21/9] w-full rounded-md object-cover transition-opacity hover:opacity-95"
                       />
-                    </div>
+                    </Link>
                   ) : null}
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     {headliner.category_emoji} {headliner.category_name} ·{" "}
