@@ -47,6 +47,7 @@ export const th: Dictionary = {
   "home.heroSub":
     "ร่วมโหวตประเด็นที่สังคมกำลังถกเถียง แล้วอ่านเหตุผลที่ดีที่สุดจากทั้งสองฝ่ายเคียงข้างกัน",
   "home.headliner": "⚡ ประเด็นเด่น",
+  "home.readTopic": "อ่าน: {title}",
   "home.castVote": "ร่วมโหวต",
   "home.emptyTab": "ยังไม่มีประเด็นในหมวดนี้ — ลองเลือกตัวกรองอื่น",
   "tab.trending": "กำลังมาแรง",
