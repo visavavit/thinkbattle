@@ -111,16 +111,10 @@ function Home() {
                     {t("home.headliner")}
                   </span>
                   {headliner.cover_image_url ? (
-                    // Hidden from assistive tech: the title link right below points at
-                    // the same topic with the same text, so exposing both would only
-                    // add a duplicate stop.
-                    <Link
-                      to="/topic/$id"
-                      params={{ id: headliner.id }}
-                      aria-hidden
-                      tabIndex={-1}
-                      className="mb-5 block"
-                    >
+                    // The title link below is the only interactive stop for this
+                    // slide; keeping the image as a plain image avoids a duplicate
+                    // focus target and prevents aria-hidden/focus conflicts.
+                    <div className="mb-5">
                       <img
                         src={headliner.cover_image_url}
                         srcSet={coverSrcSet(headliner.cover_image_url)}
@@ -133,9 +127,9 @@ function Home() {
                         decoding="async"
                         width={1200}
                         height={675}
-                        className="aspect-[21/9] w-full rounded-md object-cover transition-opacity hover:opacity-90"
+                        className="aspect-[21/9] w-full rounded-md object-cover"
                       />
-                    </Link>
+                    </div>
                   ) : null}
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     {headliner.category_emoji} {headliner.category_name} ·{" "}
