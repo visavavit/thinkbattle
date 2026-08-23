@@ -351,6 +351,7 @@ export type Database = {
           is_hidden: boolean
           is_synthetic: boolean
           likes_count: number
+          net_score: number | null
           parent_id: string | null
           side: string
           topic_id: string
@@ -368,6 +369,7 @@ export type Database = {
           is_hidden?: boolean
           is_synthetic?: boolean
           likes_count?: number
+          net_score?: number | null
           parent_id?: string | null
           side: string
           topic_id: string
@@ -385,6 +387,7 @@ export type Database = {
           is_hidden?: boolean
           is_synthetic?: boolean
           likes_count?: number
+          net_score?: number | null
           parent_id?: string | null
           side?: string
           topic_id?: string
@@ -1002,6 +1005,25 @@ export type Database = {
         }[]
       }
       topic_is_closed: { Args: { _topic_id: string }; Returns: boolean }
+      topic_ranked_comments: {
+        Args: { _per_side?: number; _topic_id: string }
+        Returns: {
+          body: string
+          controversy_score: number
+          created_at: string
+          dislikes_count: number
+          hidden_reason: string
+          id: string
+          is_hidden: boolean
+          is_synthetic: boolean
+          likes_count: number
+          net_score: number
+          parent_id: string
+          side: string
+          topic_id: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
