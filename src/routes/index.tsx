@@ -102,7 +102,24 @@ function Home() {
       </section>
 
       {headliners.length > 0 ? (
-        <Carousel opts={{ loop: headliners.length > 1, align: "start" }} className="relative">
+        <Carousel
+          opts={{
+            loop: headliners.length > 1,
+            align: "start",
+            // Embla cancels the click when a pointer travels past dragThreshold
+            // before release, so the two options below decide whether a link in
+            // the hero is reachable at all.
+            //
+            // A lone headliner has nowhere to swipe to, so its gesture handling
+            // could only ever eat a tap on the topic — turn it off entirely.
+            watchDrag: headliners.length > 1,
+            // The 10px default sits inside the slop of an ordinary tap: a finger
+            // or a mouse that slides a little on the way down still means "open
+            // this". A deliberate swipe travels far more than 24px.
+            dragThreshold: 24,
+          }}
+          className="relative"
+        >
           <CarouselContent>
             {headliners.map((headliner, slideIndex) => (
               <CarouselItem key={headliner.id}>
@@ -115,6 +132,7 @@ function Home() {
                       to="/topic/$id"
                       params={{ id: headliner.id }}
                       aria-label={t("home.readTopic", { title: headliner.title })}
+                      draggable={false}
                       className="mb-5 block"
                     >
                       <img
@@ -122,6 +140,9 @@ function Home() {
                         srcSet={coverSrcSet(headliner.cover_image_url)}
                         sizes="(min-width: 1024px) 1024px, 100vw"
                         alt=""
+                        // Without this the browser starts its own image drag on
+                        // any pointer slip and drops the click that follows.
+                        draggable={false}
                         fetchPriority={slideIndex === 0 ? "high" : "low"}
                         loading={slideIndex === 0 ? "eager" : "lazy"}
                         decoding="async"
@@ -139,6 +160,7 @@ function Home() {
                     <Link
                       to="/topic/$id"
                       params={{ id: headliner.id }}
+                      draggable={false}
                       className="transition-colors hover:text-primary"
                     >
                       {headliner.title}
@@ -157,6 +179,7 @@ function Home() {
                   <Link
                     to="/topic/$id"
                     params={{ id: headliner.id }}
+                    draggable={false}
                     className="mt-5 inline-block rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                   >
                     {t("home.castVote")}

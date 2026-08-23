@@ -9,9 +9,14 @@ import { ClosingBadge } from "./TopicDeadline";
 export function TopicCardItem({ topic }: { topic: TopicCard }) {
   const t = useT();
   return (
+    // draggable={false} on the card and its cover: otherwise a pointer that
+    // slips a few pixels between press and release starts the browser's own
+    // link/image drag, and the click that would have opened the topic is never
+    // dispatched — the card just sits there.
     <Link
       to="/topic/$id"
       params={{ id: topic.id }}
+      draggable={false}
       className="arena-panel group flex flex-col overflow-hidden transition-shadow hover:shadow-md"
     >
       {topic.cover_image_url ? (
@@ -20,6 +25,7 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
           srcSet={coverSrcSet(topic.cover_image_url)}
           sizes={COVER_SIZES}
           alt={topic.title}
+          draggable={false}
           loading="lazy"
           decoding="async"
           width={1200}

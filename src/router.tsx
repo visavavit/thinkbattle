@@ -25,6 +25,12 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // Nothing on screen changes while a route's loader runs, so a click on a
+    // topic reads as a dead link until the server answers. Starting the load on
+    // hover or touchstart usually has the data ready by the time the click
+    // lands. defaultPreloadStaleTime below keeps a hovered route from being
+    // fetched again on every pass.
+    defaultPreload: "intent",
     defaultPreloadStaleTime: 30_000,
   });
 
