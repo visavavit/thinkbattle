@@ -156,6 +156,9 @@ export const en = {
   "comment.hidden": "Hidden by a moderator",
   "comment.wildTake": "Wild take",
   "comment.topTake": "Top take",
+  "comment.sectionTop": "Top takes",
+  "comment.sectionLatest": "Latest",
+  "comment.yours": "Your take",
 
   // ---- replies
   "reply.action": "Reply",

@@ -158,6 +158,9 @@ export const th: Dictionary = {
   "comment.hidden": "ถูกซ่อนโดยผู้ดูแล",
   "comment.wildTake": "ความเห็นสุดขั้ว",
   "comment.topTake": "ความเห็นเด่น",
+  "comment.sectionTop": "ความเห็นเด่น",
+  "comment.sectionLatest": "ล่าสุด",
+  "comment.yours": "ความเห็นของคุณ",
 
   // ---- replies
   "reply.action": "ตอบกลับ",

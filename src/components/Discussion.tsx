@@ -72,6 +72,74 @@ type CommentsCache = {
  */
 const COMMENT_PAGE_SIZE = 50;
 
+/**
+ * How many takes the Top view pins above the feed. Kept deliberately small:
+ * these cards are tall, and below lg only one column is on screen at a time, so
+ * a wider band would push every fresh take off the first screen — and a pin
+ * only reads as a prize while it is scarce.
+ */
+const PIN_COUNT = 3;
+
+/**
+ * Below this a column is short enough that everyone reads all of it, and a
+ * "top 3" band would just be most of the list wearing a badge.
+ */
+const MIN_ROWS_FOR_PINS = 6;
+
+/** How long a revealed take keeps its ring. */
+const FLASH_MS = 2500;
+
+const netOf = (r: CommentRow) => (r.likes_count ?? 0) - (r.dislikes_count ?? 0);
+
+const controversyOf = (r: CommentRow) =>
+  (r.likes_count ?? 0) + (r.dislikes_count ?? 0) - Math.abs(netOf(r));
+
+// Every comparator falls through to recency. Without that last step ties were
+// left to sort stability, so a take's position depended on the order the page
+// happened to arrive in.
+const byNewest = (a: CommentRow, b: CommentRow) => b.created_at.localeCompare(a.created_at);
+
+const byNetScore = (a: CommentRow, b: CommentRow) =>
+  netOf(b) - netOf(a) || b.likes_count - a.likes_count || byNewest(a, b);
+
+const byControversy = (a: CommentRow, b: CommentRow) =>
+  b.controversy_score - a.controversy_score ||
+  b.likes_count + b.dislikes_count - (a.likes_count + a.dislikes_count) ||
+  byNewest(a, b);
+
+/**
+ * Brings one take on screen and marks it — used both by a notification deep
+ * link and by the reader's own freshly posted take, which the Top ranking would
+ * otherwise bury below every upvoted argument in the column.
+ *
+ * The node may not be there yet (a refetch still in flight) or may be
+ * display:none (the column that is collapsed below lg), so this retries instead
+ * of firing once. Returns a cancel for the retry loop — clearing the ring is
+ * left to whoever owns the flash, so that a re-render cannot strand it.
+ */
+function revealComment(id: string, flash: (id: string) => void, tries = 8) {
+  let left = tries;
+  let timer: ReturnType<typeof setTimeout>;
+
+  const run = () => {
+    const el = document.getElementById(`comment-${id}`);
+    if (!el || el.offsetParent === null) {
+      if (left-- > 0) timer = setTimeout(run, 60);
+      return;
+    }
+    // yanking a take that is already in front of the reader reads as a glitch
+    const box = el.getBoundingClientRect();
+    if (box.top < 0 || box.bottom > window.innerHeight) {
+      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
+    }
+    flash(id);
+  };
+
+  timer = setTimeout(run, 0);
+  return () => clearTimeout(timer);
+}
+
 
 const SORTS: { key: SortKey; labelKey: TranslationKey; icon: typeof Star }[] = [
   { key: "top", labelKey: "sort.top", icon: Star },
@@ -93,7 +161,24 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const [myVote, setMyVote] = useState<Side | null>(null);
   // which column is on screen below lg, where only one fits at a time
   const [activeSide, setActiveSide] = useState<Side>("a");
+  // the take currently wearing the reveal ring — held here rather than written
+  // straight onto the node, because the refetch that follows a post re-renders
+  // the list and would wipe a hand-applied class off it
+  const [flashId, setFlashId] = useState<string | null>(null);
   const columnsRef = useRef<HTMLDivElement>(null);
+  // cancels an in-flight reveal, and only on unmount: tearing it down whenever
+  // the row pool changes would cancel the retry before the node ever appeared
+  const revealRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => revealRef.current?.(), []);
+
+  // The ring clears on its own timer rather than inside the reveal, so a
+  // re-render mid-flash cannot strand it on screen. Re-running for a second
+  // take cancels the first timer, which is exactly right.
+  useEffect(() => {
+    if (!flashId) return;
+    const timer = setTimeout(() => setFlashId(null), FLASH_MS);
+    return () => clearTimeout(timer);
+  }, [flashId]);
 
   const selectSide = useCallback((side: Side) => {
     setActiveSide(side);
@@ -187,6 +272,46 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     },
   });
 
+  // The page above is ordered by recency, so on a long thread the genuinely
+  // top-ranked takes can sit outside it entirely — which made "Top take" mean
+  // no more than "top of the last 50". This pulls them in by name: the best and
+  // the wildest of each side, plus their replies, so the ranking the reader
+  // sees is the whole debate's.
+  const pinsQuery = useQuery({
+    queryKey: ["comment-pins", topic.id],
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("topic_ranked_comments", {
+        _topic_id: topic.id,
+        _per_side: PIN_COUNT,
+      });
+      if (error) throw error;
+      const rows = (data ?? []) as unknown as CommentRow[];
+
+      // resolved here rather than leaning on the page's lookup, which only ever
+      // sees the ids it fetched itself
+      const ids = [...new Set(rows.map((r) => r.user_id))];
+      const authors = new Map<string, string>();
+      if (ids.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", ids);
+        for (const profile of profiles ?? []) authors.set(profile.id, profile.username);
+      }
+      return { rows, authors };
+    },
+  });
+
+  // Pins first, page rows second: the page copy is the one realtime and
+  // invalidation keep current, so it has to win on an id collision.
+  const allRows = useMemo(() => {
+    const pool = new Map<string, CommentRow>();
+    for (const row of pinsQuery.data?.rows ?? []) pool.set(row.id, row);
+    for (const row of commentsQuery.data?.rows ?? []) pool.set(row.id, row);
+    return [...pool.values()];
+  }, [pinsQuery.data?.rows, commentsQuery.data?.rows]);
+
   // A notification links straight at a take: /topic/$id#comment-<uuid>. The
   // target can sit past the loaded page, or in the column that is collapsed on
   // mobile, so resolve both before scrolling.
@@ -196,10 +321,9 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const revealedFor = useRef<string | null>(null);
 
   useEffect(() => {
-    const rows = commentsQuery.data?.rows;
-    if (!targetId || !rows) return;
+    if (!targetId || allRows.length === 0) return;
 
-    const target = rows.find((r) => r.id === targetId);
+    const target = allRows.find((r) => r.id === targetId);
     if (!target) {
       // older than the page we hold — reach back for it, but not forever
       if (!commentsQuery.data?.hasMore) return;
@@ -217,25 +341,13 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     revealedFor.current = targetId;
 
     // a reply lives under its parent, which is what decides the column
-    const parent = target.parent_id ? rows.find((r) => r.id === target.parent_id) : target;
+    const parent = target.parent_id ? allRows.find((r) => r.id === target.parent_id) : target;
     if (parent) setActiveSide(parent.side as Side);
 
     // the column may need a paint to un-hide before it can be scrolled to
-    let tries = 8;
-    let timer: ReturnType<typeof setTimeout>;
-    const reveal = () => {
-      const el = document.getElementById(`comment-${targetId}`);
-      if (!el || el.offsetParent === null) {
-        if (tries-- > 0) timer = setTimeout(reveal, 60);
-        return;
-      }
-      el.scrollIntoView({ block: "center", behavior: "smooth" });
-      el.classList.add("ring-2", "ring-primary");
-      timer = setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 2500);
-    };
-    timer = setTimeout(reveal, 0);
-    return () => clearTimeout(timer);
-  }, [targetId, commentsQuery.data]);
+    revealRef.current?.();
+    revealRef.current = revealComment(targetId, setFlashId);
+  }, [targetId, allRows, commentsQuery.data?.hasMore]);
 
   // who has since voted for the other side — powers the "Changed their mind" badge
   const authorSidesQuery = useQuery({
@@ -256,7 +368,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     queryKey: ["reactions", topic.id, user?.id ?? "anon"],
     enabled: Boolean(user),
     queryFn: async () => {
-      const ids = (commentsQuery.data?.rows ?? []).map((r) => r.id);
+      const ids = allRows.map((r) => r.id);
       if (ids.length === 0) return {} as Record<string, number>;
       const { data } = await supabase
         .from("comment_reactions")
@@ -441,6 +553,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       if (previous && previous !== choice) {
         toast.success(t("vote.switched"));
         queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
+        queryClient.invalidateQueries({ queryKey: ["comment-pins", topic.id] });
       }
     },
     [user, isClosed, isBanned, myVote, topic.id, topic.votes_a, topic.votes_b, queryClient, t],
@@ -462,6 +575,33 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     [user, isClosed, myVote, applyVote],
   );
 
+
+  /**
+   * Called once a take or reply has landed. Seeding the cache here means the
+   * node exists on the very next paint, so the reveal never has to race the
+   * refetch — and the reader sees where their own words went instead of having
+   * to go hunting for them under the ranked takes.
+   */
+  const onPosted = useCallback(
+    (row: CommentRow) => {
+      queryClient.setQueryData<CommentsCache>(commentsKeyRef.current, (prev) => {
+        if (!prev) return prev;
+        // the same dedupe the realtime handler uses, so the socket echo of the
+        // reader's own insert cannot double the row
+        if (prev.rows.some((r) => r.id === row.id)) return prev;
+        const authors = new Map(prev.authors);
+        const name = user?.user_metadata?.["username"] as string | undefined;
+        // without this the poster's own take reads "anonymous" for a beat
+        if (name && !authors.has(row.user_id)) authors.set(row.user_id, name);
+        return { ...prev, rows: [row, ...prev.rows], authors };
+      });
+      // wider retry budget than a deep link gets: an anonymous reader holds no
+      // socket, so the node may have to wait on the invalidation refetch
+      revealRef.current?.();
+      revealRef.current = revealComment(row.id, setFlashId, 40);
+    },
+    [queryClient, user],
+  );
 
   const react = useCallback(
     async (commentId: string, value: 1 | -1) => {
@@ -494,16 +634,22 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       }
       queryClient.invalidateQueries({ queryKey: ["reactions", topic.id, user.id] });
       queryClient.invalidateQueries({ queryKey: ["comments", topic.id] });
+      // a reaction re-ranks the column, so the pin set can move with it
+      queryClient.invalidateQueries({ queryKey: ["comment-pins", topic.id] });
     },
     [user, isClosed, isBanned, reactionsQuery.data, queryClient, topic.id, t],
   );
 
-  const authors = commentsQuery.data?.authors ?? new Map<string, string>();
+  const authors = useMemo(() => {
+    const merged = new Map(pinsQuery.data?.authors ?? []);
+    for (const [id, name] of commentsQuery.data?.authors ?? []) merged.set(id, name);
+    return merged;
+  }, [pinsQuery.data?.authors, commentsQuery.data?.authors]);
   const authorSides = authorSidesQuery.data ?? {};
 
   // replies live under their parent take, never in the ranked column lists
   const [rowsA, rowsB, repliesByParent] = useMemo(() => {
-    const all = commentsQuery.data?.rows ?? [];
+    const all = allRows;
     const tops = all.filter((r) => !r.parent_id);
     const map: Record<string, CommentRow[]> = {};
     for (const r of all) {
@@ -514,15 +660,13 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       list.sort((x, y) => x.created_at.localeCompare(y.created_at));
     }
     return [tops.filter((r) => r.side === "a"), tops.filter((r) => r.side === "b"), map];
-  }, [commentsQuery.data?.rows]);
+  }, [allRows]);
 
 
   const myOldTakes = useMemo(() => {
     if (!user || !myVote) return 0;
-    return (commentsQuery.data?.rows ?? []).filter(
-      (r) => r.user_id === user.id && r.side === myVote,
-    ).length;
-  }, [commentsQuery.data?.rows, user, myVote]);
+    return allRows.filter((r) => r.user_id === user.id && r.side === myVote).length;
+  }, [allRows, user, myVote]);
 
 
   return (
@@ -630,6 +774,8 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           isBanned={isBanned}
           isClosed={isClosed}
           isActive={activeSide === "a"}
+          flashId={flashId}
+          onPosted={onPosted}
         />
         <CommentColumn
           side="b"
@@ -650,6 +796,8 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           isBanned={isBanned}
           isClosed={isClosed}
           isActive={activeSide === "b"}
+          flashId={flashId}
+          onPosted={onPosted}
         />
 
       </div>
@@ -869,6 +1017,8 @@ function CommentColumn({
   isBanned,
   isClosed,
   isActive,
+  flashId,
+  onPosted,
 }: {
   side: Side;
   title: string;
@@ -893,6 +1043,9 @@ function CommentColumn({
   isClosed: boolean;
   /** below lg only the active column is shown; both stay mounted either way */
   isActive: boolean;
+  /** the take currently wearing the reveal ring, if it is in this column */
+  flashId: string | null;
+  onPosted: (row: CommentRow) => void;
 }) {
 
   const [sort, setSort] = useState<SortKey>("top");
@@ -900,24 +1053,31 @@ function CommentColumn({
   const [posting, setPosting] = useState(false);
   const queryClient = useQueryClient();
 
-  const sorted = useMemo(() => {
-    const copy = [...rows];
-    if (sort === "top") {
-      copy.sort(
-        (a, b) =>
-          b.likes_count - b.dislikes_count - (a.likes_count - a.dislikes_count) ||
-          b.likes_count - a.likes_count,
-      );
-    } else if (sort === "wild") {
-      copy.sort(
-        (a, b) =>
-          b.controversy_score - a.controversy_score ||
-          b.likes_count + b.dislikes_count - (a.likes_count + a.dislikes_count),
-      );
-    } else {
-      copy.sort((a, b) => b.created_at.localeCompare(a.created_at));
-    }
-    return copy;
+  /**
+   * Top is a small band of pins over a newest-first feed, not a pure
+   * leaderboard. A straight ranking stops moving once a topic is a day old:
+   * new takes are never seen, so they never earn likes, so they are never seen.
+   * The pins keep the strongest arguments in the prime spot; everything under
+   * them stays a live feed, which is also where a reader's own take lands.
+   *
+   * Wild is left as a pure ranking on purpose — it is an opt-in destination,
+   * and browsing the chaos in rank order is the whole point of that tab.
+   */
+  const { pinned, rest } = useMemo(() => {
+    if (sort === "newest") return { pinned: [] as CommentRow[], rest: [...rows].sort(byNewest) };
+    if (sort === "wild") return { pinned: [] as CommentRow[], rest: [...rows].sort(byControversy) };
+
+    // A hidden take is not an argument anyone can read, and one that has not
+    // gone positive has not earned the badge — the same bar the highlight used.
+    const pins =
+      rows.length >= MIN_ROWS_FOR_PINS
+        ? rows
+            .filter((r) => !r.is_hidden && netOf(r) > 0)
+            .sort(byNetScore)
+            .slice(0, PIN_COUNT)
+        : [];
+    const pinnedIds = new Set(pins.map((r) => r.id));
+    return { pinned: pins, rest: rows.filter((r) => !pinnedIds.has(r.id)).sort(byNewest) };
   }, [rows, sort]);
 
   const t = useT();
@@ -933,17 +1093,23 @@ function CommentColumn({
       return;
     }
     setPosting(true);
-    const { error } = await supabase
+    // returning the row is what lets the take be put on screen and pointed at,
+    // rather than left for its author to go looking for
+    const { data: inserted, error } = await supabase
       .from("comments")
-      .insert({ topic_id: topicId, user_id: user.id, side, body: text.slice(0, 2000) });
+      .insert({ topic_id: topicId, user_id: user.id, side, body: text.slice(0, 2000) })
+      .select("*")
+      .single();
     setPosting(false);
     if (error) {
       toast.error(tError(describeError(error, t("comment.failed"))));
       return;
     }
     setBody("");
+    if (inserted) onPosted(inserted as unknown as CommentRow);
     toast.success(t("comment.posted"));
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
+    queryClient.invalidateQueries({ queryKey: ["comment-pins", topicId] });
   }
 
 
@@ -1010,116 +1176,241 @@ function CommentColumn({
         </div>
       )}
 
+      {pinned.length > 0 ? (
+        <>
+          <SectionHeading icon={Star} label={t("comment.sectionTop")} />
+          <ul className="space-y-3">
+            {pinned.map((row) => (
+              <CommentItem
+                key={row.id}
+                row={row}
+                replies={repliesByParent[row.id] ?? []}
+                authors={authors}
+                authorSides={authorSides}
+                side={side}
+                labelA={labelA}
+                labelB={labelB}
+                otherLabel={otherLabel}
+                myVote={myVote}
+                user={user}
+                topicId={topicId}
+                reactions={reactions}
+                onReact={onReact}
+                onPosted={onPosted}
+                isAdmin={isAdmin}
+                isBanned={isBanned}
+                isClosed={isClosed}
+                flashId={flashId}
+                highlighted
+                badge={t("comment.topTake")}
+              />
+            ))}
+          </ul>
+          <SectionHeading icon={Clock} label={t("comment.sectionLatest")} />
+        </>
+      ) : null}
+
       <ul className="space-y-3">
-        {sorted.map((row, index) => {
-          const netScore = (row.likes_count ?? 0) - (row.dislikes_count ?? 0);
-          const controversy =
-            (row.likes_count ?? 0) + (row.dislikes_count ?? 0) - Math.abs(netScore);
-          const highlighted =
-            index < 3 &&
-            (sort === "top" ? netScore > 0 : sort === "wild" ? controversy > 0 : false);
-          // the author argued this side, then voted for the other one
-          const switched = Boolean(authorSides[row.user_id]) && authorSides[row.user_id] !== side;
+        {rest.map((row, index) => {
+          // Wild keeps its ranked shape, so its badge is still positional.
+          const wild = sort === "wild" && index < PIN_COUNT && controversyOf(row) > 0;
           return (
-          <li
-            key={row.id}
-            id={`comment-${row.id}`}
-            className={`scroll-mt-24 rounded-sm border p-3 ${
-              row.is_hidden
-                ? "border-dashed border-destructive/50 bg-destructive/5"
-                : highlighted
-                  ? "border-primary/70 bg-accent/40"
-                  : "border-border"
-            }`}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs text-muted-foreground">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="font-bold text-foreground">
-                  {authors.get(row.user_id) ?? t("comment.anonymous")}
-                </span>
-                {switched ? (
-                  <span
-                    title={t("comment.changedMindTitle", { label: otherLabel })}
-                    className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
-                  >
-                    {t("comment.changedMind")}
-                  </span>
-                ) : null}
-              </span>
-              {row.is_hidden ? (
-                <span className="font-medium text-destructive">
-                  {t("comment.hidden")}
-                  {row.hidden_reason ? ` — ${row.hidden_reason}` : ""}
-                </span>
-              ) : highlighted ? (
-                <span className="font-medium text-muted-foreground">
-                  {sort === "wild" ? t("comment.wildTake") : t("comment.topTake")}
-                </span>
-              ) : null}
-            </div>
-
-
-            <p className="mt-2 text-sm leading-relaxed break-words text-foreground">{row.body}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <ReactionButton
-                active={reactions[row.id] === 1}
-                count={row.likes_count}
-                onClick={() => onReact(row.id, 1)}
-                icon={<ThumbsUp className="h-3.5 w-3.5" />}
-                disabled={isClosed}
-              />
-              <ReactionButton
-                active={reactions[row.id] === -1}
-                count={row.dislikes_count}
-                onClick={() => onReact(row.id, -1)}
-                icon={<ThumbsDown className="h-3.5 w-3.5" />}
-                disabled={isClosed}
-              />
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <Flame className="h-3.5 w-3.5" /> {row.controversy_score}
-              </span>
-
-              <span className="ml-auto flex items-center gap-1">
-                {user && user.id !== row.user_id && !isBanned ? (
-                  <ReportButton commentId={row.id} />
-                ) : null}
-                {isAdmin ? (
-                  <ModeratorControls
-                    comment={row}
-                    topicId={topicId}
-                    authorName={authors.get(row.user_id) ?? t("comment.anonymous")}
-                  />
-                ) : null}
-              </span>
-            </div>
-
-            <ReplyThread
-              parent={row}
+            <CommentItem
+              key={row.id}
+              row={row}
               replies={repliesByParent[row.id] ?? []}
               authors={authors}
+              authorSides={authorSides}
+              side={side}
               labelA={labelA}
               labelB={labelB}
+              otherLabel={otherLabel}
               myVote={myVote}
               user={user}
               topicId={topicId}
               reactions={reactions}
               onReact={onReact}
+              onPosted={onPosted}
               isAdmin={isAdmin}
               isBanned={isBanned}
               isClosed={isClosed}
+              flashId={flashId}
+              highlighted={wild}
+              badge={wild ? t("comment.wildTake") : null}
             />
-          </li>
-
           );
         })}
 
-        {sorted.length === 0 ? (
-          <li className="py-6 text-center text-sm text-muted-foreground">
-            {t("comment.empty")}
-          </li>
+        {pinned.length === 0 && rest.length === 0 ? (
+          <li className="py-6 text-center text-sm text-muted-foreground">{t("comment.empty")}</li>
         ) : null}
       </ul>
     </section>
+  );
+}
+
+/**
+ * Names the two bands the Top view is split into. Without them the ordering
+ * reads as a shuffled list rather than a deliberate shape — best arguments
+ * first, then everything as it lands.
+ */
+function SectionHeading({ icon: Icon, label }: { icon: typeof Star; label: string }) {
+  return (
+    <h3 className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      {label}
+    </h3>
+  );
+}
+
+/**
+ * One take and its answers. Split out of the column so the Top view can render
+ * the same card in both of its bands — the pins and the feed below them.
+ */
+function CommentItem({
+  row,
+  replies,
+  authors,
+  authorSides,
+  side,
+  labelA,
+  labelB,
+  otherLabel,
+  myVote,
+  user,
+  topicId,
+  reactions,
+  onReact,
+  onPosted,
+  isAdmin,
+  isBanned,
+  isClosed,
+  flashId,
+  highlighted,
+  badge,
+}: {
+  row: CommentRow;
+  replies: CommentRow[];
+  authors: Map<string, string>;
+  authorSides: Record<string, Side>;
+  side: Side;
+  labelA: string;
+  labelB: string;
+  otherLabel: string;
+  myVote: Side | null;
+  user: User | null;
+  topicId: string;
+  reactions: Record<string, number>;
+  onReact: (id: string, value: 1 | -1) => void;
+  onPosted: (row: CommentRow) => void;
+  isAdmin: boolean;
+  isBanned: boolean;
+  isClosed: boolean;
+  flashId: string | null;
+  /** carries the accent border — a pin, or a top-ranked wild take */
+  highlighted: boolean;
+  /** what the highlight is claiming, shown opposite the author */
+  badge: string | null;
+}) {
+  const t = useT();
+  // the author argued this side, then voted for the other one
+  const switched = Boolean(authorSides[row.user_id]) && authorSides[row.user_id] !== side;
+  const mine = Boolean(user) && user!.id === row.user_id;
+
+  return (
+    <li
+      id={`comment-${row.id}`}
+      className={`scroll-mt-24 rounded-sm border p-3 transition-shadow ${
+        row.is_hidden
+          ? "border-dashed border-destructive/50 bg-destructive/5"
+          : highlighted
+            ? "border-primary/70 bg-accent/40"
+            : "border-border"
+      } ${flashId === row.id ? "ring-2 ring-primary" : ""}`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-bold text-foreground">
+            {authors.get(row.user_id) ?? t("comment.anonymous")}
+          </span>
+          {mine ? (
+            // the reveal only covers the first few seconds; this is how you
+            // find your own take again on a later visit
+            <span className="rounded-full border border-primary/60 px-2 py-0.5 text-[11px] font-medium text-primary">
+              {t("comment.yours")}
+            </span>
+          ) : null}
+          {switched ? (
+            <span
+              title={t("comment.changedMindTitle", { label: otherLabel })}
+              className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+            >
+              {t("comment.changedMind")}
+            </span>
+          ) : null}
+        </span>
+        {row.is_hidden ? (
+          <span className="font-medium text-destructive">
+            {t("comment.hidden")}
+            {row.hidden_reason ? ` — ${row.hidden_reason}` : ""}
+          </span>
+        ) : badge ? (
+          <span className="font-medium text-muted-foreground">{badge}</span>
+        ) : null}
+      </div>
+
+      <p className="mt-2 text-sm leading-relaxed break-words text-foreground">{row.body}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <ReactionButton
+          active={reactions[row.id] === 1}
+          count={row.likes_count}
+          onClick={() => onReact(row.id, 1)}
+          icon={<ThumbsUp className="h-3.5 w-3.5" />}
+          disabled={isClosed}
+        />
+        <ReactionButton
+          active={reactions[row.id] === -1}
+          count={row.dislikes_count}
+          onClick={() => onReact(row.id, -1)}
+          icon={<ThumbsDown className="h-3.5 w-3.5" />}
+          disabled={isClosed}
+        />
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <Flame className="h-3.5 w-3.5" /> {row.controversy_score}
+        </span>
+
+        <span className="ml-auto flex items-center gap-1">
+          {user && user.id !== row.user_id && !isBanned ? (
+            <ReportButton commentId={row.id} />
+          ) : null}
+          {isAdmin ? (
+            <ModeratorControls
+              comment={row}
+              topicId={topicId}
+              authorName={authors.get(row.user_id) ?? t("comment.anonymous")}
+            />
+          ) : null}
+        </span>
+      </div>
+
+      <ReplyThread
+        parent={row}
+        replies={replies}
+        authors={authors}
+        labelA={labelA}
+        labelB={labelB}
+        myVote={myVote}
+        user={user}
+        topicId={topicId}
+        reactions={reactions}
+        onReact={onReact}
+        onPosted={onPosted}
+        isAdmin={isAdmin}
+        isBanned={isBanned}
+        isClosed={isClosed}
+        flashId={flashId}
+      />
+    </li>
   );
 }
 
@@ -1139,9 +1430,11 @@ function ReplyThread({
   topicId,
   reactions,
   onReact,
+  onPosted,
   isAdmin,
   isBanned,
   isClosed,
+  flashId,
 }: {
   parent: CommentRow;
   replies: CommentRow[];
@@ -1153,9 +1446,11 @@ function ReplyThread({
   topicId: string;
   reactions: Record<string, number>;
   onReact: (id: string, value: 1 | -1) => void;
+  onPosted: (row: CommentRow) => void;
   isAdmin: boolean;
   isBanned: boolean;
   isClosed: boolean;
+  flashId: string | null;
 }) {
   const queryClient = useQueryClient();
   const { t, tError } = useI18n();
@@ -1168,13 +1463,17 @@ function ReplyThread({
     const text = body.trim();
     if (text.length < 2 || !user || !myVote) return;
     setPosting(true);
-    const { error } = await supabase.from("comments").insert({
-      topic_id: topicId,
-      user_id: user.id,
-      side: myVote,
-      parent_id: parent.id,
-      body: text.slice(0, 2000),
-    });
+    const { data: inserted, error } = await supabase
+      .from("comments")
+      .insert({
+        topic_id: topicId,
+        user_id: user.id,
+        side: myVote,
+        parent_id: parent.id,
+        body: text.slice(0, 2000),
+      })
+      .select("*")
+      .single();
     setPosting(false);
     if (error) {
       toast.error(tError(describeError(error, t("reply.failed"))));
@@ -1182,6 +1481,7 @@ function ReplyThread({
     }
     setBody("");
     setOpen(false);
+    if (inserted) onPosted(inserted as unknown as CommentRow);
     toast.success(t("reply.posted"));
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
   }
@@ -1194,7 +1494,9 @@ function ReplyThread({
           <div
             key={reply.id}
             id={`comment-${reply.id}`}
-            className="scroll-mt-24 rounded-sm bg-muted/40 p-2"
+            className={`scroll-mt-24 rounded-sm bg-muted/40 p-2 ${
+              flashId === reply.id ? "ring-2 ring-primary" : ""
+            }`}
           >
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="font-bold text-foreground">
@@ -1405,6 +1707,8 @@ function ModeratorControls({
       action === "delete" ? t("mod.deleted") : action === "hide" ? t("mod.hidden") : t("mod.restored"),
     );
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
+    // hiding or deleting pulls the take out of the ranking
+    queryClient.invalidateQueries({ queryKey: ["comment-pins", topicId] });
   }
 
   return (
