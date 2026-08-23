@@ -45,6 +45,7 @@ export const en = {
   "home.heroSub":
     "Vote on the debates people are actually having, then read the best arguments from both sides — side by side.",
   "home.headliner": "⚡ The Headliner",
+  "home.readTopic": "Read: {{title}}",
   "home.castVote": "Cast your vote",
   "home.emptyTab": "Nothing in this tab yet — try another filter.",
   "tab.trending": "Trending",
