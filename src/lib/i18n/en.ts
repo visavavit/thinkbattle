@@ -144,7 +144,8 @@ export const en = {
   "comment.tooLong": "That take is too long (2000 characters max).",
   "comment.failed": "Could not post that take.",
   "comment.lockedBanned": "Your account is suspended — you can read but not post.",
-  "comment.lockedOtherSide": "You voted for the other side — this column is read-only.",
+  "comment.lockedOtherSide":
+    "You voted for the other side, so you can't post a take here — you can still reply, like and dislike.",
   "comment.lockedVote": "Vote above to unlock this column.",
   "comment.lockedSignIn": "Sign in and vote to join this column.",
   "comment.lockedClosed": "This debate is closed — the takes below are the final word.",
