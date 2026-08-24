@@ -9,6 +9,7 @@ export const th: Dictionary = {
   "nav.admin": "ผู้ดูแล",
   "nav.signIn": "เข้าสู่ระบบ",
   "nav.signOut": "ออกจากระบบ",
+  "nav.menu": "เมนู",
   "footer.tagline": "ถกเถียง · สองทางเลือก รับฟังทั้งสองฝ่าย",
   "footer.about": "เกี่ยวกับเรา",
   "footer.terms": "ข้อกำหนดการใช้งาน",

@@ -7,6 +7,7 @@ export const en = {
   "nav.admin": "Admin",
   "nav.signIn": "Sign in",
   "nav.signOut": "Sign out",
+  "nav.menu": "Menu",
   "footer.tagline": "toktiang.com · two choices, both sides heard.",
   "footer.about": "About",
   "footer.terms": "Terms",

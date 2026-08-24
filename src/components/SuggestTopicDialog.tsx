@@ -109,8 +109,14 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Lightbulb className="mr-1 h-4 w-4" /> {t("suggest.trigger")}
+        <Button
+          variant="outline"
+          size="sm"
+          className="px-2 sm:px-3"
+          aria-label={t("suggest.trigger")}
+        >
+          <Lightbulb className="h-4 w-4 sm:mr-1" />
+          <span className="hidden sm:inline">{t("suggest.trigger")}</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
