@@ -156,3 +156,44 @@
 @utility rule-top {
   border-top: 3px solid var(--color-foreground);
 }
+
+/* The deadline countdown: each digit box remounts when its number changes, so
+   the animation replays on every tick — the seconds visibly flip over. */
+@keyframes countdown-tick {
+  from {
+    transform: translateY(-25%);
+    opacity: 0.25;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes countdown-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0.6;
+  }
+}
+
+.countdown-tick {
+  display: inline-block;
+  animation: countdown-tick 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.countdown-pulse {
+  animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .countdown-tick,
+  .countdown-pulse {
+    animation: none;
+  }
+}

@@ -110,3 +110,46 @@ export function useTopicClock(closesAt: string | null | undefined): TopicClock {
 
   return { ...clock, mounted: now !== null };
 }
+
+/** Every unit a countdown clock shows at once, unlike `countdown` above. */
+export type RemainingParts = { days: number; hours: number; minutes: number; seconds: number };
+
+/** Splits the remaining time into d/h/m/s. Null once the deadline has passed. */
+export function splitRemaining(msLeft: number | null): RemainingParts | null {
+  if (msLeft === null || msLeft <= 0) return null;
+  const total = Math.floor(msLeft / 1000);
+  return {
+    days: Math.floor(total / 86_400),
+    hours: Math.floor(total / 3_600) % 24,
+    minutes: Math.floor(total / 60) % 60,
+    seconds: total % 60,
+  };
+}
+
+/**
+ * A one-second clock, for the ticking countdown only.
+ *
+ * Deliberately separate from `useTopicClock`, which slows to a tick a minute
+ * when the deadline is far off: a seconds display has to move every second,
+ * and this keeps that re-render inside the countdown instead of running the
+ * whole discussion page at 1 Hz. Returns null through SSR and the hydrating
+ * render — the digits are clock-dependent, like every other printed time.
+ *
+ * @param deadline the deadline in epoch milliseconds, or null for no deadline
+ */
+export function useCountdownParts(deadline: number | null): RemainingParts | null {
+  const [msLeft, setMsLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (deadline === null) {
+      setMsLeft(null);
+      return;
+    }
+    const tick = () => setMsLeft(deadline - Date.now());
+    tick();
+    const timer = setInterval(tick, 1_000);
+    return () => clearInterval(timer);
+  }, [deadline]);
+
+  return splitRemaining(msLeft);
+}

@@ -23,7 +23,7 @@ import { describeError } from "@/lib/admin";
 import { useI18n, useT, type TranslationKey } from "@/lib/i18n";
 import { getTopicCounts, type TopicCard } from "@/lib/public.functions";
 import { useTopicClock } from "@/lib/topic-clock";
-import { ClosingNotice, DeadlineLine } from "./TopicDeadline";
+import { ClosingNotice, DeadlineCountdown, DeadlineLine } from "./TopicDeadline";
 import { SplitBar } from "./SplitBar";
 import { Button } from "@/components/ui/button";
 import { AuthorAvatar, type Author } from "./AuthorAvatar";
@@ -747,6 +747,10 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           </span>
           <DeadlineLine clock={clock} />
         </p>
+        {/* the same deadline as the line above, but ticking */}
+        <div className="text-center">
+          <DeadlineCountdown clock={clock} />
+        </div>
       </section>
 
       <SideSwitcher

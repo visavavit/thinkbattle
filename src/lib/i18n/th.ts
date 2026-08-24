@@ -93,6 +93,13 @@ export const th: Dictionary = {
   "closing.soonTitle": "ปิดโหวตในอีก {time}",
   "closing.soonBody":
     "หลังจากนั้นผลจะถือเป็นที่สิ้นสุด ไม่สามารถโหวต แสดงความเห็น หรือแสดงความรู้สึกได้อีก",
+  "closing.countdownLabel": "เหลือเวลาโหวตอีก",
+  "closing.countdownLast": "โค้งสุดท้าย เหลือเวลาอีก",
+  "closing.countdownAria": "เหลือเวลาโหวตอีก {d} วัน {h} ชั่วโมง {m} นาที {s} วินาที",
+  "time.dayShort": "วัน",
+  "time.hourShort": "ชม.",
+  "time.minShort": "นาที",
+  "time.secShort": "วิ",
   "time.days": "{n} วัน",
   "time.hours": "{n} ชั่วโมง",
   "time.minutes": "{n} นาที",
