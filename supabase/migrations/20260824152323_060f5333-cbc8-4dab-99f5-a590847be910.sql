@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.closed_trending_weight(timestamp with time zone) TO authenticated, anon, service_role;
