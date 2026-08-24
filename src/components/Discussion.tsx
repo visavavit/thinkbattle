@@ -26,6 +26,7 @@ import { useTopicClock } from "@/lib/topic-clock";
 import { ClosingNotice, DeadlineLine } from "./TopicDeadline";
 import { SplitBar } from "./SplitBar";
 import { Button } from "@/components/ui/button";
+import { AuthorAvatar, type Author } from "./AuthorAvatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
@@ -60,7 +61,7 @@ type CommentRow = {
 /** What the ["comments", topicId, limit] query holds. */
 type CommentsCache = {
   rows: CommentRow[];
-  authors: Map<string, string>;
+  authors: Map<string, Author>;
   /** true when the server had a full page left, so there is more to load */
   hasMore: boolean;
 };
@@ -260,13 +261,14 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
 
       const rows = [...topRows, ...replyRows];
       const ids = [...new Set(rows.map((r) => r.user_id))];
-      const authors = new Map<string, string>();
+      const authors = new Map<string, Author>();
       if (ids.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, username")
+          .select("id, username, avatar_url")
           .in("id", ids);
-        for (const p of profiles ?? []) authors.set(p.id, p.username);
+        for (const p of profiles ?? [])
+          authors.set(p.id, { username: p.username, avatar_url: p.avatar_url });
       }
       return { rows, authors, hasMore: topRows.length === limit };
     },
@@ -291,13 +293,14 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       // resolved here rather than leaning on the page's lookup, which only ever
       // sees the ids it fetched itself
       const ids = [...new Set(rows.map((r) => r.user_id))];
-      const authors = new Map<string, string>();
+      const authors = new Map<string, Author>();
       if (ids.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, username")
+          .select("id, username, avatar_url")
           .in("id", ids);
-        for (const profile of profiles ?? []) authors.set(profile.id, profile.username);
+        for (const profile of profiles ?? [])
+          authors.set(profile.id, { username: profile.username, avatar_url: profile.avatar_url });
       }
       return { rows, authors };
     },
@@ -439,14 +442,15 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       if (ids.length === 0) return;
       void supabase
         .from("profiles")
-        .select("id, username")
+        .select("id, username, avatar_url")
         .in("id", ids)
         .then(({ data }) => {
           if (!data || data.length === 0) return;
           queryClient.setQueryData<CommentsCache>(commentsKeyRef.current, (prev) => {
             if (!prev) return prev;
             const authors = new Map(prev.authors);
-            for (const row of data) authors.set(row.id, row.username);
+            for (const row of data)
+              authors.set(row.id, { username: row.username, avatar_url: row.avatar_url });
             return { ...prev, authors };
           });
         });
@@ -591,8 +595,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         if (prev.rows.some((r) => r.id === row.id)) return prev;
         const authors = new Map(prev.authors);
         const name = user?.user_metadata?.["username"] as string | undefined;
-        // without this the poster's own take reads "anonymous" for a beat
-        if (name && !authors.has(row.user_id)) authors.set(row.user_id, name);
+        // without this the poster's own take reads "anonymous" for a beat. The
+        // picture is not in the session, so a first-ever take shows the
+        // fallback until the next fetch fills it in.
+        if (name && !authors.has(row.user_id))
+          authors.set(row.user_id, { username: name, avatar_url: null });
         return { ...prev, rows: [row, ...prev.rows], authors };
       });
       // wider retry budget than a deep link gets: an anonymous reader holds no
@@ -642,7 +649,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
 
   const authors = useMemo(() => {
     const merged = new Map(pinsQuery.data?.authors ?? []);
-    for (const [id, name] of commentsQuery.data?.authors ?? []) merged.set(id, name);
+    for (const [id, author] of commentsQuery.data?.authors ?? []) merged.set(id, author);
     return merged;
   }, [pinsQuery.data?.authors, commentsQuery.data?.authors]);
   const authorSides = authorSidesQuery.data ?? {};
@@ -1025,7 +1032,7 @@ function CommentColumn({
   rows: CommentRow[];
   /** one level of replies, keyed by the take they answer */
   repliesByParent: Record<string, CommentRow[]>;
-  authors: Map<string, string>;
+  authors: Map<string, Author>;
   /** each commenter's current vote on this topic, for the changed-mind badge */
   authorSides: Record<string, Side>;
   labelA: string;
@@ -1291,7 +1298,7 @@ function CommentItem({
 }: {
   row: CommentRow;
   replies: CommentRow[];
-  authors: Map<string, string>;
+  authors: Map<string, Author>;
   authorSides: Record<string, Side>;
   side: Side;
   labelA: string;
@@ -1330,8 +1337,11 @@ function CommentItem({
     >
       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs text-muted-foreground">
         <span className="flex flex-wrap items-center gap-2">
-          <span className="font-bold text-foreground">
-            {authors.get(row.user_id) ?? t("comment.anonymous")}
+          <span className="flex items-center gap-1.5">
+            <AuthorAvatar author={authors.get(row.user_id)} />
+            <span className="font-bold text-foreground">
+              {authors.get(row.user_id)?.username ?? t("comment.anonymous")}
+            </span>
           </span>
           {mine ? (
             // the reveal only covers the first few seconds; this is how you
@@ -1387,7 +1397,7 @@ function CommentItem({
             <ModeratorControls
               comment={row}
               topicId={topicId}
-              authorName={authors.get(row.user_id) ?? t("comment.anonymous")}
+              authorName={authors.get(row.user_id)?.username ?? t("comment.anonymous")}
             />
           ) : null}
         </span>
@@ -1438,7 +1448,7 @@ function ReplyThread({
 }: {
   parent: CommentRow;
   replies: CommentRow[];
-  authors: Map<string, string>;
+  authors: Map<string, Author>;
   labelA: string;
   labelB: string;
   myVote: Side | null;
@@ -1499,8 +1509,11 @@ function ReplyThread({
             }`}
           >
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="font-bold text-foreground">
-                {authors.get(reply.user_id) ?? t("comment.anonymous")}
+              <span className="flex items-center gap-1.5">
+                <AuthorAvatar author={authors.get(reply.user_id)} className="h-5 w-5" />
+                <span className="font-bold text-foreground">
+                  {authors.get(reply.user_id)?.username ?? t("comment.anonymous")}
+                </span>
               </span>
               <span
                 className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
@@ -1537,7 +1550,7 @@ function ReplyThread({
                   <ModeratorControls
                     comment={reply}
                     topicId={topicId}
-                    authorName={authors.get(reply.user_id) ?? t("comment.anonymous")}
+                    authorName={authors.get(reply.user_id)?.username ?? t("comment.anonymous")}
                   />
                 ) : null}
               </span>
