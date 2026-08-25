@@ -265,6 +265,38 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_edits: {
+        Row: {
+          comment_id: string
+          editor_id: string
+          id: string
+          previous_body: string
+          replaced_at: string
+        }
+        Insert: {
+          comment_id: string
+          editor_id: string
+          id?: string
+          previous_body: string
+          replaced_at?: string
+        }
+        Update: {
+          comment_id?: string
+          editor_id?: string
+          id?: string
+          previous_body?: string
+          replaced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_edits_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_reactions: {
         Row: {
           comment_id: string
@@ -344,6 +376,8 @@ export type Database = {
           controversy_score: number | null
           created_at: string
           dislikes_count: number
+          edit_count: number
+          edited_at: string | null
           hidden_at: string | null
           hidden_by: string | null
           hidden_reason: string | null
@@ -362,6 +396,8 @@ export type Database = {
           controversy_score?: number | null
           created_at?: string
           dislikes_count?: number
+          edit_count?: number
+          edited_at?: string | null
           hidden_at?: string | null
           hidden_by?: string | null
           hidden_reason?: string | null
@@ -380,6 +416,8 @@ export type Database = {
           controversy_score?: number | null
           created_at?: string
           dislikes_count?: number
+          edit_count?: number
+          edited_at?: string | null
           hidden_at?: string | null
           hidden_by?: string | null
           hidden_reason?: string | null
@@ -1012,6 +1050,8 @@ export type Database = {
           controversy_score: number
           created_at: string
           dislikes_count: number
+          edit_count: number
+          edited_at: string
           hidden_reason: string
           id: string
           is_hidden: boolean
