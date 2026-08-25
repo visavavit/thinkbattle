@@ -151,25 +151,27 @@ takes no further votes, takes or reactions from any client, the synthetic ones
 included. Moderation still works on a closed topic; hiding and deleting a
 comment are the one thing the deadline does not freeze.
 
-This project was built with [Lovable](https://lovable.dev).
-
-**Live app**: https://thinkbattle.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/305e7210-ac73-42ed-8142-a542ff7c57ad).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+You need [Bun](https://bun.sh) installed.
 
 ```sh
 git clone <this-repository-url>
 cd <repository-name>
-npm i
-npm run dev
+bun install
+bun run dev
 ```
+
+Copy `.env` values for `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` and
+`VITE_SUPABASE_PROJECT_ID` (plus their non-prefixed server twins) before starting
+the dev server. Server-only secrets — `SUPABASE_SERVICE_ROLE_KEY`, the `R2_*`
+variables and `BOT_TICK_SECRET` — live in the deployment environment, never in
+the repository.
+
+```sh
+bun run build     # production build
+bun run lint      # eslint
+bun run format    # prettier
+```
+
+**Live app**: https://toktiang.com

@@ -1,20 +1,27 @@
-type LovableErrorOptions = {
+// Runtime error forwarding for the local dev/editor toolchain.
+//
+// Both hooks below are installed only by the development harness — in a
+// production build `import.meta.env.DEV` folds to `false`, the guard makes the
+// rest of the function unreachable, and dead-code elimination strips the hook
+// names out of the shipped bundle entirely.
+
+type ReportOptions = {
   mechanism?: "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
   handled?: boolean;
   severity?: "error" | "warning" | "info";
 };
 
-type LovableEvents = {
+type DevEvents = {
   captureException?: (
     error: unknown,
     context?: Record<string, unknown>,
-    options?: LovableErrorOptions,
+    options?: ReportOptions,
   ) => void;
 };
 
 declare global {
   interface Window {
-    __lovableEvents?: LovableEvents;
+    __lovableEvents?: DevEvents;
     __lovableReportRuntimeError?: (payload: {
       message: string;
       stack?: string;
@@ -23,8 +30,9 @@ declare global {
   }
 }
 
-export function reportLovableError(error: unknown, context: Record<string, unknown> = {}) {
+export function reportAppError(error: unknown, context: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
+  if (!import.meta.env.DEV) return;
   window.__lovableEvents?.captureException?.(
     error,
     {
@@ -39,8 +47,8 @@ export function reportLovableError(error: unknown, context: Record<string, unkno
     },
   );
   // Prod React does not rethrow boundary-caught errors to window.onerror, so the
-  // editor's telemetry never sees them. Forward to lovable.js's reporting hook,
-  // which is present only inside the editor preview.
+  // dev harness's telemetry never sees them. Forward to the harness's reporting
+  // hook, which is present only inside the editor preview.
   // Loaders and server fns commonly throw a raw Response; String(it) is the
   // opaque "[object Response]", so pull out the status and URL instead.
   const message =

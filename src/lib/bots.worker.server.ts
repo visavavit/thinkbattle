@@ -87,7 +87,9 @@ async function generateTakes(args: {
   tone: string;
   count: number;
 }): Promise<string[]> {
-  const key = process.env["LOVABLE_API_KEY"];
+  // Server-only. AI_GATEWAY_API_KEY is the name to set going forward; the legacy
+  // name is still read so an existing deployment keeps working until it is renamed.
+  const key = process.env["AI_GATEWAY_API_KEY"] || process.env["LOVABLE_API_KEY"];
   if (!key) return Array.from({ length: args.count }, () => fallbackTake(args.tone));
 
   const toneHint =

@@ -1,14 +1,3 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
-
 ## Resolved Launch Checklist — DO NOT RE-APPLY
 
 The following items from the pre-launch audit have already been implemented and verified.
@@ -18,7 +7,7 @@ Do not re-run, re-apply, or undo these fixes unless the user explicitly asks for
 
 1. **Bot tick endpoint no longer public.** `src/routes/api/public/bots/tick.ts` now authenticates against a dedicated `BOT_TICK_SECRET` via `x-bot-tick-secret` or `Authorization: Bearer`, using a timing-safe comparison. The Supabase publishable key is no longer accepted.
 2. **Cron job points to the production apex domain.** The `bot-audience-tick` job posts to `https://toktiang.com/api/public/bots/tick`. The secret is pulled from a private `public.app_settings` table at runtime; no plaintext secret remains in migration files.
-3. **Production environment variables confirmed.** `LOVABLE_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and the five `R2_*` variables are set in the server environment.
+3. **Production environment variables confirmed.** `AI_GATEWAY_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and the five `R2_*` variables are set in the server environment.
 4. **Build verified.** `bun run build` and `tsgo --noEmit` pass locally.
 
 ### Should fix before opening the doors (resolved)
