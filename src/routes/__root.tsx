@@ -165,8 +165,24 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    // The auth client can emit SIGNED_IN again when an already signed-in tab
+    // regains focus. Treating that as a fresh login invalidated every active
+    // query (notifications, roles, bans and admin panels) at once, which made
+    // returning to the tab look like a stuck full-page navigation.
+    let currentUserId: string | null | undefined;
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      const nextUserId = session?.user.id ?? null;
+
+      if (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") {
+        currentUserId = nextUserId;
+        return;
+      }
+
+      if (event === "SIGNED_IN" && currentUserId === nextUserId) return;
+      if (event === "SIGNED_OUT" && currentUserId === null) return;
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+
+      currentUserId = nextUserId;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
