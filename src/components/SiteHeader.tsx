@@ -34,13 +34,13 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:gap-4">
-        <Link to="/" className="flex shrink-0 items-center gap-2">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5">
           <img
             src={logoAsset.url}
             alt=""
-            className="h-8 w-8 shrink-0 object-contain"
-            width={32}
-            height={32}
+            className="h-9 w-9 shrink-0 object-contain sm:h-11 sm:w-11"
+            width={44}
+            height={44}
           />
           <span className="font-display text-lg font-semibold tracking-tight whitespace-nowrap text-foreground sm:text-xl">
             {t("brand.arena")}
