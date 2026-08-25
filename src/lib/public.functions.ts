@@ -78,7 +78,7 @@ function feedOrder(tab: FeedTab): FeedOrder {
 }
 
 async function fetchFeedRows(order: FeedOrder, category?: string): Promise<TopicCard[]> {
-  const supabase = publicClient();
+  const supabase = publicClient(30);
   let query = supabase.from("topic_cards").select("*").eq("status", "published").limit(60);
 
   if (category) query = query.eq("category_slug", category);
@@ -127,7 +127,7 @@ function stillOpen(topic: TopicCard): boolean {
 }
 
 async function fetchHeadliners(): Promise<TopicCard[]> {
-  const supabase = publicClient();
+  const supabase = publicClient(30);
 
   // admin pins always win; otherwise fall back to the closest fight
   const { data: pinned } = await supabase
@@ -161,7 +161,7 @@ export const getHeadliners = createServerFn({ method: "GET" }).handler(async () 
 });
 
 async function fetchTopic(id: string): Promise<TopicCard | null> {
-  const supabase = publicClient();
+  const supabase = publicClient(30);
   const { data: row, error } = await supabase
     .from("topic_cards")
     .select("*")
@@ -181,8 +181,8 @@ export const getTopic = createServerFn({ method: "GET" })
 
 export type TopicCounts = { votes_a: number; votes_b: number };
 
-async function fetchTopicCounts(id: string): Promise<TopicCounts> {
-  const supabase = publicClient();
+async function fetchTopicCounts(id: string, edgeTtlSeconds = 0): Promise<TopicCounts> {
+  const supabase = publicClient(edgeTtlSeconds);
   const { data, error } = await supabase
     .from("topics")
     .select("votes_a, votes_b")
@@ -214,12 +214,12 @@ export const getTopicCounts = createServerFn({ method: "GET" })
       return fetchTopicCounts(data.id);
     }
     setResponseHeader("cache-control", publicCacheControl(COUNTS_READ));
-    return cached(`counts:${data.id}`, COUNTS_READ, () => fetchTopicCounts(data.id));
+    return cached(`counts:${data.id}`, COUNTS_READ, () => fetchTopicCounts(data.id, 5));
   });
 
 
 async function fetchTaxonomy() {
-  const supabase = publicClient();
+  const supabase = publicClient(300);
   const [cats, tags] = await Promise.all([
     supabase.from("categories").select("id, name, slug, emoji").order("name"),
     supabase.from("tags").select("id, name, slug").order("name"),
