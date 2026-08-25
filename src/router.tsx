@@ -2,6 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { routeTree } from "./routeTree.gen";
+import { PageSkeleton } from "./components/RouteSkeletons";
 
 export const getRouter = () => {
   const queryClient = new QueryClient({
@@ -32,6 +33,11 @@ export const getRouter = () => {
     // fetched again on every pass.
     defaultPreload: "intent",
     defaultPreloadStaleTime: 30_000,
+    // If a loader takes longer than a blink, swap in the route's skeleton so
+    // the click is visibly acknowledged instead of freezing the old page.
+    defaultPendingComponent: PageSkeleton,
+    defaultPendingMs: 120,
+    defaultPendingMinMs: 250,
   });
 
   // Ships the server's query cache to the browser with the HTML. Without it

@@ -48,12 +48,12 @@ export function SiteHeader() {
         </Link>
 
         <nav className="ml-4 hidden gap-4 text-sm font-medium text-muted-foreground sm:flex">
-          <Link to="/" className="hover:text-primary" activeProps={{ className: "text-primary" }}>
+          <Link to="/" className="transition-colors hover:text-primary active:opacity-60" activeProps={{ className: "text-primary" }}>
             {t("nav.feed")}
           </Link>
           <Link
             to="/browse"
-            className="hover:text-primary"
+            className="transition-colors hover:text-primary active:opacity-60"
             activeProps={{ className: "text-primary" }}
           >
             {t("nav.browse")}
@@ -61,7 +61,7 @@ export function SiteHeader() {
           {isAdmin ? (
             <Link
               to="/admin"
-              className="hover:text-primary"
+              className="transition-colors hover:text-primary active:opacity-60"
               activeProps={{ className: "text-primary" }}
             >
               {t("nav.admin")}
