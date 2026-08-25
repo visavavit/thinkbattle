@@ -1502,18 +1502,18 @@ function EditedMarker({ row }: { row: CommentRow }) {
           : t("comment.edited")}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[80vh] overflow-x-hidden overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("comment.historyTitle")}</DialogTitle>
             <DialogDescription>{t("comment.historyBody")}</DialogDescription>
           </DialogHeader>
-          <ol className="space-y-3">
-            <li className="rounded-sm border border-primary/60 bg-accent/40 p-3">
+          <ol className="min-w-0 space-y-3">
+            <li className="min-w-0 rounded-sm border border-primary/60 bg-accent/40 p-3">
               <p className="text-xs font-medium text-muted-foreground">
                 {t("comment.historyCurrent")}
                 {row.edited_at ? ` — ${stamp(row.edited_at)}` : ""}
               </p>
-              <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap">
+              <p className="mt-1 text-sm leading-relaxed break-all whitespace-pre-wrap">
                 {row.body}
               </p>
             </li>
@@ -1523,11 +1523,11 @@ function EditedMarker({ row }: { row: CommentRow }) {
               <li className="text-sm text-destructive">{t("comment.historyFailed")}</li>
             ) : (
               history.data?.map((version) => (
-                <li key={version.id} className="rounded-sm border border-border p-3">
+                <li key={version.id} className="min-w-0 rounded-sm border border-border p-3">
                   <p className="text-xs font-medium text-muted-foreground">
                     {t("comment.historyReplaced", { at: stamp(version.replaced_at) })}
                   </p>
-                  <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">
+                  <p className="mt-1 text-sm leading-relaxed break-all whitespace-pre-wrap text-muted-foreground">
                     {version.previous_body}
                   </p>
                 </li>
