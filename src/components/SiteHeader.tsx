@@ -42,7 +42,7 @@ export function SiteHeader() {
             width={44}
             height={44}
           />
-          <span className="font-display text-lg font-semibold tracking-tight whitespace-nowrap text-foreground sm:text-xl">
+          <span className="font-display text-base font-semibold tracking-tight whitespace-nowrap text-foreground sm:text-xl">
             {t("brand.arena")}
           </span>
         </Link>
