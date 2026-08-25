@@ -28,7 +28,17 @@ export type TopicCard = {
   published_at: string | null;
 };
 
-function publicClient() {
+/**
+ * Anonymous read client.
+ *
+ * `edgeTtlSeconds` puts the REST GET in the colo's shared cache. The in-process
+ * cache only helps a warm isolate, and low-traffic isolates are recycled
+ * constantly — so a cold request otherwise pays a fresh TLS handshake to the
+ * database region, which is where the occasional ~1s first byte came from.
+ * The colo cache is shared across isolates, so that cost is paid once per TTL
+ * per location instead of once per cold start.
+ */
+function publicClient(edgeTtlSeconds = 0) {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
   const url = process.env["SUPABASE_URL"]!;
   return createClient<Database>(url, key, {
@@ -40,10 +50,19 @@ function publicClient() {
           h.delete("Authorization");
         }
         h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
+        const method = (init?.method ?? "GET").toUpperCase();
+        const cacheable = edgeTtlSeconds > 0 && method === "GET";
+        return fetch(input, {
+          ...init,
+          headers: h,
+          ...(cacheable
+            ? { cf: { cacheTtl: edgeTtlSeconds, cacheEverything: true } }
+            : {}),
+        } as RequestInit);
       },
     },
   });
+
 }
 
 export type FeedTab = "trending" | "neck" | "top" | "newest";
