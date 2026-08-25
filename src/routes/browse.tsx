@@ -5,7 +5,7 @@ import { Clock, Flame, Hourglass, Layers, Lock, Scale, Search, Star, Vote, X } f
 import { z } from "zod";
 import { getFeed, getTaxonomy, type FeedTab, type TopicCard } from "@/lib/public.functions";
 import { TopicCardItem } from "@/components/TopicCardItem";
-import { BrowseSkeleton } from "@/components/RouteSkeletons";
+import { BrowseSkeleton, CardGridSkeleton } from "@/components/RouteSkeletons";
 import { readClock } from "@/lib/topic-clock";
 import { seoTags } from "@/lib/site";
 import { translate as tr, useT, type TranslationKey } from "@/lib/i18n";
