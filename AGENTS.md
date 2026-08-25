@@ -24,3 +24,26 @@ Do not re-run, re-apply, or undo these fixes unless the user explicitly asks for
 - Do not add new bot/AI disclosures without asking the user first; the current stance is to keep them removed.
 - Do not rotate the `BOT_TICK_SECRET` or change the cron URL without a clear reason.
 - The `refresh_trending_scores` cron runs every minute; monitor its cost as the topic count grows.
+
+## Performance: edge caching for public reads (2026-08-25)
+
+`src/lib/public.functions.ts` fetches through a Supabase client whose `fetch` passes
+Cloudflare `cf: { cacheTtl, cacheEverything: true }` options. This moves repeat public
+reads off the worker isolate (cold isolates were adding ~1.2s TTFB from TLS handshakes).
+
+Current TTLs — keep these unless asked to change:
+
+- Feed / topic detail / headliners: 30s
+- Taxonomy (categories, tags): 5m
+- Vote counts for anonymous visitors: 5s
+- Signed-in requests: cache bypassed entirely, so votes and comments show up immediately
+
+Related: `src/server.ts` sets `s-maxage=30, stale-while-revalidate=300` on public HTML
+documents, and signed-in users bypass that document cache too.
+
+Rules for future agents:
+
+- Do not add caching to any read that can return per-user state.
+- Do not raise the anonymous vote-count TTL above a few seconds; the split bar must feel live.
+- If a public read looks stale in the preview, check for an auth session first before
+  changing TTLs.
