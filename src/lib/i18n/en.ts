@@ -68,6 +68,7 @@ export const en = {
   "browse.statusOpen": "Open for votes",
   "browse.statusSoon": "Closing soon",
   "browse.statusClosed": "Closed",
+  "browse.loading": "Loading…",
   "browse.resultOne": "{n} debate",
   "browse.resultMany": "{n} debates",
   "browse.clearAll": "Clear filters",
