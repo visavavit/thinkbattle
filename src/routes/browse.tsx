@@ -272,9 +272,11 @@ function BrowsePage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p aria-live="polite" className="text-sm text-muted-foreground">
-          {t(topics.length === 1 ? "browse.resultOne" : "browse.resultMany", {
-            n: topics.length,
-          })}
+          {feedPending
+            ? t("browse.loading")
+            : t(topics.length === 1 ? "browse.resultOne" : "browse.resultMany", {
+                n: topics.length,
+              })}
         </p>
         {/* the empty state carries its own reset, so this one would only be a
             second copy of the same button */}
@@ -283,7 +285,9 @@ function BrowsePage() {
         ) : null}
       </div>
 
-      {topics.length > 0 ? (
+      {feedPending ? (
+        <CardGridSkeleton count={6} />
+      ) : topics.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {topics.map((topic) => (
             <TopicCardItem key={topic.id} topic={topic} />
