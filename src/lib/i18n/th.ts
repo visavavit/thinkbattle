@@ -171,6 +171,8 @@ export const th: Dictionary = {
   "comment.sectionTop": "ความเห็นเด่น",
   "comment.sectionLatest": "ล่าสุด",
   "comment.yours": "ความเห็นของคุณ",
+  "comment.showMore": "ดูเพิ่มเติม",
+  "comment.showLess": "ย่อลง",
 
   // ---- replies
   "reply.action": "ตอบกลับ",

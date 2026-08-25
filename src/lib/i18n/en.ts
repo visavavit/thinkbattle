@@ -169,6 +169,8 @@ export const en = {
   "comment.sectionTop": "Top takes",
   "comment.sectionLatest": "Latest",
   "comment.yours": "Your take",
+  "comment.showMore": "Show more",
+  "comment.showLess": "Show less",
 
   // ---- replies
   "reply.action": "Reply",

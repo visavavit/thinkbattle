@@ -1275,6 +1275,57 @@ function SectionHeading({ icon: Icon, label }: { icon: typeof Star; label: strin
 }
 
 /**
+ * A take's body, clamped to six lines with a toggle when it runs past them.
+ * A 1000-character take otherwise buries the reactions under it and leaves one
+ * side's column towering over the other.
+ *
+ * Overflow is measured while the text is clamped: once expanded the element
+ * grows to fit and would report no overflow, so the toggle has to stand on what
+ * we learned before it opened.
+ */
+function CommentBody({ body, className }: { body: string; className: string }) {
+  const t = useT();
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const ref = useRef<HTMLParagraphElement | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || expanded) return;
+    const measure = () => setOverflows(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    // Late fonts and a resized column both move where the text wraps, and a
+    // take that fit at one width may not at the next.
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [body, expanded]);
+
+  return (
+    <>
+      <p
+        ref={ref}
+        className={`${className} text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground ${
+          expanded ? "" : "line-clamp-6"
+        }`}
+      >
+        {body}
+      </p>
+      {overflows ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="mt-1 text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
+        >
+          {t(expanded ? "comment.showLess" : "comment.showMore")}
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+/**
  * One take and its answers. Split out of the column so the Top view can render
  * the same card in both of its bands — the pins and the feed below them.
  */
@@ -1373,7 +1424,7 @@ function CommentItem({
         ) : null}
       </div>
 
-      <p className="mt-2 text-sm leading-relaxed break-words text-foreground">{row.body}</p>
+      <CommentBody body={row.body} className="mt-2" />
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <ReactionButton
           active={reactions[row.id] === 1}
@@ -1530,7 +1581,7 @@ function ReplyThread({
                 <span className="font-medium text-destructive">{t("comment.hidden")}</span>
               ) : null}
             </div>
-            <p className="mt-1 text-sm leading-relaxed break-words text-foreground">{reply.body}</p>
+            <CommentBody body={reply.body} className="mt-1" />
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <ReactionButton
                 active={reactions[reply.id] === 1}
