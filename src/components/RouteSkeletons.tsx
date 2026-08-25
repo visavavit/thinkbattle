@@ -41,7 +41,7 @@ export function BrowseSkeleton() {
   );
 }
 
-function CardGridSkeleton({ count }: { count: number }) {
+export function CardGridSkeleton({ count }: { count: number }) {
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: count }).map((_, i) => (

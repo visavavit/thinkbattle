@@ -5,7 +5,7 @@ import { Clock, Flame, Hourglass, Layers, Lock, Scale, Search, Star, Vote, X } f
 import { z } from "zod";
 import { getFeed, getTaxonomy, type FeedTab, type TopicCard } from "@/lib/public.functions";
 import { TopicCardItem } from "@/components/TopicCardItem";
-import { BrowseSkeleton } from "@/components/RouteSkeletons";
+import { BrowseSkeleton, CardGridSkeleton } from "@/components/RouteSkeletons";
 import { readClock } from "@/lib/topic-clock";
 import { seoTags } from "@/lib/site";
 import { translate as tr, useT, type TranslationKey } from "@/lib/i18n";
@@ -74,10 +74,13 @@ export const Route = createFileRoute("/browse")({
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ sort: search.sort ?? DEFAULT_SORT, category: search.category }),
   loader: async ({ context, deps }) => {
-    await Promise.all([
-      context.queryClient.ensureQueryData(taxonomyQuery),
-      context.queryClient.ensureQueryData(browseQuery(deps.sort, deps.category)),
-    ]);
+    // The feed is awaited on the server so the HTML ships with cards in it, but
+    // a client navigation must not sit on a blank screen waiting for rows: the
+    // page frame renders straight away and the grid fills in behind a skeleton.
+    const feed = context.queryClient.ensureQueryData(browseQuery(deps.sort, deps.category));
+    if (typeof window === "undefined") await feed;
+    else void feed.catch(() => {});
+    await context.queryClient.ensureQueryData(taxonomyQuery);
   },
   head: () => {
     // Filters live in the query string; the canonical target is the bare page.
@@ -141,7 +144,9 @@ function BrowsePage() {
   const sort = search.sort ?? DEFAULT_SORT;
 
   const { data: taxonomy } = useSuspenseQuery(taxonomyQuery);
-  const { data: rows = [] } = useQuery(browseQuery(sort, search.category));
+  const { data: rows = [], isPending: feedPending } = useQuery(
+    browseQuery(sort, search.category),
+  );
 
   // The box is typed into far faster than the URL should change, so it keeps
   // its own state and syncs both ways: down when the URL moves without it
@@ -267,9 +272,11 @@ function BrowsePage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p aria-live="polite" className="text-sm text-muted-foreground">
-          {t(topics.length === 1 ? "browse.resultOne" : "browse.resultMany", {
-            n: topics.length,
-          })}
+          {feedPending
+            ? t("browse.loading")
+            : t(topics.length === 1 ? "browse.resultOne" : "browse.resultMany", {
+                n: topics.length,
+              })}
         </p>
         {/* the empty state carries its own reset, so this one would only be a
             second copy of the same button */}
@@ -278,7 +285,9 @@ function BrowsePage() {
         ) : null}
       </div>
 
-      {topics.length > 0 ? (
+      {feedPending ? (
+        <CardGridSkeleton count={6} />
+      ) : topics.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {topics.map((topic) => (
             <TopicCardItem key={topic.id} topic={topic} />

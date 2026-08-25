@@ -70,6 +70,7 @@ export const th: Dictionary = {
   "browse.statusOpen": "เปิดให้โหวต",
   "browse.statusSoon": "ใกล้ปิดโหวต",
   "browse.statusClosed": "ปิดโหวตแล้ว",
+  "browse.loading": "กำลังโหลด…",
   "browse.resultOne": "{n} ประเด็น",
   "browse.resultMany": "{n} ประเด็น",
   "browse.clearAll": "ล้างตัวกรอง",

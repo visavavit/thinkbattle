@@ -55,6 +55,11 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
       ]);
       return { categories: cats.data ?? [], tags: tags.data ?? [] };
     },
+    // The dialog lives in the header, so this ran on every page load and put two
+    // database round trips in front of the content. Nobody needs the lists until
+    // the form is actually open.
+    enabled: open,
+    staleTime: 5 * 60_000,
   });
 
   async function submit() {
