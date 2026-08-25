@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -12,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
+import { NavigationProgress } from "@/components/NavigationProgress";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageProvider, translate as tr, useT } from "@/lib/i18n";
@@ -127,11 +129,15 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function AppFrame() {
   const t = useT();
+  // Remounting on pathname change replays the enter animation, so a completed
+  // navigation reads as movement instead of a silent swap.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <NavigationProgress />
       <SiteHeader />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <main className="flex-1">
+      <main key={pathname} className="route-enter flex-1">
         <Outlet />
       </main>
       <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">

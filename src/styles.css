@@ -197,3 +197,49 @@
     animation: none;
   }
 }
+
+/* Navigation feedback: an indeterminate blue/red sweep under the header while
+   the router resolves a route, plus a short enter animation for new pages. */
+@keyframes nav-progress-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.nav-progress-bar {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-primary) 35%,
+    var(--color-destructive) 65%,
+    transparent 100%
+  );
+  animation: nav-progress-sweep 1s linear infinite;
+}
+
+@keyframes route-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.route-enter {
+  animation: route-enter 0.22s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-enter {
+    animation: none;
+  }
+  .nav-progress-bar {
+    animation: none;
+  }
+}
