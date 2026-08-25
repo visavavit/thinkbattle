@@ -47,3 +47,24 @@ Rules for future agents:
 - Do not raise the anonymous vote-count TTL above a few seconds; the split bar must feel live.
 - If a public read looks stale in the preview, check for an auth session first before
   changing TTLs.
+
+## Auth event storm on tab refocus (2026-08-25)
+
+Symptom: switching away from the tab and back left the app stuck on loading skeletons,
+with a burst of duplicate auth + notification requests in the network log.
+
+Cause: Supabase's auth client re-emits `SIGNED_IN` (and token-refresh) events whenever
+the tab regains focus, even when the session never changed. `src/routes/__root.tsx`
+reacted to every event with `router.invalidate()` + `queryClient.invalidateQueries()`,
+refetching every active query at once.
+
+Fix: `src/routes/__root.tsx` keeps the last known user id in a ref and ignores
+`SIGNED_IN` / `SIGNED_OUT` events when the id is unchanged. Only a real identity change
+triggers invalidation.
+
+Rules for future agents:
+
+- Never invalidate the router or the whole query cache directly from `onAuthStateChange`
+  without first comparing the user id to the previous one.
+- If you add new auth-driven refresh logic, verify it by focusing another tab and
+  returning: there should be no refetch burst.
