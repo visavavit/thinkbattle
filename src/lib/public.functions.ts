@@ -28,7 +28,17 @@ export type TopicCard = {
   published_at: string | null;
 };
 
-function publicClient() {
+/**
+ * Anonymous read client.
+ *
+ * `edgeTtlSeconds` puts the REST GET in the colo's shared cache. The in-process
+ * cache only helps a warm isolate, and low-traffic isolates are recycled
+ * constantly — so a cold request otherwise pays a fresh TLS handshake to the
+ * database region, which is where the occasional ~1s first byte came from.
+ * The colo cache is shared across isolates, so that cost is paid once per TTL
+ * per location instead of once per cold start.
+ */
+function publicClient(edgeTtlSeconds = 0) {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
   const url = process.env["SUPABASE_URL"]!;
   return createClient<Database>(url, key, {
@@ -40,10 +50,19 @@ function publicClient() {
           h.delete("Authorization");
         }
         h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
+        const method = (init?.method ?? "GET").toUpperCase();
+        const cacheable = edgeTtlSeconds > 0 && method === "GET";
+        return fetch(input, {
+          ...init,
+          headers: h,
+          ...(cacheable
+            ? { cf: { cacheTtl: edgeTtlSeconds, cacheEverything: true } }
+            : {}),
+        } as RequestInit);
       },
     },
   });
+
 }
 
 export type FeedTab = "trending" | "neck" | "top" | "newest";
@@ -59,7 +78,7 @@ function feedOrder(tab: FeedTab): FeedOrder {
 }
 
 async function fetchFeedRows(order: FeedOrder, category?: string): Promise<TopicCard[]> {
-  const supabase = publicClient();
+  const supabase = publicClient(30);
   let query = supabase.from("topic_cards").select("*").eq("status", "published").limit(60);
 
   if (category) query = query.eq("category_slug", category);
@@ -108,7 +127,7 @@ function stillOpen(topic: TopicCard): boolean {
 }
 
 async function fetchHeadliners(): Promise<TopicCard[]> {
-  const supabase = publicClient();
+  const supabase = publicClient(30);
 
   // admin pins always win; otherwise fall back to the closest fight
   const { data: pinned } = await supabase
@@ -142,7 +161,7 @@ export const getHeadliners = createServerFn({ method: "GET" }).handler(async () 
 });
 
 async function fetchTopic(id: string): Promise<TopicCard | null> {
-  const supabase = publicClient();
+  const supabase = publicClient(30);
   const { data: row, error } = await supabase
     .from("topic_cards")
     .select("*")
@@ -162,8 +181,8 @@ export const getTopic = createServerFn({ method: "GET" })
 
 export type TopicCounts = { votes_a: number; votes_b: number };
 
-async function fetchTopicCounts(id: string): Promise<TopicCounts> {
-  const supabase = publicClient();
+async function fetchTopicCounts(id: string, edgeTtlSeconds = 0): Promise<TopicCounts> {
+  const supabase = publicClient(edgeTtlSeconds);
   const { data, error } = await supabase
     .from("topics")
     .select("votes_a, votes_b")
@@ -195,12 +214,12 @@ export const getTopicCounts = createServerFn({ method: "GET" })
       return fetchTopicCounts(data.id);
     }
     setResponseHeader("cache-control", publicCacheControl(COUNTS_READ));
-    return cached(`counts:${data.id}`, COUNTS_READ, () => fetchTopicCounts(data.id));
+    return cached(`counts:${data.id}`, COUNTS_READ, () => fetchTopicCounts(data.id, 5));
   });
 
 
 async function fetchTaxonomy() {
-  const supabase = publicClient();
+  const supabase = publicClient(300);
   const [cats, tags] = await Promise.all([
     supabase.from("categories").select("id, name, slug, emoji").order("name"),
     supabase.from("tags").select("id, name, slug").order("name"),
