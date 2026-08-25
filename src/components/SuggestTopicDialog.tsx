@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Lightbulb } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
@@ -120,7 +120,7 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
           className="px-2 sm:px-3"
           aria-label={t("suggest.trigger")}
         >
-          <Lightbulb className="h-4 w-4 sm:mr-1" />
+          <Plus className="h-4 w-4 sm:mr-1" />
           <span className="hidden sm:inline">{t("suggest.trigger")}</span>
         </Button>
       </DialogTrigger>
