@@ -43,6 +43,7 @@ export const th: Dictionary = {
   "common.tryAgain": "ลองอีกครั้ง",
   "common.cancel": "ยกเลิก",
   "common.close": "ปิด",
+  "common.scrollToTop": "กลับขึ้นด้านบน",
 
   // ---- home
   "home.heroLead": "ถกเถียง.com",

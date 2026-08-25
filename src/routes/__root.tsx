@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
 import { NavigationProgress } from "@/components/NavigationProgress";
+import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageProvider, translate as tr, useT } from "@/lib/i18n";
@@ -154,6 +155,7 @@ function AppFrame() {
           </Link>
         </nav>
       </footer>
+      <ScrollToTopButton />
     </div>
   );
 }

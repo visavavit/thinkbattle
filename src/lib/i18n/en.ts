@@ -41,6 +41,7 @@ export const en = {
   "common.tryAgain": "Try again",
   "common.cancel": "Cancel",
   "common.close": "Close",
+  "common.scrollToTop": "Back to top",
 
   // ---- home
   "home.heroLead": "toktiang.com",
