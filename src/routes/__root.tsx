@@ -127,11 +127,15 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function AppFrame() {
   const t = useT();
+  // Remounting on pathname change replays the enter animation, so a completed
+  // navigation reads as movement instead of a silent swap.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <NavigationProgress />
       <SiteHeader />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <main className="flex-1">
+      <main key={pathname} className="route-enter flex-1">
         <Outlet />
       </main>
       <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">
