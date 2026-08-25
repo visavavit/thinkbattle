@@ -40,6 +40,7 @@ export const en = {
   "error.body": "Something went wrong on our end. You can try refreshing or head back home.",
   "common.tryAgain": "Try again",
   "common.cancel": "Cancel",
+  "common.close": "Close",
 
   // ---- home
   "home.heroLead": "toktiang.com",
@@ -151,7 +152,8 @@ export const en = {
   "comment.placeholder": "Defend your side...",
   "comment.post": "Post your take",
   "comment.posted": "Take posted 🔥",
-  "comment.tooLong": "That take is too long (2000 characters max).",
+  "comment.tooLong": "That take is too long ({max} characters max).",
+  "comment.counter": "{used} / {max}",
   "comment.failed": "Could not post that take.",
   "comment.lockedBanned": "Your account is suspended — you can read but not post.",
   "comment.lockedOtherSide":
@@ -171,6 +173,22 @@ export const en = {
   "comment.yours": "Your take",
   "comment.showMore": "Show more",
   "comment.showLess": "Show less",
+
+  // ---- editing a take
+  "comment.edit": "Edit your take",
+  "comment.editAria": "Edit the text of your take",
+  "comment.editSave": "Save changes",
+  "comment.editNotice": "Earlier versions stay readable — anyone can open the edit history.",
+  "comment.edited": "Edited",
+  "comment.editedTimes": "Edited {count}×",
+  "comment.editedTitle": "See what this take said before",
+  "comment.editFailed": "Could not save that edit.",
+  "comment.historyTitle": "Edit history",
+  "comment.historyBody":
+    "Every version of this take, newest first. Replies and reactions may have been written against an earlier one.",
+  "comment.historyCurrent": "Current version",
+  "comment.historyReplaced": "Replaced {at}",
+  "comment.historyFailed": "Could not load the edit history.",
 
   // ---- replies
   "reply.action": "Reply",

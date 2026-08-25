@@ -42,6 +42,7 @@ export const th: Dictionary = {
   "error.body": "เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง หรือกลับไปยังหน้าแรก",
   "common.tryAgain": "ลองอีกครั้ง",
   "common.cancel": "ยกเลิก",
+  "common.close": "ปิด",
 
   // ---- home
   "home.heroLead": "ถกเถียง.com",
@@ -153,7 +154,8 @@ export const th: Dictionary = {
   "comment.placeholder": "อธิบายเหตุผลของฝ่ายคุณ...",
   "comment.post": "เผยแพร่ความเห็น",
   "comment.posted": "เผยแพร่ความเห็นเรียบร้อย",
-  "comment.tooLong": "ความเห็นยาวเกินไป (ไม่เกิน 2,000 ตัวอักษร)",
+  "comment.tooLong": "ความเห็นยาวเกินไป (ไม่เกิน {max} ตัวอักษร)",
+  "comment.counter": "{used} / {max}",
   "comment.failed": "ไม่สามารถเผยแพร่ความเห็นนี้ได้",
   "comment.lockedBanned": "บัญชีของคุณถูกระงับ อ่านได้แต่แสดงความเห็นไม่ได้",
   "comment.lockedOtherSide":
@@ -173,6 +175,22 @@ export const th: Dictionary = {
   "comment.yours": "ความเห็นของคุณ",
   "comment.showMore": "ดูเพิ่มเติม",
   "comment.showLess": "ย่อลง",
+
+  // ---- แก้ไขความเห็น
+  "comment.edit": "แก้ไขความเห็นของคุณ",
+  "comment.editAria": "แก้ไขข้อความในความเห็นของคุณ",
+  "comment.editSave": "บันทึกการแก้ไข",
+  "comment.editNotice": "ข้อความเดิมยังอ่านได้ ทุกคนสามารถเปิดดูประวัติการแก้ไข",
+  "comment.edited": "แก้ไขแล้ว",
+  "comment.editedTimes": "แก้ไขแล้ว {count} ครั้ง",
+  "comment.editedTitle": "ดูข้อความเดิมของความเห็นนี้",
+  "comment.editFailed": "ไม่สามารถบันทึกการแก้ไขได้",
+  "comment.historyTitle": "ประวัติการแก้ไข",
+  "comment.historyBody":
+    "ทุกเวอร์ชันของความเห็นนี้ เรียงจากใหม่ไปเก่า การตอบกลับและการแสดงความรู้สึกอาจอ้างอิงเวอร์ชันก่อนหน้า",
+  "comment.historyCurrent": "เวอร์ชันปัจจุบัน",
+  "comment.historyReplaced": "แทนที่เมื่อ {at}",
+  "comment.historyFailed": "ไม่สามารถโหลดประวัติการแก้ไขได้",
 
   // ---- replies
   "reply.action": "ตอบกลับ",

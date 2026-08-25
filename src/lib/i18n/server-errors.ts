@@ -11,14 +11,19 @@ export const serverMessagesTh: Record<string, string> = {
   "Hourly comment limit reached. Take a breather.":
     "คุณแสดงความเห็นครบจำนวนที่กำหนดต่อชั่วโมงแล้ว กรุณาพักสักครู่",
   "Your comment is too short.": "ความเห็นสั้นเกินไป",
-  "Your comment is too long (2000 characters max).":
-    "ความเห็นยาวเกินไป (ไม่เกิน 2,000 ตัวอักษร)",
+  "Your comment is too long (4000 characters max).":
+    "ความเห็นยาวเกินไป (ไม่เกิน 4,000 ตัวอักษร)",
   "That looks like spam. Try writing a real take.":
     "เนื้อหานี้เข้าข่ายสแปม กรุณาเขียนความเห็นที่มีเนื้อหาจริง",
   "Please turn off caps lock before posting.":
     "กรุณาปิดการพิมพ์ตัวพิมพ์ใหญ่ทั้งหมดก่อนเผยแพร่",
   "You already posted that here.": "คุณเคยเผยแพร่ข้อความเดียวกันนี้ไปแล้ว",
   "That comment no longer exists.": "ไม่พบความเห็นนี้แล้ว",
+  "Only the text of a comment can be edited.": "แก้ไขได้เฉพาะข้อความของความเห็นเท่านั้น",
+  "Only the author can edit a comment.": "เฉพาะเจ้าของความเห็นเท่านั้นที่แก้ไขได้",
+  "A hidden comment cannot be edited.": "ความเห็นที่ถูกซ่อนไม่สามารถแก้ไขได้",
+  "You have edited this comment too many times. Try again later.":
+    "คุณแก้ไขความเห็นนี้บ่อยเกินไป กรุณาลองใหม่ภายหลัง",
   "You can only reply to a top-level take.": "สามารถตอบกลับได้เฉพาะความเห็นหลักเท่านั้น",
   "Reply must stay on the same topic.": "การตอบกลับต้องอยู่ในประเด็นเดียวกัน",
   "Too many reactions too quickly.": "คุณแสดงความรู้สึกถี่เกินไป",

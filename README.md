@@ -72,6 +72,17 @@ Sorting Tabs Per Side:
 
 Comment Interaction: Individual comments feature simple Like and Dislike buttons.
 
+Long Takes: A take or reply may run to 4000 characters. Anything past six lines
+is clamped behind a *Show more* toggle, so one essay cannot leave its column
+towering over the other or push the reactions off the screen.
+
+Editing: An author can revise their own take or reply while the debate is open.
+Every revision is recorded — the take carries an *Edited* marker, and anyone can
+open it to read every version it has had, newest first. The trail is written by
+a database trigger into a table nobody holds INSERT, UPDATE or DELETE on, so a
+take that collected its likes on one argument cannot quietly become another.
+Editing stops when the take is hidden or the deadline passes.
+
 5. Technical Stack & Architecture
 
 Frontend: React (or Next.js for SEO-optimized public topic pages).
@@ -146,9 +157,10 @@ edit or delete entries.
 Four invariants are enforced by the database rather than the UI, so they hold
 no matter how a request arrives: the last admin cannot be demoted, admins cannot
 be banned, only admins can change a comment's moderation fields — an author
-can still edit their own comment body but cannot un-hide it — and a closed topic
-takes no further votes, takes or reactions from any client, the synthetic ones
-included. Moderation still works on a closed topic; hiding and deleting a
+can edit their own comment body, but only the body: not its author, topic, side,
+parent, timestamp or edit trail, and never to un-hide it — and a closed topic
+takes no further votes, takes, edits or reactions from any client, the synthetic
+ones included. Moderation still works on a closed topic; hiding and deleting a
 comment are the one thing the deadline does not freeze.
 
 ## Development

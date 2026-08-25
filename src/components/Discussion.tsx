@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   Check,
@@ -14,6 +19,7 @@ import {
   EyeOff,
   Trash2,
   Reply,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
@@ -53,9 +59,19 @@ type CommentRow = {
   is_hidden: boolean;
   hidden_reason: string | null;
   created_at: string;
+  /** null until the author revises the take; drives the "edited" marker */
+  edited_at?: string | null;
+  edit_count?: number;
   parent_id: string | null;
   /** AI-generated demo account — disclosed with a badge next to the name */
   is_synthetic?: boolean;
+};
+
+/** One superseded version of a take, newest first in the history dialog. */
+type CommentEditRow = {
+  id: string;
+  previous_body: string;
+  replaced_at: string;
 };
 
 /** What the ["comments", topicId, limit] query holds. */
@@ -72,6 +88,16 @@ type CommentsCache = {
  * a take from its answers.
  */
 const COMMENT_PAGE_SIZE = 50;
+
+/**
+ * The longest a take or a reply may be, matching the column check and the
+ * insert/edit guards in the database. Long enough for an argument that actually
+ * makes a case; the clamp in CommentBody is what keeps the column readable.
+ */
+const COMMENT_MAX_LENGTH = 4000;
+
+/** Below this the counter is noise; past it the ceiling is worth knowing about. */
+const COUNTER_VISIBLE_FROM = COMMENT_MAX_LENGTH - 500;
 
 /**
  * How many takes the Top view pins above the feed. Kept deliberately small:
@@ -1099,8 +1125,8 @@ function CommentColumn({
   async function submit() {
     const text = body.trim();
     if (text.length < 2 || !user) return;
-    if (text.length > 2000) {
-      toast.error(t("comment.tooLong"));
+    if (text.length > COMMENT_MAX_LENGTH) {
+      toast.error(t("comment.tooLong", { max: COMMENT_MAX_LENGTH }));
       return;
     }
     setPosting(true);
@@ -1108,7 +1134,7 @@ function CommentColumn({
     // rather than left for its author to go looking for
     const { data: inserted, error } = await supabase
       .from("comments")
-      .insert({ topic_id: topicId, user_id: user.id, side, body: text.slice(0, 2000) })
+      .insert({ topic_id: topicId, user_id: user.id, side, body: text })
       .select("*")
       .single();
     setPosting(false);
@@ -1163,11 +1189,12 @@ function CommentColumn({
         <div className="space-y-2">
           <Textarea
             value={body}
-            maxLength={1000}
+            maxLength={COMMENT_MAX_LENGTH}
             onChange={(e) => setBody(e.target.value)}
             placeholder={t("comment.placeholder")}
-            className="bg-background"
+            className="min-h-28 bg-background"
           />
+          <CharCounter length={body.length} />
           <Button onClick={submit} disabled={posting || body.trim().length < 2} className="w-full">
             {t("comment.post")}
           </Button>
@@ -1275,9 +1302,14 @@ function SectionHeading({ icon: Icon, label }: { icon: typeof Star; label: strin
 }
 
 /**
- * A take's body, clamped to six lines with a toggle when it runs past them.
- * A 1000-character take otherwise buries the reactions under it and leaves one
- * side's column towering over the other.
+ * A take's body, clamped to six lines with a toggle when it runs past them. A
+ * 4000-character argument would otherwise bury the reactions under it and leave
+ * one side's column towering over the other, so the clamp is what makes a long
+ * take safe to allow at all.
+ *
+ * Collapsing again scrolls the card back into view: on a take that filled
+ * several screens the toggle otherwise ends up far above the viewport, leaving
+ * the reader stranded in the middle of the next comment.
  *
  * Overflow is measured while the text is clamped: once expanded the element
  * grows to fit and would report no overflow, so the toggle has to stand on what
@@ -1301,6 +1333,20 @@ function CommentBody({ body, className }: { body: string; className: string }) {
     return () => observer.disconnect();
   }, [body, expanded]);
 
+  // A fresh edit can shrink a take back inside the clamp; leaving it expanded
+  // would then strand a "Show less" with nothing to collapse.
+  useEffect(() => {
+    setExpanded(false);
+  }, [body]);
+
+  function toggle() {
+    if (expanded) {
+      const card = ref.current?.closest("[id^='comment-']");
+      card?.scrollIntoView({ block: "nearest" });
+    }
+    setExpanded((v) => !v);
+  }
+
   return (
     <>
       <p
@@ -1314,7 +1360,7 @@ function CommentBody({ body, className }: { body: string; className: string }) {
       {overflows ? (
         <button
           type="button"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={toggle}
           aria-expanded={expanded}
           className="mt-1 text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
         >
@@ -1322,6 +1368,216 @@ function CommentBody({ body, className }: { body: string; className: string }) {
         </button>
       ) : null}
     </>
+  );
+}
+
+/** Character budget for a composer, quiet until the ceiling is in sight. */
+function CharCounter({ length }: { length: number }) {
+  const t = useT();
+  if (length < COUNTER_VISIBLE_FROM) return null;
+  return (
+    <p
+      className={`text-right text-xs ${
+        length >= COMMENT_MAX_LENGTH ? "text-destructive" : "text-muted-foreground"
+      }`}
+    >
+      {t("comment.counter", { used: length, max: COMMENT_MAX_LENGTH })}
+    </p>
+  );
+}
+
+/**
+ * Revises a take in place. The row comes back from the update so the caches can
+ * be corrected without a refetch — and so the edit marker the database stamped
+ * lands on screen with the new text rather than one render later.
+ */
+function CommentEditor({
+  row,
+  onDone,
+  dense = false,
+}: {
+  row: CommentRow;
+  onDone: (updated: CommentRow | null) => void;
+  /** replies sit in a tighter box than top-level takes */
+  dense?: boolean;
+}) {
+  const { t, tError } = useI18n();
+  const [body, setBody] = useState(row.body);
+  const [saving, setSaving] = useState(false);
+  const unchanged = body.trim() === row.body.trim();
+
+  async function save() {
+    const text = body.trim();
+    if (text.length < 2 || saving) return;
+    if (text.length > COMMENT_MAX_LENGTH) {
+      toast.error(t("comment.tooLong", { max: COMMENT_MAX_LENGTH }));
+      return;
+    }
+    if (unchanged) {
+      onDone(null);
+      return;
+    }
+    setSaving(true);
+    const { data: updated, error } = await supabase
+      .from("comments")
+      .update({ body: text })
+      .eq("id", row.id)
+      .select("*")
+      .single();
+    setSaving(false);
+    if (error) {
+      toast.error(tError(describeError(error, t("comment.editFailed"))));
+      return;
+    }
+    toast.success(t("comment.edited"));
+    onDone((updated as unknown as CommentRow) ?? null);
+  }
+
+  return (
+    <div className={dense ? "mt-1 space-y-2" : "mt-2 space-y-2"}>
+      <Textarea
+        value={body}
+        autoFocus
+        maxLength={COMMENT_MAX_LENGTH}
+        onChange={(e) => setBody(e.target.value)}
+        className="min-h-28 bg-background"
+        aria-label={t("comment.editAria")}
+      />
+      <CharCounter length={body.length} />
+      <p className="text-xs text-muted-foreground">{t("comment.editNotice")}</p>
+      <div className="flex gap-2">
+        <Button size="sm" onClick={save} disabled={saving || body.trim().length < 2}>
+          {t("comment.editSave")}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => onDone(null)} disabled={saving}>
+          {t("common.cancel")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The "edited" marker, and the way into what the take used to say. Kept as a
+ * button rather than a passive label: an edit that nobody can inspect is worth
+ * less than no marker at all, because it only tells the reader that the text
+ * they are arguing with may not be the text that earned the likes.
+ */
+function EditedMarker({ row }: { row: CommentRow }) {
+  const { t, lang } = useI18n();
+  const [open, setOpen] = useState(false);
+
+  const history = useQuery({
+    queryKey: ["comment-edits", row.id],
+    // only fetched once the reader asks — most takes are never edited, and most
+    // edited takes are never inspected
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("comment_edits")
+        .select("id, previous_body, replaced_at")
+        .eq("comment_id", row.id)
+        .order("replaced_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as CommentEditRow[];
+    },
+  });
+
+  const stamp = (iso: string) =>
+    new Date(iso).toLocaleString(lang === "th" ? "th-TH" : "en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title={t("comment.editedTitle")}
+        className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >
+        {(row.edit_count ?? 0) > 1
+          ? t("comment.editedTimes", { count: row.edit_count! })
+          : t("comment.edited")}
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("comment.historyTitle")}</DialogTitle>
+            <DialogDescription>{t("comment.historyBody")}</DialogDescription>
+          </DialogHeader>
+          <ol className="space-y-3">
+            <li className="rounded-sm border border-primary/60 bg-accent/40 p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                {t("comment.historyCurrent")}
+                {row.edited_at ? ` — ${stamp(row.edited_at)}` : ""}
+              </p>
+              <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap">
+                {row.body}
+              </p>
+            </li>
+            {history.isPending ? (
+              <li className="text-sm text-muted-foreground">{t("comment.loading")}</li>
+            ) : history.isError ? (
+              <li className="text-sm text-destructive">{t("comment.historyFailed")}</li>
+            ) : (
+              history.data?.map((version) => (
+                <li key={version.id} className="rounded-sm border border-border p-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t("comment.historyReplaced", { at: stamp(version.replaced_at) })}
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">
+                    {version.previous_body}
+                  </p>
+                </li>
+              ))
+            )}
+          </ol>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              {t("common.close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+/**
+ * Puts a revised row back into every cache that holds it. The paged thread and
+ * the pinned band each keep their own copy, so writing to only one leaves a
+ * pinned take showing the text the author just replaced.
+ */
+function replaceCachedComment(client: QueryClient, topicId: string, row: CommentRow) {
+  for (const prefix of [
+    ["comments", topicId],
+    ["comment-pins", topicId],
+  ]) {
+    client.setQueriesData<{ rows: CommentRow[] }>({ queryKey: prefix }, (prev) => {
+      if (!prev) return prev;
+      const index = prev.rows.findIndex((r) => r.id === row.id);
+      if (index === -1) return prev;
+      const rows = [...prev.rows];
+      rows[index] = row;
+      return { ...prev, rows };
+    });
+  }
+}
+
+/** The pencil that opens {@link CommentEditor} on the reader's own take. */
+function EditButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className="rounded-sm border border-transparent p-1 text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+    >
+      <Pencil className="h-3.5 w-3.5" />
+    </button>
   );
 }
 
@@ -1378,6 +1634,11 @@ function CommentItem({
   // the author argued this side, then voted for the other one
   const switched = Boolean(authorSides[row.user_id]) && authorSides[row.user_id] !== side;
   const mine = Boolean(user) && user!.id === row.user_id;
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  // The database refuses an edit on a hidden take or a closed debate; matching
+  // that here keeps the pencil from offering something that will only fail.
+  const canEdit = mine && !row.is_hidden && !isClosed && !isBanned;
 
   return (
     <li
@@ -1413,6 +1674,7 @@ function CommentItem({
               {t("comment.changedMind")}
             </span>
           ) : null}
+          {row.edited_at ? <EditedMarker row={row} /> : null}
         </span>
         {row.is_hidden ? (
           <span className="font-medium text-destructive">
@@ -1424,7 +1686,17 @@ function CommentItem({
         ) : null}
       </div>
 
-      <CommentBody body={row.body} className="mt-2" />
+      {editing ? (
+        <CommentEditor
+          row={row}
+          onDone={(updated) => {
+            setEditing(false);
+            if (updated) replaceCachedComment(queryClient, topicId, updated);
+          }}
+        />
+      ) : (
+        <CommentBody body={row.body} className="mt-2" />
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <ReactionButton
           active={reactions[row.id] === 1}
@@ -1445,6 +1717,9 @@ function CommentItem({
         </span>
 
         <span className="ml-auto flex items-center gap-1">
+          {canEdit && !editing ? (
+            <EditButton onClick={() => setEditing(true)} label={t("comment.edit")} />
+          ) : null}
           {user && user.id !== row.user_id && !isBanned ? (
             <ReportButton commentId={row.id} />
           ) : null}
@@ -1535,7 +1810,7 @@ function ReplyThread({
         user_id: user.id,
         side: myVote,
         parent_id: parent.id,
-        body: text.slice(0, 2000),
+        body: text,
       })
       .select("*")
       .single();
@@ -1553,78 +1828,36 @@ function ReplyThread({
 
   return (
     <div className="mt-3 space-y-2 border-l-2 border-border pl-3">
-      {replies.map((reply) => {
-        const replySide = reply.side === "a" ? "a" : "b";
-        return (
-          <div
-            key={reply.id}
-            id={`comment-${reply.id}`}
-            className={`scroll-mt-24 rounded-sm bg-muted/40 p-2 ${
-              flashId === reply.id ? "ring-2 ring-primary" : ""
-            }`}
-          >
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <AuthorAvatar author={authors.get(reply.user_id)} className="h-5 w-5" />
-                <span className="font-bold text-foreground">
-                  {authors.get(reply.user_id)?.username ?? t("comment.anonymous")}
-                </span>
-              </span>
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-                  replySide === "a" ? "border-side-a text-side-a" : "border-side-b text-side-b"
-                }`}
-              >
-                {replySide === "a" ? labelA : labelB}
-              </span>
-              {reply.is_hidden ? (
-                <span className="font-medium text-destructive">{t("comment.hidden")}</span>
-              ) : null}
-            </div>
-            <CommentBody body={reply.body} className="mt-1" />
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <ReactionButton
-                active={reactions[reply.id] === 1}
-                count={reply.likes_count}
-                onClick={() => onReact(reply.id, 1)}
-                icon={<ThumbsUp className="h-3 w-3" />}
-                disabled={isClosed}
-              />
-              <ReactionButton
-                active={reactions[reply.id] === -1}
-                count={reply.dislikes_count}
-                onClick={() => onReact(reply.id, -1)}
-                icon={<ThumbsDown className="h-3 w-3" />}
-                disabled={isClosed}
-              />
-              <span className="ml-auto flex items-center gap-1">
-                {user && user.id !== reply.user_id && !isBanned ? (
-                  <ReportButton commentId={reply.id} />
-                ) : null}
-                {isAdmin ? (
-                  <ModeratorControls
-                    comment={reply}
-                    topicId={topicId}
-                    authorName={authors.get(reply.user_id)?.username ?? t("comment.anonymous")}
-                  />
-                ) : null}
-              </span>
-            </div>
-          </div>
-        );
-      })}
+      {replies.map((reply) => (
+        <ReplyRow
+          key={reply.id}
+          reply={reply}
+          author={authors.get(reply.user_id)}
+          labelA={labelA}
+          labelB={labelB}
+          user={user}
+          topicId={topicId}
+          reactions={reactions}
+          onReact={onReact}
+          isAdmin={isAdmin}
+          isBanned={isBanned}
+          isClosed={isClosed}
+          flashed={flashId === reply.id}
+        />
+      ))}
 
       {canReply ? (
         open ? (
           <div className="space-y-2">
             <Textarea
               value={body}
-              maxLength={1000}
+              maxLength={COMMENT_MAX_LENGTH}
               autoFocus
               onChange={(e) => setBody(e.target.value)}
               placeholder={t("reply.placeholder")}
               className="bg-background"
             />
+            <CharCounter length={body.length} />
             <div className="flex gap-2">
               <Button size="sm" onClick={submit} disabled={posting || body.trim().length < 2}>
                 {t("reply.action")}
@@ -1648,7 +1881,110 @@ function ReplyThread({
   );
 }
 
+/**
+ * One reply. Split out of {@link ReplyThread} because editing is per-row state:
+ * kept inside the map, a single `editing` flag would open every reply's editor
+ * at once.
+ */
+function ReplyRow({
+  reply,
+  author,
+  labelA,
+  labelB,
+  user,
+  topicId,
+  reactions,
+  onReact,
+  isAdmin,
+  isBanned,
+  isClosed,
+  flashed,
+}: {
+  reply: CommentRow;
+  author: Author | undefined;
+  labelA: string;
+  labelB: string;
+  user: User | null;
+  topicId: string;
+  reactions: Record<string, number>;
+  onReact: (id: string, value: 1 | -1) => void;
+  isAdmin: boolean;
+  isBanned: boolean;
+  isClosed: boolean;
+  flashed: boolean;
+}) {
+  const t = useT();
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const replySide = reply.side === "a" ? "a" : "b";
+  const mine = Boolean(user) && user!.id === reply.user_id;
+  const canEdit = mine && !reply.is_hidden && !isClosed && !isBanned;
+  const name = author?.username ?? t("comment.anonymous");
 
+  return (
+    <div
+      id={`comment-${reply.id}`}
+      className={`scroll-mt-24 rounded-sm bg-muted/40 p-2 ${flashed ? "ring-2 ring-primary" : ""}`}
+    >
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <AuthorAvatar author={author} className="h-5 w-5" />
+          <span className="font-bold text-foreground">{name}</span>
+        </span>
+        <span
+          className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+            replySide === "a" ? "border-side-a text-side-a" : "border-side-b text-side-b"
+          }`}
+        >
+          {replySide === "a" ? labelA : labelB}
+        </span>
+        {reply.edited_at ? <EditedMarker row={reply} /> : null}
+        {reply.is_hidden ? (
+          <span className="font-medium text-destructive">{t("comment.hidden")}</span>
+        ) : null}
+      </div>
+      {editing ? (
+        <CommentEditor
+          row={reply}
+          dense
+          onDone={(updated) => {
+            setEditing(false);
+            if (updated) replaceCachedComment(queryClient, topicId, updated);
+          }}
+        />
+      ) : (
+        <CommentBody body={reply.body} className="mt-1" />
+      )}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <ReactionButton
+          active={reactions[reply.id] === 1}
+          count={reply.likes_count}
+          onClick={() => onReact(reply.id, 1)}
+          icon={<ThumbsUp className="h-3 w-3" />}
+          disabled={isClosed}
+        />
+        <ReactionButton
+          active={reactions[reply.id] === -1}
+          count={reply.dislikes_count}
+          onClick={() => onReact(reply.id, -1)}
+          icon={<ThumbsDown className="h-3 w-3" />}
+          disabled={isClosed}
+        />
+        <span className="ml-auto flex items-center gap-1">
+          {canEdit && !editing ? (
+            <EditButton onClick={() => setEditing(true)} label={t("comment.edit")} />
+          ) : null}
+          {user && user.id !== reply.user_id && !isBanned ? (
+            <ReportButton commentId={reply.id} />
+          ) : null}
+          {isAdmin ? (
+            <ModeratorControls comment={reply} topicId={topicId} authorName={name} />
+          ) : null}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /** Lets any signed-in member push a comment into the admin moderation queue. */
 function ReportButton({ commentId }: { commentId: string }) {
