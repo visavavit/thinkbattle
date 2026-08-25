@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Menu, Swords } from "lucide-react";
+import { Menu } from "lucide-react";
+import logoAsset from "@/assets/toktiang-logo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, useIsAdmin } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
