@@ -144,7 +144,9 @@ function BrowsePage() {
   const sort = search.sort ?? DEFAULT_SORT;
 
   const { data: taxonomy } = useSuspenseQuery(taxonomyQuery);
-  const { data: rows = [] } = useQuery(browseQuery(sort, search.category));
+  const { data: rows = [], isPending: feedPending } = useQuery(
+    browseQuery(sort, search.category),
+  );
 
   // The box is typed into far faster than the URL should change, so it keeps
   // its own state and syncs both ways: down when the URL moves without it
