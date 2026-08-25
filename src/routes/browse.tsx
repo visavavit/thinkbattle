@@ -74,10 +74,13 @@ export const Route = createFileRoute("/browse")({
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ sort: search.sort ?? DEFAULT_SORT, category: search.category }),
   loader: async ({ context, deps }) => {
-    await Promise.all([
-      context.queryClient.ensureQueryData(taxonomyQuery),
-      context.queryClient.ensureQueryData(browseQuery(deps.sort, deps.category)),
-    ]);
+    // The feed is awaited on the server so the HTML ships with cards in it, but
+    // a client navigation must not sit on a blank screen waiting for rows: the
+    // page frame renders straight away and the grid fills in behind a skeleton.
+    const feed = context.queryClient.ensureQueryData(browseQuery(deps.sort, deps.category));
+    if (typeof window === "undefined") await feed;
+    else void feed.catch(() => {});
+    await context.queryClient.ensureQueryData(taxonomyQuery);
   },
   head: () => {
     // Filters live in the query string; the canonical target is the bare page.
