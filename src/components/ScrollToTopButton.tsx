@@ -48,6 +48,8 @@ export function ScrollToTopButton() {
     window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
   }
 
+  if (!visible) return null;
+
   return (
     <Button
       type="button"
@@ -56,11 +58,7 @@ export function ScrollToTopButton() {
       onClick={scrollToTop}
       aria-label={t("common.scrollToTop")}
       title={t("common.scrollToTop")}
-      aria-hidden={!visible}
-      tabIndex={visible ? 0 : -1}
-      className={`fixed right-4 bottom-4 z-50 h-11 w-11 rounded-full border border-border shadow-lg transition-opacity duration-200 sm:right-6 sm:bottom-6 ${
-        visible ? "opacity-100" : "pointer-events-none opacity-0"
-      }`}
+      className="fixed right-4 bottom-4 z-50 h-11 w-11 animate-in rounded-full border border-border shadow-lg fade-in duration-200 sm:right-6 sm:bottom-6"
       style={{ marginBottom: "env(safe-area-inset-bottom)" }}
     >
       <ArrowUp />
