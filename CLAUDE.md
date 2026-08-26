@@ -83,6 +83,7 @@ headers in those files are stale — do not re-apply them.
 - Guest voting still needs `GUEST_COOKIE_SECRET` in the server environment — it is NOT
   set yet, so the feature stays off no matter what the admin switch says. That is
   deliberate: an unsigned device id would let one client claim any number of devices.
+
 ## Guest voting: the cache rule (2026-08-26)
 
 Anonymous visitors can vote when an admin turns it on (Admin → Settings, default
@@ -172,7 +173,7 @@ defaults to off, so applying it changes nothing visible.
 DELETE, so a hidden take's picture stayed fetchable forever at an
 immutable-cached URL. Three pieces carry it now:
 
-- `public.uploads` — a ledger row written *before* the bytes are sent
+- `public.uploads` — a ledger row written _before_ the bytes are sent
   (`begin_upload` → R2 → `finish_upload`). Nothing reaches the bucket that the
   database cannot name, attribute and delete again.
 - Triggers that mark a row `orphaned` the moment nothing references it: a take
@@ -246,7 +247,7 @@ accounts two ways — both live until the migration is applied:
 
 Rules for future agents:
 
-- Username derivation lives in `ensure_profile_row`, and the trigger *and* the
+- Username derivation lives in `ensure_profile_row`, and the trigger _and_ the
   backfill both call it. Do not write a second derivation anywhere — the
   backfill is exactly where a divergent rule would never be noticed.
 - `handle_new_user` swallows its own errors on purpose. A trigger that raises

@@ -83,6 +83,7 @@ headers in those files are stale — do not re-apply them.
 - Guest voting still needs `GUEST_COOKIE_SECRET` in the server environment — it is NOT
   set yet, so the feature stays off no matter what the admin switch says. That is
   deliberate: an unsigned device id would let one client claim any number of devices.
+
 ## Guest voting: the cache rule (2026-08-26)
 
 Anonymous visitors can vote when an admin turns it on (Admin → Settings, default

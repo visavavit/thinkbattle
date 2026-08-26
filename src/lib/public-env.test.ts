@@ -80,7 +80,10 @@ describe("publicEnvBootstrapScript", () => {
 
   test("cannot break out of the script element", () => {
     withEnv(
-      { SUPABASE_URL: "https://x/</script><script>alert(1)</script>", SUPABASE_PUBLISHABLE_KEY: "k" },
+      {
+        SUPABASE_URL: "https://x/</script><script>alert(1)</script>",
+        SUPABASE_PUBLISHABLE_KEY: "k",
+      },
       () => {
         const script = publicEnvBootstrapScript();
         expect(script).not.toContain("</script");
