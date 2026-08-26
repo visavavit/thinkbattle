@@ -239,7 +239,7 @@ export type SiteFlags = { guest_voting: boolean; comment_images: boolean };
 
 const FLAGS_OFF: SiteFlags = { guest_voting: false, comment_images: false };
 
-async function fetchSiteFlags(): Promise<SiteFlags> {
+async function fetchSiteFlags(canSignGuests: boolean): Promise<SiteFlags> {
   const supabase = publicClient(30);
   // site_flags() is a definer function that enumerates the public keys in
   // code. app_settings itself stays unreadable — it holds bot_tick_secret,
@@ -248,10 +248,6 @@ async function fetchSiteFlags(): Promise<SiteFlags> {
   const { data, error } = await supabase.rpc("site_flags");
   if (error) throw new Error(error.message);
   const flags = data as unknown as Partial<SiteFlags> | null;
-  // The admin switch is only half the answer: without GUEST_COOKIE_SECRET the
-  // server cannot sign a device id, so cast_guest_vote fails closed. Reflect
-  // that here or the page offers a button that can only ever throw.
-  const canSignGuests = Boolean(process.env["GUEST_COOKIE_SECRET"]);
   return {
     guest_voting: flags?.guest_voting === true && canSignGuests,
     comment_images: flags?.comment_images === true,
@@ -268,7 +264,13 @@ async function fetchSiteFlags(): Promise<SiteFlags> {
 export const getSiteFlags = createServerFn({ method: "GET" }).handler(async () => {
   setResponseHeader("cache-control", publicCacheControl(PUBLIC_READ));
   try {
-    return await cached("site-flags", PUBLIC_READ, fetchSiteFlags);
+    // The admin switch is only half the answer: without GUEST_COOKIE_SECRET the
+    // server cannot sign a device id, so cast_guest_vote fails closed. Read it
+    // here (inside the handler) or the page offers a button that only throws.
+    const canSignGuests = Boolean(process.env["GUEST_COOKIE_SECRET"]);
+    return await cached(`site-flags:${canSignGuests}`, PUBLIC_READ, () =>
+      fetchSiteFlags(canSignGuests),
+    );
   } catch {
     // A feature switch is not worth failing a page render over, and off is
     // the safe direction to fail in.
