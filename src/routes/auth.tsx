@@ -315,7 +315,18 @@ function AuthPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                aria-describedby={mode === "signup" ? "password-hint" : undefined}
               />
+              {/* Said up front because the project has Supabase's breached-password
+                  check switched on, and it is the most common reason a sign-up is
+                  refused. Discovering that rule only by being rejected — with no
+                  hint that reusing a password from elsewhere is what did it — is
+                  the difference between a moment's annoyance and giving up. */}
+              {mode === "signup" ? (
+                <p id="password-hint" className="mt-1 text-xs text-muted-foreground">
+                  {t("auth.passwordHint")}
+                </p>
+              ) : null}
             </div>
           )}
 

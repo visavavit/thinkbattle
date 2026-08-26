@@ -339,6 +339,12 @@ export const en = {
   "auth.errNotConfirmed": "Confirm your email address first — check your inbox for the link.",
   "auth.errRateLimited": "Too many attempts. Wait a minute and try again.",
   "auth.errGeneric": "Something went wrong. Try again.",
+  "auth.errPasswordPwned":
+    "That password has appeared in a public data breach, so it is not safe to use here. Please choose a different one — making it longer will not help.",
+  "auth.errPasswordWeak": "That password is too easy to guess. Please choose a different one.",
+  "auth.errSignupDisabled": "New accounts are not being accepted right now.",
+  "auth.passwordHint":
+    "At least 6 characters. Passwords found in known data breaches are refused, so avoid one you use elsewhere.",
 
   // ---- card meta
   "card.votes": "{n} votes",
