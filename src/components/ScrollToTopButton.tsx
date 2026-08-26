@@ -18,9 +18,7 @@ export function ScrollToTopButton() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   useEffect(() => {
-    let animationFrame = 0;
     const updateVisibility = () => {
-      animationFrame = 0;
       const scrollTop = Math.max(
         window.scrollY,
         document.documentElement.scrollTop,
@@ -28,22 +26,19 @@ export function ScrollToTopButton() {
       );
       setVisible(scrollTop >= SHOW_AFTER_PX);
     };
-    const scheduleUpdate = () => {
-      if (animationFrame) return;
-      animationFrame = window.requestAnimationFrame(updateVisibility);
-    };
 
-    scheduleUpdate();
-    const restoreCheck = window.setTimeout(scheduleUpdate, 100);
-    window.addEventListener("scroll", scheduleUpdate, { passive: true });
-    window.addEventListener("resize", scheduleUpdate, { passive: true });
-    window.addEventListener("pageshow", scheduleUpdate);
+    updateVisibility();
+    const restoreCheck = window.setTimeout(updateVisibility, 100);
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    window.addEventListener("resize", updateVisibility, { passive: true });
+    window.addEventListener("pageshow", updateVisibility);
+    document.addEventListener("visibilitychange", updateVisibility);
     return () => {
       window.clearTimeout(restoreCheck);
-      if (animationFrame) window.cancelAnimationFrame(animationFrame);
-      window.removeEventListener("scroll", scheduleUpdate);
-      window.removeEventListener("resize", scheduleUpdate);
-      window.removeEventListener("pageshow", scheduleUpdate);
+      window.removeEventListener("scroll", updateVisibility);
+      window.removeEventListener("resize", updateVisibility);
+      window.removeEventListener("pageshow", updateVisibility);
+      document.removeEventListener("visibilitychange", updateVisibility);
     };
   }, [pathname]);
 
