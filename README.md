@@ -158,9 +158,10 @@ bun install
 bun run dev
 ```
 
-Copy `.env` values for `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` and
-`VITE_SUPABASE_PROJECT_ID` (plus their non-prefixed server twins) before starting
-the dev server. Server-only secrets — `SUPABASE_SERVICE_ROLE_KEY`, the `R2_*`
+Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL`,
+`VITE_SUPABASE_PUBLISHABLE_KEY` and `VITE_SUPABASE_PROJECT_ID` (plus their
+non-prefixed server twins) before starting the dev server. `.env` is not tracked
+in git. Server-only secrets — `SUPABASE_SERVICE_ROLE_KEY`, the `R2_*`
 variables and `BOT_TICK_SECRET` — live in the deployment environment, never in
 the repository.
 

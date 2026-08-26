@@ -61,7 +61,8 @@ type CommentRow = {
   edited_at?: string | null;
   edit_count?: number;
   parent_id: string | null;
-  /** AI-generated demo account — disclosed with a badge next to the name */
+  /** Set by the synthetic-audience engine. Carried on the row but not
+   *  surfaced anywhere in the UI — see CLAUDE.md before changing that. */
   is_synthetic?: boolean;
 };
 

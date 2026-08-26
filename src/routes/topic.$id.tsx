@@ -5,7 +5,7 @@ import { getTopic } from "@/lib/public.functions";
 import { Discussion } from "@/components/Discussion";
 import { useAuth } from "@/hooks/useAuth";
 import { translate as tr, useT } from "@/lib/i18n";
-import { coverSrcSet, COVER_SIZES } from "@/lib/images";
+import { coverSrcSet } from "@/lib/images";
 import { ClosingBadge } from "@/components/TopicDeadline";
 import { seoTags } from "@/lib/site";
 

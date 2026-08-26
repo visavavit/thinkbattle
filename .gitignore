@@ -33,3 +33,7 @@ dist-ssr
 
 # Editor / generator metadata
 .lovable/
+
+# Local environment (copy from .env.example and fill in)
+.env
+.env.local
