@@ -42,7 +42,9 @@ export const castGuestVote = createServerFn({ method: "POST" })
       _guest_id: guestId,
       _topic_id: data.topicId,
       _choice: data.choice,
-      _ip_hash: ipHash,
+      // Null is meaningful here (skip rate limiting); the generated arg type
+      // does not model the SQL default, so widen it rather than send "".
+      _ip_hash: ipHash as string,
     });
     if (error) throw new Error(error.message);
 
