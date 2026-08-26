@@ -198,5 +198,24 @@ with (security_invoker = on) as
 
 grant select on public.topic_cards to anon, authenticated;
 
-revoke all on function public.topic_search_text(uuid) from public;
-revoke all on function public.refresh_topic_search_text(uuid) from public;
+-- `from public, anon, authenticated`, not `from public` alone. Supabase's
+-- default privileges grant EXECUTE on new functions in this schema to anon and
+-- authenticated explicitly, and revoking the PUBLIC pseudo-role does not remove
+-- an explicit role grant — so the shorter form would leave both of these
+-- callable over PostgREST RPC. They are SECURITY DEFINER: topic_search_text
+-- would return the text of an unpublished topic past its read policy, and
+-- refresh_topic_search_text is an UPDATE on topics that anon holds no grant for.
+--
+-- The `revoke ... from public` + explicit `grant` form used elsewhere in this
+-- repo is the deliberate-exposure case (topic_ranked_comments, site_flags).
+-- These two are internal: the triggers below call them as the definer anyway.
+revoke all on function public.topic_search_text(uuid) from public, anon, authenticated;
+revoke all on function public.refresh_topic_search_text(uuid) from public, anon, authenticated;
+
+-- Trigger functions cannot be reached over RPC, but the repo revokes them all
+-- the same (see 20260817040655) and consistency here is worth more than the
+-- two saved lines.
+revoke all on function public.sync_topic_search_text() from public, anon, authenticated;
+revoke all on function public.sync_search_text_from_topic_tags() from public, anon, authenticated;
+revoke all on function public.sync_search_text_from_tag_rename() from public, anon, authenticated;
+revoke all on function public.sync_search_text_from_category_rename() from public, anon, authenticated;
