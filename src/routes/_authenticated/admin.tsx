@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 import { AudiencePanel } from "@/components/admin/AudiencePanel";
 import { AuditLogPanel } from "@/components/admin/AuditLogPanel";
+import { SettingsPanel } from "@/components/admin/SettingsPanel";
 import { ModerationPanel } from "@/components/admin/ModerationPanel";
 import { PeoplePanel } from "@/components/admin/PeoplePanel";
 import { TaxonomyPanel } from "@/components/admin/TaxonomyPanel";
@@ -81,6 +82,7 @@ function AdminPage() {
           <TabsTrigger value="audience">Audience</TabsTrigger>
           <TabsTrigger value="taxonomy">Categories &amp; Tags</TabsTrigger>
           <TabsTrigger value="audit">Audit log</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="pt-4">
@@ -106,6 +108,9 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="audit" className="pt-4">
           <AuditLogPanel />
+        </TabsContent>
+        <TabsContent value="settings" className="pt-4">
+          <SettingsPanel actorId={user.id} />
         </TabsContent>
       </Tabs>
     </div>

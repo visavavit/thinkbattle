@@ -161,8 +161,10 @@ Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL`,
 `VITE_SUPABASE_PUBLISHABLE_KEY` and `VITE_SUPABASE_PROJECT_ID` (plus their
 non-prefixed server twins) before starting the dev server. `.env` is not tracked
 in git. Server-only secrets — `SUPABASE_SERVICE_ROLE_KEY`, the `R2_*`
-variables and `BOT_TICK_SECRET` — live in the deployment environment, never in
-the repository. `VITE_CF_BEACON_TOKEN` is optional and enables Cloudflare Web
+variables, `BOT_TICK_SECRET` and `GUEST_COOKIE_SECRET` — live in the
+deployment environment, never in the repository. `GUEST_COOKIE_SECRET` signs
+the guest-vote device cookie and salts the rate-limit IP hash; without it
+guest voting stays off, whatever the admin switch says. `VITE_CF_BEACON_TOKEN` is optional and enables Cloudflare Web
 Analytics when set (see `src/components/WebAnalytics.tsx`); the site works
 the same without it.
 

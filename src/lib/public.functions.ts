@@ -230,6 +230,41 @@ export const getHeadliners = createServerFn({ method: "GET" }).handler(async () 
   return cached("headliners", PUBLIC_READ, fetchHeadliners);
 });
 
+/** Feature switches every visitor sees the same answer to. */
+export type SiteFlags = { guest_voting: boolean };
+
+const FLAGS_OFF: SiteFlags = { guest_voting: false };
+
+async function fetchSiteFlags(): Promise<SiteFlags> {
+  const supabase = publicClient(30);
+  // site_flags() is a definer function that enumerates the public keys in
+  // code. app_settings itself stays unreadable — it holds bot_tick_secret,
+  // and a read policy broad enough to expose a flag is one mistake away from
+  // exposing that.
+  const { data, error } = await supabase.rpc("site_flags");
+  if (error) throw new Error(error.message);
+  const flags = data as unknown as Partial<SiteFlags> | null;
+  return { guest_voting: flags?.guest_voting === true };
+}
+
+/**
+ * The flag is global and identical for everyone, so it is safe to bake into
+ * the shared document — which is the point: the browser makes no extra request
+ * for it. The cost is that a toggle takes up to the process TTL plus the
+ * document cache to propagate, about a minute. The admin panel says so, and
+ * cast_guest_vote re-checks server-side so a stale page cannot act on it.
+ */
+export const getSiteFlags = createServerFn({ method: "GET" }).handler(async () => {
+  setResponseHeader("cache-control", publicCacheControl(PUBLIC_READ));
+  try {
+    return await cached("site-flags", PUBLIC_READ, fetchSiteFlags);
+  } catch {
+    // A feature switch is not worth failing a page render over, and off is
+    // the safe direction to fail in.
+    return FLAGS_OFF;
+  }
+});
+
 async function fetchTopic(id: string): Promise<TopicCard | null> {
   const supabase = publicClient(30);
   const { data: row, error } = await supabase

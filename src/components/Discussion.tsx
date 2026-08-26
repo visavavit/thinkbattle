@@ -30,6 +30,8 @@ import { getTopicCounts, type TopicCard } from "@/lib/public.functions";
 import { useTopicClock } from "@/lib/topic-clock";
 import { commentsPageFilter, nextCommentsCursor, type CommentsCursor } from "@/lib/comments-cursor";
 import { pagesHave, removeRow, upsertRow } from "@/lib/comments-cache";
+import { castGuestVote } from "@/lib/guest.functions";
+import { readGuestVote, saveGuestVote } from "@/lib/guest-vote-store";
 import { ClosingNotice, DeadlineCountdown, DeadlineLine } from "./TopicDeadline";
 import { ResultPanel, type TopTake } from "./ResultPanel";
 import { SplitBar } from "./SplitBar";
@@ -179,9 +181,18 @@ const SORTS: { key: SortKey; labelKey: TranslationKey; icon: typeof Star }[] = [
   { key: "newest", labelKey: "sort.newest", icon: Clock },
 ];
 
-export function Discussion({ topic, user }: { topic: TopicCard; user: User | null }) {
+export function Discussion({
+  topic,
+  user,
+  guestVoting = false,
+}: {
+  topic: TopicCard;
+  user: User | null;
+  /** whether an anonymous reader may cast a vote; admin-controlled, off by default */
+  guestVoting?: boolean;
+}) {
   const queryClient = useQueryClient();
-  const { t } = useI18n();
+  const { t, tError } = useI18n();
   const isAdmin = useIsAdmin(user);
   const { isBanned, reason: banReason } = useBanStatus(user);
   // flips on its own the moment the deadline passes, so a reader who has had
@@ -232,7 +243,12 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
 
   useEffect(() => {
     if (!user) {
-      setMyVote(null);
+      // A guest's own vote comes from the local mirror, read in an effect and
+      // never during render — the same hydration discipline LanguageProvider
+      // uses. Deliberately not a server round trip: that would make every
+      // anonymous page view uncacheable, which is the exact cost the caching
+      // in public.functions.ts exists to avoid.
+      setMyVote(guestVoting ? readGuestVote(topic.id) : null);
       return;
     }
     let active = true;
@@ -248,7 +264,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     return () => {
       active = false;
     };
-  }, [user, topic.id]);
+  }, [user, topic.id, guestVoting]);
 
   // A viral topic can hold thousands of takes. Pages are fetched by keyset
   // cursor and accumulate: "load more" fetches only the next page, where a
@@ -578,6 +594,46 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const total = votesA + votesB;
   const pctA = total === 0 ? 50 : Math.round((100 * votesA) / total);
 
+  /**
+   * A guest's vote. The server owns the whole decision — whether the feature
+   * is on, whether the topic is open, and what the tally is afterwards — and
+   * hands back resolved numbers rather than a delta.
+   *
+   * That matters for one case the client cannot detect: a guest whose local
+   * mirror was cleared but whose cookie survived believes they have no vote,
+   * so pressing A when the server already holds B is really A+1/B-1, not A+1.
+   */
+  const applyGuestVote = useCallback(
+    async (choice: Side) => {
+      if (isClosed) {
+        toast.error(t("vote.closed"));
+        return;
+      }
+      const previous = myVote;
+      if (previous === choice) return;
+
+      setMyVote(choice);
+      lastLocalVoteAt.current = Date.now();
+      setVotesA((v) => v + (choice === "a" ? 1 : 0) - (previous === "a" ? 1 : 0));
+      setVotesB((v) => v + (choice === "b" ? 1 : 0) - (previous === "b" ? 1 : 0));
+
+      try {
+        const result = await castGuestVote({ data: { topicId: topic.id, choice } });
+        saveGuestVote(topic.id, result.choice);
+        setMyVote(result.choice);
+        setVotesA(result.votesA);
+        setVotesB(result.votesB);
+        lastLocalVoteAt.current = Date.now();
+      } catch (error) {
+        setMyVote(previous);
+        setVotesA(topic.votes_a);
+        setVotesB(topic.votes_b);
+        toast.error(tError(describeError(error, t("vote.failed"))));
+      }
+    },
+    [isClosed, myVote, topic.id, topic.votes_a, topic.votes_b, t, tError],
+  );
+
   const applyVote = useCallback(
     async (choice: Side) => {
       if (!user) return;
@@ -625,16 +681,19 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   // always confirmed rather than fired straight off the vote button
   const [pendingSide, setPendingSide] = useState<Side | null>(null);
 
+  /** Who is allowed to press the buttons at all. */
+  const canVote = Boolean(user) || guestVoting;
+
   const castVote = useCallback(
     (choice: Side) => {
-      if (!user || isClosed) return;
+      if (!canVote || isClosed) return;
       if (myVote && myVote !== choice) {
         setPendingSide(choice);
         return;
       }
-      void applyVote(choice);
+      void (user ? applyVote(choice) : applyGuestVote(choice));
     },
-    [user, isClosed, myVote, applyVote],
+    [canVote, user, isClosed, myVote, applyVote, applyGuestVote],
   );
 
   /**
@@ -782,14 +841,14 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
               side="a"
               label={topic.choice_a}
               active={myVote === "a"}
-              disabled={!user}
+              disabled={!canVote}
               onClick={() => castVote("a")}
             />
             <VoteButton
               side="b"
               label={topic.choice_b}
               active={myVote === "b"}
-              disabled={!user}
+              disabled={!canVote}
               onClick={() => castVote("b")}
             />
           </div>
@@ -804,13 +863,21 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
                 )
               ) : (
                 <>
-                  {" — "}
+                  {/* Four states here. Signed in is above; the rest differ by
+                      whether guest voting is on and whether this device has
+                      already used it. A guest can always vote or switch — what
+                      an account adds is the right to argue back. */}
+                  {guestVoting ? (myVote ? " — " : ` — ${t("vote.guestPickToUnlock")} `) : " — "}
                   <Link
                     to="/auth"
                     search={{ redirect: `/topic/${topic.id}` }}
                     className="font-bold text-primary underline"
                   >
-                    {t("vote.signInToVote")}
+                    {guestVoting
+                      ? myVote
+                        ? t("vote.guestSignInToArgue")
+                        : t("vote.guestSignInToo")
+                      : t("vote.signInToVote")}
                   </Link>
                 </>
               )}
@@ -921,7 +988,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
               onClick={() => {
                 const next = pendingSide;
                 setPendingSide(null);
-                if (next) void applyVote(next);
+                if (next) void (user ? applyVote(next) : applyGuestVote(next));
               }}
             >
               {t("switch.confirm")}
@@ -1158,7 +1225,13 @@ function CommentColumn({
   const t = useT();
   const tError = useI18n().tError;
   const accent = side === "a" ? "border-side-a" : "border-side-b";
-  const canComment = myVote === side && !isBanned && !isClosed;
+  // The user check is load-bearing, not defensive. This used to read
+  // `myVote === side && ...`, correct only because an anonymous reader could
+  // never have a myVote. Guest voting breaks that invariant: without this a
+  // guest who has voted gets an open composer whose Post button silently does
+  // nothing, because submit() below returns on !user. Guest voting unlocks the
+  // tally, not the debate.
+  const canComment = Boolean(user) && myVote === side && !isBanned && !isClosed;
 
   async function submit() {
     const text = body.trim();
@@ -1247,7 +1320,12 @@ function CommentColumn({
                 ? myVote
                   ? t("comment.lockedOtherSide")
                   : t("comment.lockedVote")
-                : t("comment.lockedSignIn")}
+                : // A guest who has already voted is told their vote counted
+                  // and what signing in would add, rather than being asked to
+                  // do the thing they have just done.
+                  myVote
+                  ? t("comment.lockedGuestVoted")
+                  : t("comment.lockedSignIn")}
         </div>
       )}
 

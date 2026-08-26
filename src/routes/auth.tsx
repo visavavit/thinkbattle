@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { translate as tr, useT } from "@/lib/i18n";
 import { safeReturnPath, stashReturnPath, takeStashedReturnPath } from "@/lib/return-to";
+import { claimGuestVotes } from "@/lib/guest.functions";
+import { forgetGuestVotes } from "@/lib/guest-vote-store";
 
 const authSearchSchema = z.object({
   // Where to go once signed in. Validated again on use — see safeReturnPath.
@@ -52,12 +54,32 @@ function AuthPage() {
   // leaving wins over the query string, which will not have survived.
   const returnTo = safeReturnPath(search.redirect);
 
+  // Fires once per real sign-in. CLAUDE.md documents Supabase re-emitting
+  // SIGNED_IN on every tab refocus, so a claim hung off the raw event would
+  // cost a round trip per focus, per tab.
+  const claimedFor = useRef<string | null>(null);
+
   useEffect(() => {
     if (!user) return;
     ensureProfile(user);
+
+    if (claimedFor.current !== user.id) {
+      claimedFor.current = user.id;
+      // Hand this device's guest votes to the account. Best-effort: a failed
+      // merge must not block the sign-in that just succeeded, and the votes
+      // still count in the tally either way — they are just not attributed.
+      void claimGuestVotes()
+        .then(({ claimed }) => {
+          if (claimed.length === 0) return;
+          forgetGuestVotes(claimed);
+          toast.success(t("vote.guestMerged"));
+        })
+        .catch(() => {});
+    }
+
     const target = takeStashedReturnPath() ?? returnTo;
     navigate({ to: target ?? "/", replace: true });
-  }, [user, navigate, returnTo]);
+  }, [user, navigate, returnTo, t]);
 
   async function submit() {
     const parsed = schema.safeParse({ email, password });

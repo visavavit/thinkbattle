@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import { getTopic } from "@/lib/public.functions";
+import { getSiteFlags, getTopic, type SiteFlags } from "@/lib/public.functions";
 import { Discussion } from "@/components/Discussion";
 import { useAuth } from "@/hooks/useAuth";
 import { translate as tr, useT } from "@/lib/i18n";
@@ -16,9 +16,26 @@ const topicQuery = (id: string) =>
     queryFn: () => getTopic({ data: { id } }),
   });
 
+/**
+ * Feature switches. Global and identical for every visitor, so this rides
+ * along in the shared document and costs the browser no extra request — see
+ * getSiteFlags. It is deliberately not per-device state: nothing that varies
+ * by reader may enter the SSR path, or it lands in the shared edge cache.
+ */
+const siteFlagsQuery = queryOptions({
+  queryKey: ["site-flags"],
+  queryFn: () => getSiteFlags(),
+  staleTime: 5 * 60_000,
+});
+
+const FLAGS_OFF: SiteFlags = { guest_voting: false };
+
 export const Route = createFileRoute("/topic/$id")({
   loader: async ({ context, params }) => {
-    const topic = await context.queryClient.ensureQueryData(topicQuery(params.id));
+    const [topic] = await Promise.all([
+      context.queryClient.ensureQueryData(topicQuery(params.id)),
+      context.queryClient.ensureQueryData(siteFlagsQuery),
+    ]);
     if (!topic) throw notFound();
     return {
       id: topic.id,
@@ -97,6 +114,7 @@ function TopicFallback({ titleKey }: { titleKey: "topic.loadFailed" | "topic.not
 function TopicPage() {
   const { id } = Route.useParams();
   const { data: topic } = useSuspenseQuery(topicQuery(id));
+  const { data: flags = FLAGS_OFF } = useSuspenseQuery(siteFlagsQuery);
   const { user } = useAuth();
   const t = useT();
 
@@ -144,7 +162,7 @@ function TopicPage() {
       ) : null}
       {topic.description ? <p className="text-muted-foreground">{topic.description}</p> : null}
 
-      <Discussion topic={topic} user={user} />
+      <Discussion topic={topic} user={user} guestVoting={flags.guest_voting} />
     </div>
   );
 }

@@ -54,6 +54,8 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         heading: "คุกกี้และการจัดเก็บในเบราว์เซอร์",
         body: [
           "เราใช้ที่จัดเก็บในเบราว์เซอร์เพื่อรักษาสถานะการเข้าสู่ระบบและจดจำภาษาที่เลือกเท่านั้น ไม่มีคุกกี้โฆษณา",
+          "หากคุณร่วมโหวตโดยไม่ได้เข้าสู่ระบบ เราจะตั้งคุกกี้ที่มีรหัสอุปกรณ์แบบสุ่ม เพื่อให้หนึ่งอุปกรณ์นับเป็นหนึ่งคะแนนต่อหนึ่งประเด็น และเพื่อให้คุณเปลี่ยนใจได้ภายหลัง รหัสนี้ไม่ผูกกับตัวตนของคุณ และจะถูกลบเมื่อคุณเข้าสู่ระบบ",
+          "เพื่อป้องกันการโหวตซ้ำโดยอัตโนมัติ เราบันทึกค่าแฮชของหมายเลขไอพีพร้อมวันที่ ไม่ใช่หมายเลขไอพีโดยตรง ค่าแฮชจะเปลี่ยนทุกวันจึงไม่สามารถเชื่อมโยงข้ามวันได้",
         ],
       },
       {
@@ -92,6 +94,8 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         heading: "Cookies and browser storage",
         body: [
           "Browser storage is used only to keep you signed in and to remember your language choice. No advertising cookies.",
+          "If you vote without an account, we set a cookie holding a random device identifier. It exists so one device counts as one vote per debate and so you can change your mind later. It is not linked to your identity, and it is cleared when you sign in.",
+          "To limit automated repeat voting we record a dated hash of your IP address rather than the address itself. The hash changes every day, so it cannot be linked across days.",
         ],
       },
       {

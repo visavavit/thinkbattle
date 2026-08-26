@@ -38,4 +38,13 @@ export const serverMessagesTh: Record<string, string> = {
   "Admins only.": "เฉพาะผู้ดูแลระบบเท่านั้น",
   "This debate has closed. Voting and comments are final.":
     "ประเด็นนี้ปิดแล้ว ผลโหวตและความเห็นถือเป็นที่สิ้นสุด",
+  "Guest voting is turned off.":
+    "ขณะนี้ปิดการโหวตสำหรับผู้ไม่ได้เข้าสู่ระบบ กรุณาเข้าสู่ระบบเพื่อโหวต",
+  "Pick one of the two sides.": "กรุณาเลือกหนึ่งในสองฝ่าย",
+  // Deliberately not an accusation: Thai mobile carriers put many users behind
+  // one address, so this will sometimes land on someone who did nothing wrong.
+  "That is a lot of voting at once. Try again in a minute.":
+    "มีการโหวตจำนวนมากในช่วงเวลาสั้น ๆ กรุณาลองใหม่ในอีกหนึ่งนาที",
+  "That is a lot of voting at once. Try again later.":
+    "มีการโหวตจำนวนมากในช่วงเวลาสั้น ๆ กรุณาลองใหม่อีกครั้งในภายหลัง",
 };
