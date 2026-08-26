@@ -75,6 +75,10 @@ alter table public.uploads enable row level security;
 -- Read-only to its owner, and written exclusively by the definer functions
 -- below. An INSERT grant here would let a client mint a ledger row claiming an
 -- object it does not own, which is the one thing the ledger exists to prevent.
+-- Dropped first because Postgres has no `create policy if not exists`, and a
+-- migration that cannot be re-run is one you cannot recover a half-failed
+-- apply with.
+drop policy if exists "read own uploads" on public.uploads;
 create policy "read own uploads" on public.uploads
   for select to authenticated using (auth.uid() = user_id);
 
