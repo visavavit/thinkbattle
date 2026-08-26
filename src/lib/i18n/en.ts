@@ -186,6 +186,8 @@ export const en = {
   "comment.attachConfirmRemove":
     "Remove this image? It is deleted for good — this cannot be undone.",
   "comment.attachmentAlt": "Image attached to this take",
+  "comment.attachmentOpen": "View this image full size",
+  "comment.attachmentFull": "Attached image",
   "comment.post": "Post your take",
   "comment.posted": "Take posted 🔥",
   "comment.tooLong": "That take is too long ({max} characters max).",

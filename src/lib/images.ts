@@ -19,27 +19,44 @@
 export const COVER_WIDTHS = [480, 960, 1600] as const;
 
 /**
+ * The cover slot is full-bleed on phones and capped by the feed grid above it,
+ * so a viewport-width hint is accurate enough for the browser to choose well.
+ */
+export const COVER_SIZES = "(min-width: 1024px) 560px, (min-width: 640px) 50vw, 100vw";
+
+/**
  * Widths a comment attachment is rendered at, ascending.
  *
- * Stops at 960 where covers go to 1600: an attachment sits inside one debate
- * column, which the arena caps at roughly 560 CSS pixels even on a wide
- * screen, so 960 already covers a 2x phone and there is nothing above it worth
- * paying for. Lightbox-style full-size viewing is deliberately not offered —
- * the picture is evidence attached to an argument, not the argument.
+ * The first two rungs are what the debate column actually paints: it caps at
+ * roughly 520 CSS pixels, so 960 already covers a 2x phone. 1600 exists purely
+ * for the tap-to-open view — an attachment on this site is usually a
+ * screenshot, and a screenshot is mostly text, which is the one kind of
+ * picture that is worthless at column width. Without a rung above what the
+ * column paints, "see it full size" would just mean "see the same 960px file
+ * on a bigger canvas".
  */
-export const COMMENT_WIDTHS = [480, 960] as const;
+export const COMMENT_WIDTHS = [480, 960, 1600] as const;
+
+/**
+ * The rungs the *inline* thumbnail is allowed to choose from.
+ *
+ * This is not the same list as COMMENT_WIDTHS and must not become it. A `sizes`
+ * hint alone does not keep the browser off the top rung: it multiplies the CSS
+ * width by the device pixel ratio and picks the smallest candidate at or above
+ * the result, so a 520px slot on an ordinary 2x laptop asks for 1040px and
+ * would take the 1600 file every time. Every reader scrolling past a thread
+ * would pay for the opened view nobody opened.
+ *
+ * Withholding 1600 from the srcset caps that at 960. The opened view does not
+ * use a srcset at all — it loads the stored URL, which is the widest rendition.
+ */
+const COMMENT_INLINE_WIDTHS = [480, 960] as const;
 
 /**
  * An attachment is full-bleed inside its column, and below lg only one column
  * is on screen at a time.
  */
 export const COMMENT_SIZES = "(min-width: 1024px) 520px, (min-width: 640px) 50vw, 100vw";
-
-/**
- * The cover slot is full-bleed on phones and capped by the feed grid above it,
- * so a viewport-width hint is accurate enough for the browser to choose well.
- */
-export const COVER_SIZES = "(min-width: 1024px) 560px, (min-width: 640px) 50vw, 100vw";
 
 const RENDITION_PATTERN = /-w(\d+)\.(jpg|png|webp)$/;
 
@@ -73,9 +90,12 @@ export function coverSrcSet(url: string | null | undefined): string | undefined 
   return srcSetFor(url, COVER_WIDTHS);
 }
 
-/** A srcset for a take's attachment. */
+/**
+ * A srcset for a take's attachment as it appears inline in a column. Tops out
+ * below the widest stored rendition on purpose — see COMMENT_INLINE_WIDTHS.
+ */
 export function attachmentSrcSet(url: string | null | undefined): string | undefined {
-  return srcSetFor(url, COMMENT_WIDTHS);
+  return srcSetFor(url, COMMENT_INLINE_WIDTHS);
 }
 
 /** Builds the object key for one rendition of an upload. */

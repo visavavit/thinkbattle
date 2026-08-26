@@ -4,7 +4,19 @@ import { attachmentSrcSet, coverSrcSet, coverWidthsFor, renditionKey } from "./i
 const CDN = "https://cdn.example.com";
 
 describe("attachmentSrcSet", () => {
+  test("stops below the widest rendition, so the column never loads it", () => {
+    // 1600 is uploaded and is what the opened view shows, but a `sizes` hint
+    // alone would not keep a 2x screen off it: 520 CSS px x 2 asks for 1040,
+    // and the browser takes the smallest candidate at or above that. Leaving
+    // 1600 out of the srcset is what caps the inline thumbnail at 960.
+    expect(attachmentSrcSet(`${CDN}/comments/abc-w1600.webp`)).toBe(
+      `${CDN}/comments/abc-w480.webp 480w, ${CDN}/comments/abc-w960.webp 960w`,
+    );
+  });
+
   test("offers every rung the upload actually wrote, and no more", () => {
+    // A picture whose source was too narrow for a rung stops where the upload
+    // stopped — the srcset must never name a file nobody wrote.
     expect(attachmentSrcSet(`${CDN}/comments/abc-w960.webp`)).toBe(
       `${CDN}/comments/abc-w480.webp 480w, ${CDN}/comments/abc-w960.webp 960w`,
     );
@@ -24,13 +36,11 @@ describe("attachmentSrcSet", () => {
     expect(attachmentSrcSet(undefined)).toBeUndefined();
   });
 
-  test("never claims a width above the attachment ladder", () => {
-    // Covers go up to 1600 and attachments stop at 960. A URL carrying a
-    // cover-sized suffix must not make the attachment markup ask for a file
-    // the attachment ladder never wrote.
-    expect(attachmentSrcSet(`${CDN}/comments/abc-w1600.webp`)).toBe(
-      `${CDN}/comments/abc-w480.webp 480w, ${CDN}/comments/abc-w960.webp 960w`,
-    );
+  test("ignores a suffix that is not on the ladder", () => {
+    // Nothing writes a key like this today — sub-rung sources are stored
+    // unsized — but an old or hand-made URL must degrade to a single src
+    // rather than invent siblings around a width nobody wrote.
+    expect(attachmentSrcSet(`${CDN}/comments/abc-w300.webp`)).toBeUndefined();
   });
 });
 

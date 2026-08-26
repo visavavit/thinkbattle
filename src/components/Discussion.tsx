@@ -140,6 +140,14 @@ const MIN_ROWS_FOR_PINS = 6;
 /** How long a revealed take keeps its ring. */
 const FLASH_MS = 2500;
 
+/**
+ * How tall an attachment may stand in a column, in pixels. Matches Tailwind's
+ * `max-h-96`, which is what the fallback path still uses — kept as a number
+ * because the sized path derives a pixel width from it. A taller cap would let
+ * one phone screenshot tower over the whole opposing column.
+ */
+const MAX_ATTACHMENT_HEIGHT = 384;
+
 const netOf = (r: CommentRow) => (r.likes_count ?? 0) - (r.dislikes_count ?? 0);
 
 /** Stable empty fallback for pinsQuery.data?.authors, so a missing query
@@ -1598,7 +1606,7 @@ function AttachmentPicker({
 }
 
 /**
- * A posted take's attachment.
+ * A posted take's attachment: capped in the column, full size when opened.
  *
  * `width`/`height` are on the element on purpose. Takes load by keyset cursor
  * and arrive mid-scroll, so an image that only claims its space once it decodes
@@ -1607,9 +1615,10 @@ function AttachmentPicker({
  * reserve the box up front; they are null only for pictures whose ladder the
  * uploader could not build, and those are rare enough to let reflow.
  *
- * Capped rather than opened into a lightbox: the picture supports the argument,
- * it is not the argument, and a full-screen viewer is an invitation to post
- * pictures that need one.
+ * The thumbnail is a real <button>, not an <img> with a click handler, so it
+ * is reachable by keyboard and announces itself. The remove control sits on
+ * top of it and stops propagation — otherwise taking the picture down would
+ * open it on the way out.
  */
 function CommentAttachment({
   row,
@@ -1622,6 +1631,7 @@ function CommentAttachment({
 }) {
   const { t, tError } = useI18n();
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
   const sweep = useServerFn(sweepOrphanUploads);
 
   if (!row.image_url) return null;
@@ -1650,23 +1660,64 @@ function CommentAttachment({
     onRemoved(updated as unknown as CommentRow);
   }
 
+  // Both stored dimensions, or neither: the frame's whole job is to be the
+  // right shape before the bytes arrive, and it cannot do that from one.
+  const w = row.image_width ?? 0;
+  const h = row.image_height ?? 0;
+  const sized = w > 0 && h > 0;
+
   return (
-    <figure className="relative mt-3">
-      <img
-        src={row.image_url}
-        srcSet={attachmentSrcSet(row.image_url)}
-        sizes={COMMENT_SIZES}
-        width={row.image_width ?? undefined}
-        height={row.image_height ?? undefined}
-        alt={t("comment.attachmentAlt")}
-        loading="lazy"
-        decoding="async"
-        className="max-h-96 w-full rounded-sm border border-border bg-muted/40 object-contain"
-      />
+    /*
+     * The frame hugs the picture rather than filling the column. A phone
+     * screenshot is tall and narrow, and a full-width box around one is mostly
+     * empty background with the picture stranded in the middle — and it puts
+     * the remove control an inch away from the thing it removes.
+     *
+     * But hugging cannot be `width: auto`. An unloaded <img> with auto on both
+     * axes has no intrinsic size, so the box collapses to its border and snaps
+     * open when the bytes land — exactly the shift the stored dimensions exist
+     * to prevent, in the one place it is most disruptive: a keyset-paged column
+     * the reader is in the middle of. So the width is computed here instead:
+     * as wide as the picture would be at the height cap, and never wider than
+     * the column. With that definite and aspect-ratio on the image, the shape
+     * is fully known from the row alone.
+     *
+     * Rows from before the dimensions were recorded fall back to filling the
+     * column, which reflows on load. There is nothing better to do with them,
+     * and they are rare.
+     */
+    <figure
+      className={`relative mt-3 ${sized ? "max-w-full" : "w-full"}`}
+      style={sized ? { width: `${Math.round((MAX_ATTACHMENT_HEIGHT * w) / h)}px` } : undefined}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={t("comment.attachmentOpen")}
+        className="block w-full cursor-zoom-in rounded-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+      >
+        <img
+          src={row.image_url}
+          srcSet={attachmentSrcSet(row.image_url)}
+          sizes={COMMENT_SIZES}
+          width={w || undefined}
+          height={h || undefined}
+          alt={t("comment.attachmentAlt")}
+          loading="lazy"
+          decoding="async"
+          style={sized ? { aspectRatio: `${w} / ${h}` } : undefined}
+          className={`w-full rounded-sm border border-border bg-muted/40 object-contain ${
+            sized ? "" : "max-h-96"
+          }`}
+        />
+      </button>
       {canRemove ? (
         <button
           type="button"
-          onClick={remove}
+          onClick={(e) => {
+            e.stopPropagation();
+            void remove();
+          }}
           disabled={busy}
           aria-label={t("comment.attachRemove")}
           title={t("comment.attachRemove")}
@@ -1675,7 +1726,57 @@ function CommentAttachment({
           <X className="h-3.5 w-3.5" />
         </button>
       ) : null}
+
+      <AttachmentLightbox row={row} open={open} onOpenChange={setOpen} />
     </figure>
+  );
+}
+
+/**
+ * The opened attachment.
+ *
+ * Deliberately not a srcset: the stored URL is the widest rendition, and this
+ * view is the whole reason a rung wider than the column exists. Handing the
+ * browser a `sizes` hint here would let it pick the column-sized file again and
+ * defeat the point.
+ *
+ * The image is capped at the viewport rather than shown at natural pixels. A
+ * 1600px screenshot on a phone would otherwise open at four times the screen
+ * width, and the reader's first act would be to pinch it back down. Anyone who
+ * genuinely wants the raw file has the URL.
+ *
+ * Mounted only while open so the wide rendition is never fetched by the many
+ * readers who just scroll past.
+ */
+function AttachmentLightbox({
+  row,
+  open,
+  onOpenChange,
+}: {
+  row: CommentRow;
+  open: boolean;
+  onOpenChange: (next: boolean) => void;
+}) {
+  const t = useT();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[95vw] gap-2 p-2 sm:max-w-4xl">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{t("comment.attachmentFull")}</DialogTitle>
+          <DialogDescription>{t("comment.attachmentAlt")}</DialogDescription>
+        </DialogHeader>
+        {open && row.image_url ? (
+          <img
+            src={row.image_url}
+            width={row.image_width ?? undefined}
+            height={row.image_height ?? undefined}
+            alt={t("comment.attachmentAlt")}
+            decoding="async"
+            className="max-h-[85vh] w-auto max-w-full rounded-sm object-contain"
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 

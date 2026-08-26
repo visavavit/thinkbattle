@@ -147,15 +147,21 @@ function AttachmentPreview({ url }: { url: string | null | undefined }) {
   if (!url) return null;
   return (
     <figure className="mt-2">
-      <img
-        src={url}
-        alt="Attached to this comment"
-        loading="lazy"
-        decoding="async"
-        className="max-h-48 rounded-sm border border-border bg-muted/40 object-contain"
-      />
+      {/* Opens the stored file in a new tab rather than a dialog. A moderator
+          deciding whether a screenshot is a doxx needs to read the text in it,
+          which usually means zooming past anything a modal would give them. */}
+      <a href={url} target="_blank" rel="noreferrer" title="Open this image full size">
+        <img
+          src={url}
+          alt="Attached to this comment"
+          loading="lazy"
+          decoding="async"
+          className="max-h-48 cursor-zoom-in rounded-sm border border-border bg-muted/40 object-contain"
+        />
+      </a>
       <figcaption className="mt-1 text-xs text-muted-foreground">
-        Attached image — hiding or deleting this comment removes it from storage.
+        Attached image — click to open it full size. Hiding or deleting this comment removes it from
+        storage.
       </figcaption>
     </figure>
   );

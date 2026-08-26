@@ -197,9 +197,19 @@ Rules for future agents:
 - Attachments cannot be swapped after posting, only removed. The body has an
   edit trail; an image has none, and one that can change silently after earning
   likes is worse than one that cannot change at all.
-- Keep `image_width`/`image_height` on the row and on the `<img>`. Takes page in
-  by keyset cursor and arrive mid-scroll; without them every picture shoves the
-  column down as it decodes.
+- Keep `image_width`/`image_height` on the row, and keep the frame's width
+  computed from them (`MAX_ATTACHMENT_HEIGHT * w / h`). Takes page in by keyset
+  cursor and arrive mid-scroll, so a frame that only takes its shape once the
+  bytes land loses the reader their place. `width: auto` does **not** work here:
+  an unloaded `<img>` with auto on both axes has no intrinsic size and the box
+  collapses to its border. There is a Playwright check for this in the session
+  notes; if you change the sizing, re-measure before and after load.
+- `COMMENT_INLINE_WIDTHS` is deliberately narrower than `COMMENT_WIDTHS` and
+  must not be merged into it. A `sizes` hint alone does not keep the browser off
+  the top rung — it multiplies CSS width by DPR and takes the smallest candidate
+  above the result, so a 520px slot on a 2x screen would pull the 1600 file into
+  every thread anyone scrolls. The 1600 rung is for the opened view, which uses
+  the stored URL and no srcset.
 - Both admin feeds (`admin_comment_feed`, `admin_report_queue`) return the image
   URL. If you redeclare either, keep it — and keep `is_synthetic` on the comment
   feed, which an earlier migration added and is easy to drop by accident.

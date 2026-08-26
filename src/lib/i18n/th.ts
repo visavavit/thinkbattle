@@ -188,6 +188,8 @@ export const th: Dictionary = {
   "comment.attachRemoveFailed": "ไม่สามารถเอารูปนี้ออกได้",
   "comment.attachConfirmRemove": "เอารูปนี้ออกใช่ไหม รูปจะถูกลบถาวรและกู้คืนไม่ได้",
   "comment.attachmentAlt": "รูปที่แนบมากับความเห็นนี้",
+  "comment.attachmentOpen": "ดูรูปนี้แบบเต็ม",
+  "comment.attachmentFull": "รูปที่แนบมา",
   "comment.post": "เผยแพร่ความเห็น",
   "comment.posted": "เผยแพร่ความเห็นเรียบร้อย",
   "comment.tooLong": "ความเห็นยาวเกินไป (ไม่เกิน {max} ตัวอักษร)",
