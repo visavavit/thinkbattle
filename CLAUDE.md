@@ -133,3 +133,27 @@ Rules for future agents:
   tsvector: Postgres cannot segment Thai, so full-text search matches almost nothing.
 - Browse's _status_ filter stays client-side on purpose — deadline state is read from the
   reader's clock because rows are cached for minutes.
+
+## Environment variable rebinds require a dev-server restart (2026-08-26)
+
+Symptom: after rebinding Lovable Cloud Supabase credentials, the preview still logged
+`Missing Supabase environment variable(s): SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY` and
+hydration replaced the SSR-rendered page with the root error boundary.
+
+Cause: the running Vite dev server had cached the old environment variables. Rebinding
+alone updated the deployment environment but did not flush the in-process cache, so the
+browser bundle continued to be built/loaded without credentials.
+
+Fix: kill the dev server process so the supervisor restarts it; the new process then picks
+up the rebound variables. Also verify the browser console after a full page load, not just
+the initial SSR paint.
+
+Rules for future agents:
+
+- After any Supabase credential rebind, restart the dev server and re-check the browser
+  console for `Missing Supabase environment variable(s)`.
+- If the error appears only on the published domain (`toktiang.com`) and not the
+  preview, the production bundle was built before the rebind. Republish the app to
+  regenerate the bundle with the current environment variables.
+- Do not assume a successful SSR render means hydration is healthy; wait for the client
+  bundle to mount and check for late errors.
