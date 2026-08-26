@@ -69,11 +69,11 @@ Sorting Tabs Per Side:
 Comment Interaction: Individual comments feature simple Like and Dislike buttons.
 
 Long Takes: A take or reply may run to 4000 characters. Anything past six lines
-is clamped behind a *Show more* toggle, so one essay cannot leave its column
+is clamped behind a _Show more_ toggle, so one essay cannot leave its column
 towering over the other or push the reactions off the screen.
 
 Editing: An author can revise their own take or reply while the debate is open.
-Every revision is recorded — the take carries an *Edited* marker, and anyone can
+Every revision is recorded — the take carries an _Edited_ marker, and anyone can
 open it to read every version it has had, newest first. The trail is written by
 a database trigger into a table nobody holds INSERT, UPDATE or DELETE on, so a
 take that collected its likes on one argument cannot quietly become another.
@@ -88,7 +88,6 @@ Styling: Tailwind CSS.
 Backend & Database: Supabase (PostgreSQL) leveraging real-time subscriptions for live vote/comment updates.
 
 Hosting / Deployment: Cloudflare Pages/Workers.
-
 
 8. MVP Implementation Roadmap
 
@@ -123,7 +122,7 @@ a read-only result; leaving it empty runs the debate indefinitely, and a date in
 the past closes it on the spot.
 
 **Moderation** — the reports queue members file from any comment, plus a search
-across every comment in the arena. Comments can be *hidden* (reversible: pulled
+across every comment in the arena. Comments can be _hidden_ (reversible: pulled
 from public view and from the topic's comment count, still visible to their author)
 or deleted outright, and an author can be banned in one step from either view.
 Admins also get hide/delete controls inline on topic pages.

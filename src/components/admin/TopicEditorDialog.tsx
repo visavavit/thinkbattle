@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/TagInput";
 import { ImageUploadButton } from "@/components/ImageUploadButton";
 
-
 import {
   Dialog,
   DialogContent,
@@ -163,7 +162,6 @@ export function TopicEditorDialog({
       ? "This closes the debate immediately. The result stays readable; voting, takes and reactions stop."
       : "At that moment voting, takes and reactions stop. The result stays readable.";
 
-
   const save = useMutation({
     mutationFn: async () => {
       const parsed = topicSchema.safeParse(form);
@@ -240,7 +238,6 @@ export function TopicEditorDialog({
           category_id: categoryId,
           closes_at: values.closes_at,
         },
-
       });
       return topicId;
     },
@@ -406,7 +403,6 @@ export function TopicEditorDialog({
             </div>
             <p className="text-muted-foreground mt-2 text-xs">{closesDescription}</p>
           </div>
-
         </div>
 
         <DialogFooter>

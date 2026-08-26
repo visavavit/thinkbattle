@@ -3,8 +3,7 @@ import { LegalPage, type LegalContent } from "@/components/LegalPage";
 import { seoTags } from "@/lib/site";
 
 const TITLE = "เกี่ยวกับถกเถียง — About toktiang.com";
-const DESCRIPTION =
-  "How toktiang.com works and how debates are ranked on toktiang.com.";
+const DESCRIPTION = "How toktiang.com works and how debates are ranked on toktiang.com.";
 
 export const Route = createFileRoute("/about")({
   head: () => {

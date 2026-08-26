@@ -158,8 +158,8 @@ export function AudiencePanel({ actorId }: { actorId: string }) {
         </div>
         <p className="text-sm text-muted-foreground">
           Seeds a topic with members that vote over real time, argue in the right column and react
-          to each other. Delivery follows a natural interest curve — busy at first, quiet overnight —
-          so numbers never tick up mechanically.
+          to each other. Delivery follows a natural interest curve — busy at first, quiet overnight
+          — so numbers never tick up mechanically.
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -246,7 +246,13 @@ export function AudiencePanel({ actorId }: { actorId: string }) {
               Target split — {pctA}% {selected ? selected.choice_a : "A"} / {100 - pctA}%{" "}
               {selected ? selected.choice_b : "B"}
             </Label>
-            <Slider value={[pctA]} min={0} max={100} step={1} onValueChange={([v]) => setPctA(v ?? 50)} />
+            <Slider
+              value={[pctA]}
+              min={0}
+              max={100}
+              step={1}
+              onValueChange={([v]) => setPctA(v ?? 50)}
+            />
           </div>
           <div className="space-y-2">
             <Label>Realism jitter — {jitter}%</Label>

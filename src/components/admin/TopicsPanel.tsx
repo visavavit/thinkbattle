@@ -158,7 +158,6 @@ function useTopicMutations(actorId: string) {
     onError: (error) => toast.error(describeError(error, "Could not update the headliners")),
   });
 
-
   return { setStatus, remove, feature };
 }
 

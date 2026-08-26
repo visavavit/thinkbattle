@@ -84,10 +84,7 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return withDocumentCacheHeaders(
-        request,
-        await normalizeCatastrophicSsrResponse(response),
-      );
+      return withDocumentCacheHeaders(request, await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
@@ -97,4 +94,3 @@ export default {
     }
   },
 };
-

@@ -54,14 +54,11 @@ function publicClient(edgeTtlSeconds = 0) {
         return fetch(input, {
           ...init,
           headers: h,
-          ...(cacheable
-            ? { cf: { cacheTtl: edgeTtlSeconds, cacheEverything: true } }
-            : {}),
+          ...(cacheable ? { cf: { cacheTtl: edgeTtlSeconds, cacheEverything: true } } : {}),
         } as RequestInit);
       },
     },
   });
-
 }
 
 export type FeedTab = "trending" | "neck" | "top" | "newest";
@@ -215,7 +212,6 @@ export const getTopicCounts = createServerFn({ method: "GET" })
     setResponseHeader("cache-control", publicCacheControl(COUNTS_READ));
     return cached(`counts:${data.id}`, COUNTS_READ, () => fetchTopicCounts(data.id, 5));
   });
-
 
 async function fetchTaxonomy() {
   const supabase = publicClient(300);

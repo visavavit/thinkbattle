@@ -34,7 +34,10 @@ export const Route = createFileRoute("/topic/$id")({
       };
     }
     const title = `${loaderData.title} — ถกเถียง`;
-    const description = tr("meta.topic.description", { a: loaderData.choiceA, b: loaderData.choiceB });
+    const description = tr("meta.topic.description", {
+      a: loaderData.choiceA,
+      b: loaderData.choiceB,
+    });
     // A debate's cover is its share card; topics without one fall back to the
     // site card so a share is never a bare text link.
     const seo = seoTags(`/topic/${loaderData.id}`, loaderData.cover);

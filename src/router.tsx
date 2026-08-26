@@ -21,7 +21,6 @@ export const getRouter = () => {
     },
   });
 
-
   const router = createRouter({
     routeTree,
     context: { queryClient },
@@ -46,5 +45,4 @@ export const getRouter = () => {
   setupRouterSsrQueryIntegration({ router, queryClient });
 
   return router;
-
 };

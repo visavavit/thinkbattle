@@ -158,7 +158,6 @@ function revealComment(id: string, flash: (id: string) => void, tries = 8) {
   return () => clearTimeout(timer);
 }
 
-
 const SORTS: { key: SortKey; labelKey: TranslationKey; icon: typeof Star }[] = [
   { key: "top", labelKey: "sort.top", icon: Star },
   { key: "newest", labelKey: "sort.newest", icon: Clock },
@@ -383,7 +382,6 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   });
 
   const reactionsQuery = useQuery({
-
     queryKey: ["reactions", topic.id, user?.id ?? "anon"],
     enabled: Boolean(user),
     queryFn: async () => {
@@ -417,7 +415,6 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     refetchIntervalInBackground: false,
     staleTime: 10_000,
   });
-
 
   useEffect(() => {
     const counts = countsQuery.data;
@@ -595,7 +592,6 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     [user, isClosed, myVote, applyVote],
   );
 
-
   /**
    * Called once a take or reply has landed. Seeding the cache here means the
    * node exists on the very next paint, so the reveal never has to race the
@@ -685,12 +681,10 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     return [tops.filter((r) => r.side === "a"), tops.filter((r) => r.side === "b"), map];
   }, [allRows]);
 
-
   const myOldTakes = useMemo(() => {
     if (!user || !myVote) return 0;
     return allRows.filter((r) => r.user_id === user.id && r.side === myVote).length;
   }, [allRows, user, myVote]);
-
 
   return (
     <div className="space-y-8">
@@ -826,7 +820,6 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
           flashId={flashId}
           onPosted={onPosted}
         />
-
       </div>
 
       {commentsQuery.data?.hasMore ? (
@@ -878,7 +871,6 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     </div>
   );
 }
-
 
 /**
  * Below lg only one column fits, so the other side would otherwise be buried
@@ -1074,7 +1066,6 @@ function CommentColumn({
   flashId: string | null;
   onPosted: (row: CommentRow) => void;
 }) {
-
   const [sort, setSort] = useState<SortKey>("top");
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
@@ -1134,7 +1125,6 @@ function CommentColumn({
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
     queryClient.invalidateQueries({ queryKey: ["comment-pins", topicId] });
   }
-
 
   return (
     // `flex` is supplied by the display class below, never in the base string:
@@ -2013,9 +2003,7 @@ function ReportButton({ commentId }: { commentId: string }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("report.title")}</DialogTitle>
-            <DialogDescription>
-              {t("report.body")}
-            </DialogDescription>
+            <DialogDescription>{t("report.body")}</DialogDescription>
           </DialogHeader>
           <Input
             value={reason}
@@ -2086,7 +2074,11 @@ function ModeratorControls({
       return;
     }
     toast.success(
-      action === "delete" ? t("mod.deleted") : action === "hide" ? t("mod.hidden") : t("mod.restored"),
+      action === "delete"
+        ? t("mod.deleted")
+        : action === "hide"
+          ? t("mod.hidden")
+          : t("mod.restored"),
     );
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
     // hiding or deleting pulls the take out of the ranking

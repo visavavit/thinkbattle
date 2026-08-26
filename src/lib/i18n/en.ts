@@ -135,8 +135,7 @@ export const en = {
 
   // ---- ban banner
   "ban.title": "Your account is suspended.",
-  "ban.body":
-    "You can still read every debate, but voting, commenting and reacting are disabled.",
+  "ban.body": "You can still read every debate, but voting, commenting and reacting are disabled.",
   "ban.reason": " Reason: {reason}",
 
   // ---- comment columns
@@ -286,8 +285,7 @@ export const en = {
   "meta.auth.title": "Sign in — toktiang.com",
   "meta.auth.description": "Sign in to vote on debates and post takes in toktiang.com.",
   "meta.topic.unavailable": "Debate unavailable — toktiang.com",
-  "meta.topic.description":
-    "{a} vs {b}. Vote, then defend your side in the split comment columns.",
+  "meta.topic.description": "{a} vs {b}. Vote, then defend your side in the split comment columns.",
   // ---- account panel
   "account.title": "Your account",
   "account.profileTitle": "Profile",
@@ -310,10 +308,12 @@ export const en = {
   "account.errPasswordShort": "Password must be at least 6 characters.",
   "account.errPasswordMismatch": "The two passwords do not match.",
   "account.deleteTitle": "Delete account",
-  "account.deleteHint": "Your login is removed for good. Past takes stay in their threads under a deleted-user name.",
+  "account.deleteHint":
+    "Your login is removed for good. Past takes stay in their threads under a deleted-user name.",
   "account.deleteButton": "Delete account",
   "account.deleteConfirmTitle": "Delete your account?",
-  "account.deleteConfirmBody": "This cannot be undone. Your sign-in, notifications and profile are removed. Comments and votes remain, shown as a deleted user.",
+  "account.deleteConfirmBody":
+    "This cannot be undone. Your sign-in, notifications and profile are removed. Comments and votes remain, shown as a deleted user.",
   "account.deleteConfirmLabel": "Type DELETE to confirm",
   "account.deleted": "Your account has been deleted.",
   "account.cancel": "Cancel",

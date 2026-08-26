@@ -16,7 +16,6 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-
 /** The default tab stays absent from the URL. Spelling it out would make
  *  validateSearch return a search object the bare "/" does not have, and the
  *  router would answer every visit to the home page with a redirect to
@@ -40,7 +39,6 @@ const headlinerQuery = queryOptions({
   queryKey: ["headliners"],
   queryFn: () => getHeadliners(),
 });
-
 
 export const Route = createFileRoute("/")({
   validateSearch: searchSchema,
@@ -197,7 +195,6 @@ function Home() {
         </Carousel>
       ) : null}
 
-
       <div className="flex flex-wrap gap-2">
         {TABS.map(({ key, labelKey, icon: Icon }) => (
           <Link
@@ -226,7 +223,6 @@ function Home() {
       {topics.length === 0 ? (
         <p className="py-12 text-center text-muted-foreground">{t("home.emptyTab")}</p>
       ) : null}
-
     </div>
   );
 }

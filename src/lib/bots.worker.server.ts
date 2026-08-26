@@ -23,7 +23,10 @@ type ActionRow = {
 };
 
 class GatewayBlocked extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
     super(message);
   }
 }
@@ -32,10 +35,13 @@ async function acquireLock() {
   const until = new Date(Date.now() + LOCK_SECONDS * 1000).toISOString();
   const { data, error } = await supabaseAdmin
     .from("job_locks")
-    .upsert({ name: LOCK_NAME, locked_until: until, updated_at: new Date().toISOString() }, {
-      onConflict: "name",
-      ignoreDuplicates: false,
-    })
+    .upsert(
+      { name: LOCK_NAME, locked_until: until, updated_at: new Date().toISOString() },
+      {
+        onConflict: "name",
+        ignoreDuplicates: false,
+      },
+    )
     .lt("locked_until", new Date().toISOString())
     .select("name");
   if (error) {
@@ -375,13 +381,7 @@ export async function runBotTick() {
         const sameSide = target.side === action.choice;
         // agreeing mostly likes; disagreeing mostly dislikes — the same shape
         // real readers produce, so the ranking stays believable
-        const value = sameSide
-          ? Math.random() < 0.92
-            ? 1
-            : -1
-          : Math.random() < 0.72
-            ? -1
-            : 1;
+        const value = sameSide ? (Math.random() < 0.92 ? 1 : -1) : Math.random() < 0.72 ? -1 : 1;
         const { error } = await supabaseAdmin
           .from("comment_reactions")
           .insert({ comment_id: target.id, user_id: profile, value });

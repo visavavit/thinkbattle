@@ -67,11 +67,14 @@ export function SuggestTopicDialog({ user }: { user: User | null }) {
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
       const key = parsed.error.issues[0]?.message;
-      const known = ["suggest.errTitle", "suggest.errChoiceA", "suggest.errChoiceB", "suggest.errCategory"] as const;
+      const known = [
+        "suggest.errTitle",
+        "suggest.errChoiceA",
+        "suggest.errChoiceB",
+        "suggest.errCategory",
+      ] as const;
       type Known = (typeof known)[number];
-      toast.error(
-        known.includes(key as Known) ? t(key as Known) : t("suggest.checkForm"),
-      );
+      toast.error(known.includes(key as Known) ? t(key as Known) : t("suggest.checkForm"));
       return;
     }
     setSaving(true);

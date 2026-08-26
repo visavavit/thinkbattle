@@ -12,13 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,7 +30,10 @@ export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
       { title: "บัญชีของฉัน — ถกเถียง" },
-      { name: "description", content: "Manage your display name, avatar and password on toktiang.com." },
+      {
+        name: "description",
+        content: "Manage your display name, avatar and password on toktiang.com.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -96,9 +93,7 @@ function AccountPage() {
       .eq("id", user!.id);
     setSavingProfile(false);
     if (error) {
-      toast.error(
-        error.code === "23505" ? t("account.errNameTaken") : t("account.errSaveFailed"),
-      );
+      toast.error(error.code === "23505" ? t("account.errNameTaken") : t("account.errSaveFailed"));
       return;
     }
     toast.success(t("account.savedProfile"));

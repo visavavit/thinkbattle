@@ -96,7 +96,9 @@ function AuthPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <div className="arena-panel space-y-5 p-6">
-        <h1 className="text-3xl">{mode === "signin" ? t("auth.signInTitle") : t("auth.signUpTitle")}</h1>
+        <h1 className="text-3xl">
+          {mode === "signin" ? t("auth.signInTitle") : t("auth.signUpTitle")}
+        </h1>
         <p className="text-sm text-muted-foreground">{t("auth.sub")}</p>
 
         <div className="space-y-3">
@@ -126,7 +128,8 @@ function AuthPage() {
         </div>
 
         <div className="flex items-center gap-3 text-xs text-muted-foreground uppercase">
-          <span className="h-px flex-1 bg-border" /> {t("auth.or")} <span className="h-px flex-1 bg-border" />
+          <span className="h-px flex-1 bg-border" /> {t("auth.or")}{" "}
+          <span className="h-px flex-1 bg-border" />
         </div>
 
         <Button variant="outline" className="w-full" onClick={google}>

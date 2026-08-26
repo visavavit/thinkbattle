@@ -11,12 +11,10 @@ export const serverMessagesTh: Record<string, string> = {
   "Hourly comment limit reached. Take a breather.":
     "คุณแสดงความเห็นครบจำนวนที่กำหนดต่อชั่วโมงแล้ว กรุณาพักสักครู่",
   "Your comment is too short.": "ความเห็นสั้นเกินไป",
-  "Your comment is too long (4000 characters max).":
-    "ความเห็นยาวเกินไป (ไม่เกิน 4,000 ตัวอักษร)",
+  "Your comment is too long (4000 characters max).": "ความเห็นยาวเกินไป (ไม่เกิน 4,000 ตัวอักษร)",
   "That looks like spam. Try writing a real take.":
     "เนื้อหานี้เข้าข่ายสแปม กรุณาเขียนความเห็นที่มีเนื้อหาจริง",
-  "Please turn off caps lock before posting.":
-    "กรุณาปิดการพิมพ์ตัวพิมพ์ใหญ่ทั้งหมดก่อนเผยแพร่",
+  "Please turn off caps lock before posting.": "กรุณาปิดการพิมพ์ตัวพิมพ์ใหญ่ทั้งหมดก่อนเผยแพร่",
   "You already posted that here.": "คุณเคยเผยแพร่ข้อความเดียวกันนี้ไปแล้ว",
   "That comment no longer exists.": "ไม่พบความเห็นนี้แล้ว",
   "Only the text of a comment can be edited.": "แก้ไขได้เฉพาะข้อความของความเห็นเท่านั้น",
@@ -30,8 +28,7 @@ export const serverMessagesTh: Record<string, string> = {
   "Too many reports in a short time.": "คุณส่งรายงานถี่เกินไป",
   "You already reported this comment.": "คุณรายงานความเห็นนี้ไปแล้ว",
   "You already suggested that topic.": "คุณเคยเสนอประเด็นนี้ไปแล้ว",
-  "You have suggested too many topics this hour.":
-    "คุณเสนอประเด็นเกินจำนวนที่กำหนดในชั่วโมงนี้",
+  "You have suggested too many topics this hour.": "คุณเสนอประเด็นเกินจำนวนที่กำหนดในชั่วโมงนี้",
   "Give your topic a real title.": "กรุณาตั้งหัวข้อให้ชัดเจน",
   "Sign in to add tags": "กรุณาเข้าสู่ระบบเพื่อเพิ่มแท็ก",
   "Your account cannot add tags": "บัญชีของคุณไม่สามารถเพิ่มแท็กได้",
