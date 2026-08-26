@@ -83,10 +83,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
+/**
+ * Falls back to the default (Thai) dictionary instead of throwing when no
+ * provider is above it. A duplicated module instance (HMR, or a component
+ * rendered outside the app frame) must not blank the whole page.
+ */
+const FALLBACK_CTX: Ctx = {
+  lang: DEFAULT_LANG,
+  setLang: () => {},
+  t: (key, vars) => translate(key, vars, DEFAULT_LANG),
+  tError: (message, fallback) => serverMessagesTh[message?.trim()] ?? message ?? fallback ?? "",
+};
+
 export function useI18n() {
-  const ctx = useContext(LanguageContext);
-  if (!ctx) throw new Error("useI18n must be used inside <LanguageProvider>");
-  return ctx;
+  return useContext(LanguageContext) ?? FALLBACK_CTX;
 }
 
 /** Shorthand for components that only need the translate function. */
