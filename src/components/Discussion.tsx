@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  keepPreviousData,
+  useInfiniteQuery,
   useQuery,
   useQueryClient,
   type QueryClient,
@@ -28,6 +28,8 @@ import { describeError } from "@/lib/admin";
 import { useI18n, useT, type TranslationKey } from "@/lib/i18n";
 import { getTopicCounts, type TopicCard } from "@/lib/public.functions";
 import { useTopicClock } from "@/lib/topic-clock";
+import { commentsPageFilter, nextCommentsCursor, type CommentsCursor } from "@/lib/comments-cursor";
+import { pagesHave, removeRow, upsertRow } from "@/lib/comments-cache";
 import { ClosingNotice, DeadlineCountdown, DeadlineLine } from "./TopicDeadline";
 import { ResultPanel, type TopTake } from "./ResultPanel";
 import { SplitBar } from "./SplitBar";
@@ -74,12 +76,21 @@ type CommentEditRow = {
   replaced_at: string;
 };
 
-/** What the ["comments", topicId, limit] query holds. */
-type CommentsCache = {
+/**
+ * One page of the ["comments", topicId] infinite query. Pages accumulate, so
+ * loading more never refetches what is already on screen.
+ */
+type CommentsPage = {
   rows: CommentRow[];
   authors: Map<string, Author>;
-  /** true when the server had a full page left, so there is more to load */
-  hasMore: boolean;
+  /** where the next page starts, or null once the thread is exhausted */
+  next: CommentsCursor | null;
+};
+
+/** The whole infinite query as React Query stores it. */
+type CommentsCache = {
+  pages: CommentsPage[];
+  pageParams: (CommentsCursor | null)[];
 };
 
 /**
@@ -239,29 +250,40 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     };
   }, [user, topic.id]);
 
-  // A viral topic can hold thousands of takes; the discussion loads a page at a
-  // time rather than the whole thread on every mount.
-  const [limit, setLimit] = useState(COMMENT_PAGE_SIZE);
-  useEffect(() => {
-    setLimit(COMMENT_PAGE_SIZE);
-  }, [topic.id]);
+  // A viral topic can hold thousands of takes. Pages are fetched by keyset
+  // cursor and accumulate: "load more" fetches only the next page, where a
+  // growing `.limit()` used to re-download everything already on screen and
+  // put one UUID per loaded take into a GET query string — which stops working
+  // outright once that URL outgrows what a proxy will accept.
+  const commentsKey = useMemo(() => ["comments", topic.id] as const, [topic.id]);
 
-  const commentsKey = useMemo(() => ["comments", topic.id, limit] as const, [topic.id, limit]);
-
-  const commentsQuery = useQuery<CommentsCache>({
+  const commentsQuery = useInfiniteQuery<
+    CommentsPage,
+    Error,
+    CommentsCache,
+    typeof commentsKey,
+    CommentsCursor | null
+  >({
     queryKey: commentsKey,
-    // keeps the current page on screen while a longer one loads
-    placeholderData: keepPreviousData,
-    queryFn: async () => {
+    initialPageParam: null,
+    getNextPageParam: (last) => last.next,
+    queryFn: async ({ pageParam }) => {
       // Top-level takes are the paged unit. Replies are then fetched for
-      // exactly those parents, so a reply can never load without its parent.
-      const { data: tops, error } = await supabase
+      // exactly those parents, so a reply can never load without its parent —
+      // and the id list is bounded by one page, not by everything loaded.
+      let query = supabase
         .from("comments")
         .select("*")
         .eq("topic_id", topic.id)
-        .is("parent_id", null)
+        .is("parent_id", null);
+
+      const filter = commentsPageFilter(pageParam);
+      if (filter) query = query.or(filter);
+
+      const { data: tops, error } = await query
         .order("created_at", { ascending: false })
-        .limit(limit);
+        .order("id", { ascending: false })
+        .limit(COMMENT_PAGE_SIZE);
       if (error) throw error;
       const topRows = (tops ?? []) as CommentRow[];
 
@@ -290,9 +312,22 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         for (const p of profiles ?? [])
           authors.set(p.id, { username: p.username, avatar_url: p.avatar_url });
       }
-      return { rows, authors, hasMore: topRows.length === limit };
+      return { rows, authors, next: nextCommentsCursor(topRows, COMMENT_PAGE_SIZE) };
     },
   });
+
+  // Flattened views of the paged cache, so everything downstream keeps working
+  // against one list of rows and one map of authors.
+  const commentRows = useMemo(
+    () => (commentsQuery.data?.pages ?? []).flatMap((page) => page.rows),
+    [commentsQuery.data?.pages],
+  );
+  const commentAuthors = useMemo(() => {
+    const merged = new Map<string, Author>();
+    for (const page of commentsQuery.data?.pages ?? [])
+      for (const [id, author] of page.authors) merged.set(id, author);
+    return merged;
+  }, [commentsQuery.data?.pages]);
 
   // The page above is ordered by recency, so on a long thread the genuinely
   // top-ranked takes can sit outside it entirely — which made "Top take" mean
@@ -331,9 +366,9 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const allRows = useMemo(() => {
     const pool = new Map<string, CommentRow>();
     for (const row of pinsQuery.data?.rows ?? []) pool.set(row.id, row);
-    for (const row of commentsQuery.data?.rows ?? []) pool.set(row.id, row);
+    for (const row of commentRows) pool.set(row.id, row);
     return [...pool.values()];
-  }, [pinsQuery.data?.rows, commentsQuery.data?.rows]);
+  }, [pinsQuery.data?.rows, commentRows]);
 
   // The best case per side, for the closed-topic result panel. `pinsQuery`
   // already ranks every side's takes by net score for the pinned rows at the
@@ -357,18 +392,22 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
   const expandedFor = useRef<{ id: string; times: number } | null>(null);
   const revealedFor = useRef<string | null>(null);
 
+  // Pulled off the query object because that object is a fresh identity on
+  // every render; these three are stable enough to be honest effect deps.
+  const { fetchNextPage, hasNextPage, isFetchingNextPage } = commentsQuery;
+
   useEffect(() => {
     if (!targetId || allRows.length === 0) return;
 
     const target = allRows.find((r) => r.id === targetId);
     if (!target) {
-      // older than the page we hold — reach back for it, but not forever
-      if (!commentsQuery.data?.hasMore) return;
+      // older than the pages we hold — reach back for it, but not forever
+      if (!hasNextPage || isFetchingNextPage) return;
       const seen = expandedFor.current;
       const times = seen?.id === targetId ? seen.times : 0;
       if (times >= 3) return;
       expandedFor.current = { id: targetId, times: times + 1 };
-      setLimit((n) => n + COMMENT_PAGE_SIZE * 2);
+      void fetchNextPage();
       return;
     }
 
@@ -384,7 +423,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     // the column may need a paint to un-hide before it can be scrolled to
     revealRef.current?.();
     revealRef.current = revealComment(targetId, setFlashId);
-  }, [targetId, allRows, commentsQuery.data?.hasMore]);
+  }, [targetId, allRows, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // who has since voted for the other side — powers the "Changed their mind" badge
   const authorSidesQuery = useQuery({
@@ -447,13 +486,6 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     setVotesB(counts.votes_b);
   }, [countsQuery.data]);
 
-  // The realtime channel writes into whichever page is currently loaded. Held
-  // in a ref so paging through the thread does not tear down the socket.
-  const commentsKeyRef = useRef(commentsKey);
-  useEffect(() => {
-    commentsKeyRef.current = commentsKey;
-  }, [commentsKey]);
-
   // Only signed-in readers hold a socket. Anonymous scanners are the bulk of
   // the traffic at scale, and giving each one a subscription — which then made
   // every one of them re-download the entire thread on every new comment — is
@@ -478,19 +510,23 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         .in("id", ids)
         .then(({ data }) => {
           if (!data || data.length === 0) return;
-          queryClient.setQueryData<CommentsCache>(commentsKeyRef.current, (prev) => {
-            if (!prev) return prev;
-            const authors = new Map(prev.authors);
+          queryClient.setQueryData<CommentsCache>(commentsKey, (prev) => {
+            if (!prev?.pages[0]) return prev;
+            // Any page will do — the component merges authors across all of
+            // them — so the newest one keeps this to a single-page copy.
+            const authors = new Map(prev.pages[0].authors);
             for (const row of data)
               authors.set(row.id, { username: row.username, avatar_url: row.avatar_url });
-            return { ...prev, authors };
+            const pages = [...prev.pages];
+            pages[0] = { ...prev.pages[0], authors };
+            return { ...prev, pages };
           });
         });
     };
 
     const noteAuthor = (id: string) => {
-      const cache = queryClient.getQueryData<CommentsCache>(commentsKeyRef.current);
-      if (cache?.authors.has(id)) return;
+      const cache = queryClient.getQueryData<CommentsCache>(commentsKey);
+      if (pagesHave(cache, (page) => page.authors.has(id))) return;
       missingAuthors.add(id);
       authorTimer ??= setTimeout(flushAuthors, 500);
     };
@@ -516,22 +552,12 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
 
           // The event already carries the row, so apply it straight to the
           // cache. Invalidating instead is what caused the stampede.
-          queryClient.setQueryData<CommentsCache>(commentsKeyRef.current, (prev) => {
+          queryClient.setQueryData<CommentsCache>(commentsKey, (prev) => {
             if (!prev) return prev;
-
             if (payload.eventType === "DELETE") {
-              if (!oldRow?.id) return prev;
-              return { ...prev, rows: prev.rows.filter((r) => r.id !== oldRow.id) };
+              return oldRow?.id ? removeRow(prev, oldRow.id) : prev;
             }
-
-            if (!newRow?.id) return prev;
-            const index = prev.rows.findIndex((r) => r.id === newRow.id);
-            if (index === -1) {
-              return { ...prev, rows: [newRow, ...prev.rows] };
-            }
-            const rows = [...prev.rows];
-            rows[index] = newRow;
-            return { ...prev, rows };
+            return newRow?.id ? upsertRow(prev, newRow) : prev;
           });
 
           if (payload.eventType === "INSERT" && newRow?.user_id) {
@@ -547,7 +573,7 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
       if (sidesTimer) clearTimeout(sidesTimer);
       supabase.removeChannel(channel);
     };
-  }, [user, topic.id, queryClient]);
+  }, [user, topic.id, queryClient, commentsKey]);
 
   const total = votesA + votesB;
   const pctA = total === 0 ? 50 : Math.round((100 * votesA) / total);
@@ -619,26 +645,30 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
    */
   const onPosted = useCallback(
     (row: CommentRow) => {
-      queryClient.setQueryData<CommentsCache>(commentsKeyRef.current, (prev) => {
-        if (!prev) return prev;
-        // the same dedupe the realtime handler uses, so the socket echo of the
-        // reader's own insert cannot double the row
-        if (prev.rows.some((r) => r.id === row.id)) return prev;
-        const authors = new Map(prev.authors);
+      queryClient.setQueryData<CommentsCache>(commentsKey, (prev) => {
+        if (!prev?.pages[0]) return prev;
+        // upsertRow is the same dedupe the realtime handler uses, so the
+        // socket echo of the reader's own insert cannot double the row
+        const withRow = upsertRow(prev, row);
         const name = user?.user_metadata?.["username"] as string | undefined;
+        const first = withRow.pages[0];
+        if (!name || !first || pagesHave(withRow, (page) => page.authors.has(row.user_id)))
+          return withRow;
         // without this the poster's own take reads "anonymous" for a beat. The
         // picture is not in the session, so a first-ever take shows the
         // fallback until the next fetch fills it in.
-        if (name && !authors.has(row.user_id))
-          authors.set(row.user_id, { username: name, avatar_url: null });
-        return { ...prev, rows: [row, ...prev.rows], authors };
+        const authors = new Map(first.authors);
+        authors.set(row.user_id, { username: name, avatar_url: null });
+        const pages = [...withRow.pages];
+        pages[0] = { ...first, authors };
+        return { ...withRow, pages };
       });
       // wider retry budget than a deep link gets: an anonymous reader holds no
       // socket, so the node may have to wait on the invalidation refetch
       revealRef.current?.();
       revealRef.current = revealComment(row.id, setFlashId, 40);
     },
-    [queryClient, user],
+    [queryClient, user, commentsKey],
   );
 
   const react = useCallback(
@@ -680,9 +710,9 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
 
   const authors = useMemo(() => {
     const merged = new Map(pinsQuery.data?.authors ?? []);
-    for (const [id, author] of commentsQuery.data?.authors ?? []) merged.set(id, author);
+    for (const [id, author] of commentAuthors) merged.set(id, author);
     return merged;
-  }, [pinsQuery.data?.authors, commentsQuery.data?.authors]);
+  }, [pinsQuery.data?.authors, commentAuthors]);
   const authorSides = authorSidesQuery.data ?? {};
 
   // replies live under their parent take, never in the ranked column lists
@@ -853,14 +883,14 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
         />
       </div>
 
-      {commentsQuery.data?.hasMore ? (
+      {hasNextPage ? (
         <div className="flex justify-center">
           <Button
             variant="outline"
-            disabled={commentsQuery.isFetching}
-            onClick={() => setLimit((n) => n + COMMENT_PAGE_SIZE)}
+            disabled={isFetchingNextPage}
+            onClick={() => void fetchNextPage()}
           >
-            {commentsQuery.isFetching ? t("comment.loading") : t("comment.loadMore")}
+            {isFetchingNextPage ? t("comment.loading") : t("comment.loadMore")}
           </Button>
         </div>
       ) : null}
