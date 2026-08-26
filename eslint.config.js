@@ -6,8 +6,20 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  // routeTree.gen.ts is generated; .prettierignore already skips it.
-  { ignores: ["dist", ".output", ".vinxi", "src/routeTree.gen.ts"] },
+  // Generated files (.prettierignore skips them too): routeTree.gen.ts comes
+  // from the router plugin; the two supabase files are emitted by tooling
+  // ("Do not edit it directly") in a style prettier rejects, and re-formatting
+  // them by hand would be undone by the next regeneration.
+  {
+    ignores: [
+      "dist",
+      ".output",
+      ".vinxi",
+      "src/routeTree.gen.ts",
+      "src/integrations/supabase/types.ts",
+      "src/integrations/supabase/previewAuthStorage.ts",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

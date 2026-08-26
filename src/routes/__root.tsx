@@ -19,6 +19,7 @@ import { WebAnalytics } from "@/components/WebAnalytics";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageProvider, translate as tr, useT } from "@/lib/i18n";
+import { publicEnvBootstrapScript } from "@/lib/public-env";
 
 function NotFoundComponent() {
   return (
@@ -118,6 +119,15 @@ function RootShell({ children }: { children: ReactNode }) {
     // Thai is the default language; the client swaps this attribute on switch.
     <html lang="th">
       <head>
+        {/*
+          Hands the Supabase URL and publishable key to the browser when the
+          bundle was built without the VITE_ variables. In <head> so it runs
+          before the module scripts <Scripts /> emits, and therefore before
+          hydration touches the Supabase client. Renders identically on the
+          server and on the client (the client reads back what this set), so
+          it does not disturb hydration. See src/lib/public-env.ts.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: publicEnvBootstrapScript() }} />
         <HeadContent />
       </head>
       <body>

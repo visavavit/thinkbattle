@@ -2,6 +2,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { brokeredPreviewStorage } from "./previewAuthStorage";
+import { readInjectedPublicEnv } from "@/lib/public-env";
 
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
@@ -31,18 +32,25 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env["VITE_SUPABASE_URL"] || process.env["SUPABASE_URL"];
+  // Three sources, in order: import.meta.env for client-side (Vite build-time
+  // replacement), process.env for SSR, and — when a deployment sets only the
+  // unprefixed server variables, so the browser bundle was built without any
+  // VITE_ values — whatever the server injected into the document. See
+  // src/lib/public-env.ts.
+  const injected = readInjectedPublicEnv();
+  const SUPABASE_URL =
+    import.meta.env["VITE_SUPABASE_URL"] || process.env["SUPABASE_URL"] || injected.SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY =
-    import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] || process.env["SUPABASE_PUBLISHABLE_KEY"];
+    import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+    injected.SUPABASE_PUBLISHABLE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
       ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
       ...(!SUPABASE_PUBLISHABLE_KEY ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Check the server environment configuration.`;
+    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Set them (or their VITE_ prefixed equivalents) in the deploy environment.`;
     console.error(`[Supabase] ${message}`);
     throw new Error(message);
   }
