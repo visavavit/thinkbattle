@@ -58,7 +58,7 @@ export function ScrollToTopButton() {
       onClick={scrollToTop}
       aria-label={t("common.scrollToTop")}
       title={t("common.scrollToTop")}
-      className="fixed right-4 bottom-4 z-50 h-11 w-11 animate-in rounded-full border border-border shadow-lg fade-in duration-200 sm:right-6 sm:bottom-6"
+      className="fixed right-4 bottom-4 z-50 h-11 w-11 rounded-full border border-border opacity-100 shadow-lg sm:right-6 sm:bottom-6"
       style={{ marginBottom: "env(safe-area-inset-bottom)" }}
     >
       <ArrowUp />
