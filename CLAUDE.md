@@ -223,3 +223,46 @@ fail the replay for reasons that predate the harness.
 
 Run it after touching any trigger, definer function or RLS policy. `bun test`
 covers none of that.
+
+## Profiles are written by the database, not the client (2026-08-26)
+
+`supabase/migrations/20260826150000_*` is **NOT YET EXECUTED**. It adds a
+`handle_new_user` trigger on `auth.users`, so every account has a profile row
+before any client code runs, and backfills the accounts that never got one.
+
+This replaces `ensureProfile()` deriving a name and upserting it, which lost
+accounts two ways — both live until the migration is applied:
+
+- It was called from one effect on `/auth`. Google sign-in redirects to the
+  bare origin, so it never ran for those accounts at all. Neither did it for
+  anyone confirming a signup email in a tab that never visits `/auth`.
+  Migration `20260819070118` already had to backfill "missing profiles for real
+  signed-up users" once.
+- It upserted `on conflict (id)` while the uniqueness that bites is the index
+  on `lower(username)` from `20260822193245`. Two people whose email local part
+  matched (`somchai@gmail.com`, `somchai@hotmail.com`) produced a silent 23505
+  and the second got no profile — then the account page's `UPDATE` matched zero
+  rows and reported success, so they could never fix it.
+
+Rules for future agents:
+
+- Username derivation lives in `ensure_profile_row`, and the trigger *and* the
+  backfill both call it. Do not write a second derivation anywhere — the
+  backfill is exactly where a divergent rule would never be noticed.
+- `handle_new_user` swallows its own errors on purpose. A trigger that raises
+  there fails the whole signup; a missing profile row is recoverable and a lost
+  signup is not.
+- Renames go through `set_my_username`, never a bare `UPDATE` on `profiles`. It
+  upserts, so it repairs a missing row, and it returns `taken` as an outcome
+  instead of a SQLSTATE the client has to recognise.
+- `ensure_my_profile` must stay a fill-in, never a rename. It is called on every
+  sign-in, and a version that "corrected" the name would overwrite whatever the
+  member chose.
+- Auth errors go through `authErrorKey` (`src/lib/auth-errors.ts`). Do not
+  `toast.error(error.message)` — that is English-only on a bilingual site, and
+  Supabase's strings are written for developers.
+
+**Dashboard step:** `https://toktiang.com/auth/reset` and
+`https://www.toktiang.com/auth/reset` must be on the Supabase auth redirect
+allow-list, or the password reset link will bounce. This is the same manual
+step as item 10 in the launch checklist.

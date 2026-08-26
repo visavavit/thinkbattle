@@ -68,13 +68,33 @@ export function useBanStatus(user: User | null) {
   return { isBanned: Boolean(query.data), reason: query.data?.reason ?? null };
 }
 
-export async function ensureProfile(user: User) {
-  const username =
-    (user.user_metadata?.["username"] as string | undefined) ??
-    (user.user_metadata?.["full_name"] as string | undefined) ??
-    user.email?.split("@")[0] ??
-    "debater";
-  await supabase
-    .from("profiles")
-    .upsert({ id: user.id, username }, { onConflict: "id", ignoreDuplicates: true });
+/**
+ * Makes sure the signed-in account has a profile row.
+ *
+ * The row is normally written by a trigger on auth.users, before any client
+ * code runs at all. This is the net under that, and it exists because the
+ * previous arrangement — deriving a name here and upserting it — lost accounts
+ * two different ways:
+ *
+ *   * it ran from one effect on /auth, and Google sign-in lands on the bare
+ *     origin, so it never ran for those accounts at all;
+ *   * it upserted `on conflict (id)` while the uniqueness that bites is on
+ *     lower(username), so two people whose email local part matched produced a
+ *     silent 23505 and one of them ended up with no profile.
+ *
+ * So the derivation lives in the database now, and this only asks for a row to
+ * exist. It never renames anyone: for an account that already has a profile it
+ * is a single existence check.
+ *
+ * Failure is ignored on purpose. It is called on the way in to a session that
+ * has already succeeded, and the migration that adds the trigger also backfills
+ * anything that slipped through — so a missing row heals, while a thrown error
+ * here would only break a sign-in that otherwise worked.
+ */
+export async function ensureProfile() {
+  try {
+    await supabase.rpc("ensure_my_profile");
+  } catch {
+    /* healed by the backfill */
+  }
 }

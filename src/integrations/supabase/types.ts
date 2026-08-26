@@ -1096,6 +1096,7 @@ export type Database = {
         Returns: string
       }
       comment_images_enabled: { Args: never; Returns: boolean }
+      ensure_my_profile: { Args: never; Returns: undefined }
       finish_upload: {
         Args: { _bytes: number; _id: string; _url: string }
         Returns: undefined
@@ -1126,7 +1127,16 @@ export type Database = {
         Returns: undefined
       }
       show_limit: { Args: never; Returns: number }
+      username_available: { Args: { _name: string }; Returns: boolean }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      set_my_username: {
+        Args: { _name: string }
+        Returns: {
+          ok: boolean
+          reason: string | null
+          username: string | null
+        }[]
+      }
       site_flags: { Args: never; Returns: Json }
       take_orphaned_uploads: {
         Args: { _limit?: number }

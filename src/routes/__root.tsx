@@ -18,6 +18,7 @@ import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import { WebAnalytics } from "@/components/WebAnalytics";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureProfile } from "@/hooks/useAuth";
 import { LanguageProvider, translate as tr, useT } from "@/lib/i18n";
 import { publicEnvBootstrapScript } from "@/lib/public-env";
 
@@ -195,6 +196,13 @@ function RootComponent() {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
 
       currentUserId = nextUserId;
+
+      // Here rather than on /auth, because that page is not on every way in:
+      // Google sign-in returns to the bare origin, and a confirmation link can
+      // be opened in a tab that never visits /auth at all. Both used to produce
+      // an account with no profile row. Guarded by the same identity check as
+      // the invalidation below, so a tab refocus does not re-fire it.
+      if (event === "SIGNED_IN" && session?.user) void ensureProfile();
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });

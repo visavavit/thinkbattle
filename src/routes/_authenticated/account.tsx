@@ -87,13 +87,40 @@ function AccountPage() {
       return;
     }
     setSavingProfile(true);
+
+    // The name goes through set_my_username rather than a bare UPDATE. An
+    // UPDATE matches nothing for a user whose profile row was never created,
+    // returns no error, and leaves this page reporting "saved" for a change
+    // that never happened — which is precisely how the missing-profile bug hid
+    // itself. The function upserts, so it repairs the row instead, and it
+    // reports "taken" as an outcome rather than as a constraint violation we
+    // would have to recognise by its SQLSTATE.
+    const { data: named, error: nameError } = await supabase.rpc("set_my_username", {
+      _name: next,
+    });
+    const result = named?.[0];
+    if (nameError || !result?.ok) {
+      setSavingProfile(false);
+      toast.error(
+        result?.reason === "taken"
+          ? t("account.errNameTaken")
+          : result?.reason === "too_short"
+            ? t("account.errNameLength")
+            : t("account.errSaveFailed"),
+      );
+      return;
+    }
+
+    // The avatar is a separate write on purpose: it has none of the uniqueness
+    // the name has, and folding it into the function would put an image URL
+    // inside something whose job is naming.
     const { error } = await supabase
       .from("profiles")
-      .update({ username: next, avatar_url: avatarUrl })
+      .update({ avatar_url: avatarUrl })
       .eq("id", user!.id);
     setSavingProfile(false);
     if (error) {
-      toast.error(error.code === "23505" ? t("account.errNameTaken") : t("account.errSaveFailed"));
+      toast.error(t("account.errSaveFailed"));
       return;
     }
     toast.success(t("account.savedProfile"));

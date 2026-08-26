@@ -19,6 +19,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthResetRouteImport } from './routes/auth_.reset'
 import { Route as TopicIdRouteImport } from './routes/topic.$id'
 import { Route as ApiPublicBotsTickRouteImport } from './routes/api/public/bots/tick'
 
@@ -71,6 +72,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/auth_/reset',
+  path: '/auth/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TopicIdRoute = TopicIdRouteImport.update({
   id: '/topic/$id',
   path: '/topic/$id',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/auth/reset': typeof AuthResetRoute
   '/topic/$id': typeof TopicIdRoute
   '/api/public/bots/tick': typeof ApiPublicBotsTickRoute
 }
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/auth/reset': typeof AuthResetRoute
   '/topic/$id': typeof TopicIdRoute
   '/api/public/bots/tick': typeof ApiPublicBotsTickRoute
 }
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/auth_/reset': typeof AuthResetRoute
   '/topic/$id': typeof TopicIdRoute
   '/api/public/bots/tick': typeof ApiPublicBotsTickRoute
 }
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/account'
     | '/admin'
+    | '/auth/reset'
     | '/topic/$id'
     | '/api/public/bots/tick'
   fileRoutesByTo: FileRoutesByTo
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/account'
     | '/admin'
+    | '/auth/reset'
     | '/topic/$id'
     | '/api/public/bots/tick'
   id:
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/account'
     | '/_authenticated/admin'
+    | '/auth_/reset'
     | '/topic/$id'
     | '/api/public/bots/tick'
   fileRoutesById: FileRoutesById
@@ -175,6 +187,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
+  AuthResetRoute: typeof AuthResetRoute
   TopicIdRoute: typeof TopicIdRoute
   ApiPublicBotsTickRoute: typeof ApiPublicBotsTickRoute
 }
@@ -251,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/auth_/reset': {
+      id: '/auth_/reset'
+      path: '/auth/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/topic/$id': {
       id: '/topic/$id'
       path: '/topic/$id'
@@ -290,6 +310,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
+  AuthResetRoute: AuthResetRoute,
   TopicIdRoute: TopicIdRoute,
   ApiPublicBotsTickRoute: ApiPublicBotsTickRoute,
 }
