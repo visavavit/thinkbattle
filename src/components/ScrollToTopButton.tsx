@@ -35,7 +35,7 @@ export function ScrollToTopButton() {
 
     scheduleUpdate();
     const restoreCheck = window.setTimeout(scheduleUpdate, 100);
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate, { passive: true });
     window.addEventListener("pageshow", scheduleUpdate);
     return () => {
