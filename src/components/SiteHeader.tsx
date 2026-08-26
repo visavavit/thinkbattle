@@ -1,10 +1,11 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Menu } from "lucide-react";
 import logoAsset from "@/assets/toktiang-logo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, useIsAdmin } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
+import { safeReturnPath } from "@/lib/return-to";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +24,12 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const t = useT();
+
+  // Read through the router rather than window.location so this is stable
+  // across SSR and the first client render.
+  const here = useRouterState({ select: (state) => state.location.href });
+  const returnTo = safeReturnPath(here);
+  const signInSearch = returnTo ? { redirect: returnTo } : {};
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -95,7 +102,10 @@ export function SiteHeader() {
             </>
           ) : (
             <Button asChild size="sm">
-              <Link to="/auth">{t("nav.signIn")}</Link>
+              {/* Come back to whatever page they were reading, not the feed. */}
+              <Link to="/auth" search={signInSearch}>
+                {t("nav.signIn")}
+              </Link>
             </Button>
           )}
 

@@ -9,8 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { translate as tr, useT } from "@/lib/i18n";
+import { safeReturnPath, stashReturnPath, takeStashedReturnPath } from "@/lib/return-to";
+
+const authSearchSchema = z.object({
+  // Where to go once signed in. Validated again on use — see safeReturnPath.
+  // `.catch` rather than a throw: a hand-edited URL should degrade to the
+  // homepage, never to an error page. Same convention as /browse.
+  redirect: z.string().optional().catch(undefined),
+});
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: authSearchSchema,
   head: () => ({
     meta: [
       { title: tr("meta.auth.title") },
@@ -36,14 +45,19 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const t = useT();
 
+  // The OAuth round trip drops component state, so a path stashed before
+  // leaving wins over the query string, which will not have survived.
+  const returnTo = safeReturnPath(search.redirect);
+
   useEffect(() => {
-    if (user) {
-      ensureProfile(user);
-      navigate({ to: "/", replace: true });
-    }
-  }, [user, navigate]);
+    if (!user) return;
+    ensureProfile(user);
+    const target = takeStashedReturnPath() ?? returnTo;
+    navigate({ to: target ?? "/", replace: true });
+  }, [user, navigate, returnTo]);
 
   async function submit() {
     const parsed = schema.safeParse({ email, password });
@@ -84,10 +98,18 @@ function AuthPage() {
   }
 
   async function google() {
+    // redirect_uri stays the bare origin: it is matched against Supabase's
+    // auth redirect allow-list, which is configured in the dashboard, so
+    // giving it a path risks breaking sign-in. The destination waits in
+    // sessionStorage instead.
+    stashReturnPath(returnTo);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
+      // The trip never happened, so drop the stash rather than leave it to be
+      // picked up by a later sign-in that meant to go somewhere else.
+      stashReturnPath(undefined);
       toast.error(t("auth.googleFailed"));
       return;
     }

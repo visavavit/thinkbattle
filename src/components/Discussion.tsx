@@ -749,7 +749,11 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
             ) : (
               <>
                 {" — "}
-                <Link to="/auth" className="font-bold text-primary underline">
+                <Link
+                  to="/auth"
+                  search={{ redirect: `/topic/${topic.id}` }}
+                  className="font-bold text-primary underline"
+                >
                   {t("vote.signInToVote")}
                 </Link>
               </>

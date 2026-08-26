@@ -1,0 +1,11 @@
+{
+  // Tests get their own program: @types/bun redefines globals such as fetch in
+  // ways that conflict with the DOM lib the app is written against, so pulling
+  // Bun's types into the app program breaks it. Kept separate, both are checked.
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx"],
+  "exclude": [],
+  "compilerOptions": {
+    "types": ["bun"]
+  }
+}
