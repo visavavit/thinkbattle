@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { Eye, EyeOff, Search, ThumbsDown, ThumbsUp, Trash2, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { sweepOrphanUploads } from "@/lib/uploads.functions";
 import {
   adminKeys,
   describeError,
@@ -30,6 +31,17 @@ function useCommentModeration(actorId: string) {
     queryClient.invalidateQueries({ queryKey: ["comments"] });
   };
 
+  // Hiding or deleting a take orphans whatever picture was on it; this is what
+  // takes the bytes off the CDN. Best effort — Settings has a button that runs
+  // the same sweep for anything a failure leaves behind.
+  const sweep = async () => {
+    try {
+      await sweepOrphanUploads();
+    } catch {
+      /* collected by the next sweep */
+    }
+  };
+
   const setHidden = useMutation({
     mutationFn: async ({
       commentId,
@@ -52,6 +64,7 @@ function useCommentModeration(actorId: string) {
         })
         .eq("id", commentId);
       if (error) throw error;
+      if (hidden) await sweep();
       await recordAudit({
         actorId,
         action: hidden ? "comment.hide" : "comment.unhide",
@@ -72,6 +85,7 @@ function useCommentModeration(actorId: string) {
     mutationFn: async ({ commentId, preview }: { commentId: string; preview?: string }) => {
       const { error } = await supabase.from("comments").delete().eq("id", commentId);
       if (error) throw error;
+      await sweep();
       await recordAudit({
         actorId,
         action: "comment.delete",
@@ -121,6 +135,32 @@ function useCommentModeration(actorId: string) {
   return { setHidden, remove, ban };
 }
 
+/**
+ * The attachment on a reported or browsed take.
+ *
+ * A moderator judging "this picture is a doxx" cannot judge it from the text
+ * under it, and one who has to open the public page to see what was reported
+ * will guess instead. Rendered small and capped: this is the queue, not a
+ * gallery, and the point is to recognise the picture, not to study it.
+ */
+function AttachmentPreview({ url }: { url: string | null | undefined }) {
+  if (!url) return null;
+  return (
+    <figure className="mt-2">
+      <img
+        src={url}
+        alt="Attached to this comment"
+        loading="lazy"
+        decoding="async"
+        className="max-h-48 rounded-sm border border-border bg-muted/40 object-contain"
+      />
+      <figcaption className="mt-1 text-xs text-muted-foreground">
+        Attached image — hiding or deleting this comment removes it from storage.
+      </figcaption>
+    </figure>
+  );
+}
+
 function CommentActions({
   actorId,
   commentId,
@@ -129,6 +169,7 @@ function CommentActions({
   authorId,
   authorName,
   authorBanned,
+  imageUrl,
 }: {
   actorId: string;
   commentId: string;
@@ -137,6 +178,8 @@ function CommentActions({
   authorId: string;
   authorName: string;
   authorBanned: boolean;
+  /** the take's attachment, if it still has one — changes what Hide costs */
+  imageUrl?: string | null;
 }) {
   const { setHidden, remove, ban } = useCommentModeration(actorId);
   return (
@@ -157,7 +200,11 @@ function CommentActions({
             </Button>
           }
           title="Hide this comment?"
-          description="It disappears from the public thread and stops counting toward the topic's comment total. The author still sees it, and you can restore it later."
+          description={
+            imageUrl
+              ? "It disappears from the public thread and stops counting toward the topic's comment total. The text comes back if you restore it — the attached image does not: hiding deletes it from storage for good."
+              : "It disappears from the public thread and stops counting toward the topic's comment total. The author still sees it, and you can restore it later."
+          }
           confirmLabel="Hide it"
           reasonLabel="Reason (kept in the audit log)"
           reasonPlaceholder="Personal attack…"
@@ -294,6 +341,7 @@ function ReportsQueue({ actorId }: { actorId: string }) {
             }`}
           >
             <p className="text-sm">{r.comment_body}</p>
+            <AttachmentPreview url={r.comment_image_url} />
             <p className="mt-2 text-xs text-muted-foreground">
               by <strong>{r.author_name}</strong> on{" "}
               <Link to="/topic/$id" params={{ id: r.topic_id }} className="underline">
@@ -313,6 +361,7 @@ function ReportsQueue({ actorId }: { actorId: string }) {
                 authorId={r.author_id}
                 authorName={r.author_name}
                 authorBanned={r.author_banned}
+                imageUrl={r.comment_image_url}
               />
               <span className="mx-1 w-px bg-border" />
               <Button
@@ -433,6 +482,7 @@ function CommentBrowser({ actorId }: { actorId: string }) {
             ) : null}
           </div>
           <p className="text-sm">{c.body}</p>
+          <AttachmentPreview url={c.image_url} />
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <ThumbsUp className="h-3.5 w-3.5" /> {c.likes_count}
@@ -449,6 +499,7 @@ function CommentBrowser({ actorId }: { actorId: string }) {
             authorId={c.author_id}
             authorName={c.author_name}
             authorBanned={c.author_banned}
+            imageUrl={c.image_url}
           />
         </div>
       ))}

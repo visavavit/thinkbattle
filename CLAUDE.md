@@ -157,3 +157,59 @@ Rules for future agents:
   regenerate the bundle with the current environment variables.
 - Do not assume a successful SSR render means hydration is healthy; wait for the client
   bundle to mount and check for late errors.
+
+## Image attachments on takes (2026-08-26)
+
+A signed-in member can attach one picture to a take, when an admin turns it on
+(Admin → Settings, default **off**). Replies stay text-only; guests cannot attach
+anything because they cannot comment at all.
+
+`supabase/migrations/20260826140000_*` is **NOT YET EXECUTED** — written and
+tested against a local replay, never run against the live database. The switch
+defaults to off, so applying it changes nothing visible.
+
+**The deletion path is the feature.** Before this, `r2.server.ts` had a PUT and no
+DELETE, so a hidden take's picture stayed fetchable forever at an
+immutable-cached URL. Three pieces carry it now:
+
+- `public.uploads` — a ledger row written *before* the bytes are sent
+  (`begin_upload` → R2 → `finish_upload`). Nothing reaches the bucket that the
+  database cannot name, attribute and delete again.
+- Triggers that mark a row `orphaned` the moment nothing references it: a take
+  deleted, an image removed, a take hidden, a topic cascading away.
+- `take_orphaned_uploads` / `mark_uploads_purged` — claim-and-confirm, because
+  R2 is outside the transaction. `sweepOrphanUploads` runs it on the
+  interactive paths and from Admin → Settings.
+
+Rules for future agents:
+
+- **Hiding a take nulls its `image_url` and that is not reversible.** It is
+  enforced in `guard_comment_image`, not in the UI, because both the moderation
+  panel and the inline controls write to `comments` directly. Do not move that
+  check into application code, and do not add an "unhide restores the image"
+  path — the bytes are gone by then.
+- Never write to R2 without a ledger row. `begin_upload` is where every rule
+  that could reject an upload belongs, so a rejected one costs no storage and an
+  abandoned one still costs its rate-limit slot.
+- `prepare()` in `ImageUploadButton.tsx` **must** re-encode attachments through a
+  canvas — that is what strips EXIF/GPS. The `asIs()` fallback deliberately
+  throws for the `comments` folder. Do not "fix" that by letting it through.
+- Attachments cannot be swapped after posting, only removed. The body has an
+  edit trail; an image has none, and one that can change silently after earning
+  likes is worse than one that cannot change at all.
+- Keep `image_width`/`image_height` on the row and on the `<img>`. Takes page in
+  by keyset cursor and arrive mid-scroll; without them every picture shoves the
+  column down as it decodes.
+- Both admin feeds (`admin_comment_feed`, `admin_report_queue`) return the image
+  URL. If you redeclare either, keep it — and keep `is_synthetic` on the comment
+  feed, which an earlier migration added and is easy to drop by accident.
+
+## Database behaviour tests (2026-08-26)
+
+`supabase/tests/run.sh` replays every migration against a throwaway local
+Postgres 16 and runs the SQL behaviour tests next to it. See
+`supabase/tests/README.md`, including the two migrations that are expected to
+fail the replay for reasons that predate the harness.
+
+Run it after touching any trigger, definer function or RLS policy. `bun test`
+covers none of that.

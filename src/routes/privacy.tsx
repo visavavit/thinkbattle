@@ -35,6 +35,7 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         body: [
           "บัญชี: อีเมล และชื่อที่แสดง (รวมถึงข้อมูลโปรไฟล์พื้นฐานหากเข้าสู่ระบบด้วย Google)",
           "กิจกรรม: การโหวต ความเห็น การกดถูกใจ/ไม่ถูกใจ การรายงาน หัวข้อที่เสนอ และเวลาที่ทำรายการ เพื่อใช้แสดงผลและป้องกันสแปม",
+          "รูปภาพที่คุณอัปโหลด: รูปโปรไฟล์ และรูปที่แนบมากับความเห็นในกรณีที่เปิดใช้งานฟีเจอร์นี้ ทุกไฟล์ที่อัปโหลดจะถูกบันทึกผูกกับบัญชีของคุณ เพื่อให้ตรวจสอบที่มาและลบออกได้ในภายหลัง ไฟล์จะถูกแปลงใหม่ในเบราว์เซอร์ของคุณก่อนส่ง ซึ่งเป็นการลบข้อมูลกำกับภาพจากกล้อง เช่น พิกัด GPS ออกไปด้วย",
           "เราไม่เก็บข้อมูลการชำระเงิน และไม่ขายข้อมูลของคุณ",
         ],
       },
@@ -42,6 +43,7 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         heading: "สิ่งที่เป็นสาธารณะ",
         body: [
           "ชื่อที่แสดง ความเห็น และฝั่งที่คุณเลือกในหัวข้อที่คุณแสดงความเห็น จะมองเห็นได้โดยสาธารณะ อีเมลของคุณไม่ถูกเปิดเผยต่อผู้ใช้อื่น",
+          "รูปที่แนบมากับความเห็นก็เป็นสาธารณะเช่นกัน และเปิดดูได้จากลิงก์โดยตรงโดยผู้ที่มีลิงก์นั้น จึงไม่ควรแนบสิ่งที่คุณไม่ต้องการเผยแพร่ต่อสาธารณะ เมื่อคุณลบความเห็น เอารูปออก หรือผู้ดูแลซ่อนความเห็นนั้น ไฟล์รูปจะถูกลบออกจากที่จัดเก็บ",
         ],
       },
       {
@@ -66,6 +68,7 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         heading: "สิทธิของคุณ",
         body: [
           "คุณขอเข้าถึง แก้ไข หรือลบบัญชีและเนื้อหาของคุณได้ที่ hello@toktiang.com เราจะดำเนินการภายในเวลาอันสมควร",
+          "รวมถึงรูปภาพด้วย เนื่องจากไฟล์ที่อัปโหลดทุกไฟล์ถูกบันทึกไว้ คำขอลบจึงมีผลถึงตัวไฟล์ ไม่ใช่เพียงความเห็นที่แนบไฟล์นั้นมา",
         ],
       },
     ],
@@ -79,6 +82,7 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         body: [
           "Account data: your email address and display name (plus basic profile data if you sign in with Google).",
           "Activity: votes, comments, reactions, reports, submitted topics and their timestamps — used to display the site and to enforce anti-spam limits.",
+          "Images you upload: a profile picture, and — where image attachments are enabled — a picture attached to a comment. Every upload is recorded against your account so it can be attributed and removed later. Uploads are re-encoded in your browser before they are sent, which strips embedded camera metadata such as GPS coordinates.",
           "We do not collect payment data and we do not sell your data.",
         ],
       },
@@ -86,6 +90,7 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         heading: "What is public",
         body: [
           "Your display name, your comments, and the side you picked on topics where you commented are publicly visible. Your email address is never shown to other users.",
+          "An image attached to a comment is public too, and it is served from a URL that anyone holding the link can open. Do not attach anything you would not put on a public page. Deleting the comment, removing the image, or having a moderator hide the comment deletes the file from storage.",
         ],
       },
       {
@@ -110,6 +115,7 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         heading: "Your rights",
         body: [
           "Email hello@toktiang.com to access, correct or delete your account and content. We act on requests within a reasonable time.",
+          "That includes images: every uploaded file is recorded, so a deletion request reaches the file itself and not only the comment it was attached to.",
         ],
       },
     ],

@@ -381,6 +381,9 @@ export type Database = {
           hidden_by: string | null
           hidden_reason: string | null
           id: string
+          image_height: number | null
+          image_url: string | null
+          image_width: number | null
           is_hidden: boolean
           is_synthetic: boolean
           likes_count: number
@@ -400,6 +403,9 @@ export type Database = {
           hidden_by?: string | null
           hidden_reason?: string | null
           id?: string
+          image_height?: number | null
+          image_url?: string | null
+          image_width?: number | null
           is_hidden?: boolean
           is_synthetic?: boolean
           likes_count?: number
@@ -419,6 +425,9 @@ export type Database = {
           hidden_by?: string | null
           hidden_reason?: string | null
           id?: string
+          image_height?: number | null
+          image_url?: string | null
+          image_width?: number | null
           is_hidden?: boolean
           is_synthetic?: boolean
           likes_count?: number
@@ -745,6 +754,48 @@ export type Database = {
         }
         Relationships: []
       }
+      uploads: {
+        Row: {
+          bytes: number
+          created_at: string
+          ext: string
+          folder: string
+          id: string
+          orphaned_at: string | null
+          state: string
+          stored_at: string | null
+          url: string | null
+          user_id: string
+          widths: number[]
+        }
+        Insert: {
+          bytes?: number
+          created_at?: string
+          ext: string
+          folder: string
+          id: string
+          orphaned_at?: string | null
+          state?: string
+          stored_at?: string | null
+          url?: string | null
+          user_id: string
+          widths?: number[]
+        }
+        Update: {
+          bytes?: number
+          created_at?: string
+          ext?: string
+          folder?: string
+          id?: string
+          orphaned_at?: string | null
+          state?: string
+          stored_at?: string | null
+          url?: string | null
+          user_id?: string
+          widths?: number[]
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -960,6 +1011,7 @@ export type Database = {
           is_hidden: boolean
           is_synthetic: boolean
           likes_count: number
+          image_url: string | null
           open_reports: number
           side: string
           topic_id: string
@@ -982,6 +1034,7 @@ export type Database = {
           author_id: string
           author_name: string
           comment_body: string
+          comment_image_url: string | null
           comment_dislikes: number
           comment_id: string
           comment_is_hidden: boolean
@@ -1038,6 +1091,15 @@ export type Database = {
         Returns: number
       }
       closed_trending_weight: { Args: { _closes_at: string }; Returns: number }
+      begin_upload: {
+        Args: { _ext: string; _folder: string; _widths: number[] }
+        Returns: string
+      }
+      comment_images_enabled: { Args: never; Returns: boolean }
+      finish_upload: {
+        Args: { _bytes: number; _id: string; _url: string }
+        Returns: undefined
+      }
       guest_voting_enabled: { Args: never; Returns: boolean }
       has_role: {
         Args: {
@@ -1057,6 +1119,8 @@ export type Database = {
       }
       refresh_trending_scores: { Args: never; Returns: undefined }
       resolve_tag_names: { Args: { _names: string[] }; Returns: string[] }
+      mark_uploads_purged: { Args: { _ids: string[] }; Returns: number }
+      pending_upload_purges: { Args: never; Returns: number }
       set_app_setting: {
         Args: { _key: string; _value: string }
         Returns: undefined
@@ -1064,6 +1128,15 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       site_flags: { Args: never; Returns: Json }
+      take_orphaned_uploads: {
+        Args: { _limit?: number }
+        Returns: {
+          ext: string
+          folder: string
+          id: string
+          widths: number[]
+        }[]
+      }
       topic_comment_authors: {
         Args: { _topic_id: string }
         Returns: {

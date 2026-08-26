@@ -174,6 +174,18 @@ export const en = {
   "sort.top": "Top Liked",
   "sort.newest": "Newest",
   "comment.placeholder": "Defend your side...",
+  "comment.attach": "Add image",
+  "comment.attachBusy": "Uploading…",
+  "comment.attachDone": "Image attached",
+  "comment.attachTooLarge": "Images must be 5 MB or smaller.",
+  "comment.attachHint":
+    "One picture per take. It can't be swapped after posting, and hiding the take takes it down.",
+  "comment.attachRemove": "Remove image",
+  "comment.attachRemoved": "Image removed",
+  "comment.attachRemoveFailed": "Could not remove that image.",
+  "comment.attachConfirmRemove":
+    "Remove this image? It is deleted for good — this cannot be undone.",
+  "comment.attachmentAlt": "Image attached to this take",
   "comment.post": "Post your take",
   "comment.posted": "Take posted 🔥",
   "comment.tooLong": "That take is too long ({max} characters max).",
@@ -241,6 +253,8 @@ export const en = {
   "mod.delete": "Delete permanently",
   "mod.deleteAria": "Delete this comment",
   "mod.confirmDelete": "Delete {name}'s comment permanently?",
+  "mod.confirmHideImage":
+    "Hiding this take also deletes the image on it, for good. Unhiding will not bring it back. Continue?",
   "mod.failed": "Moderation failed",
   "mod.deleted": "Comment deleted",
   "mod.hidden": "Comment hidden",

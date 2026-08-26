@@ -28,7 +28,7 @@ const siteFlagsQuery = queryOptions({
   staleTime: 5 * 60_000,
 });
 
-const FLAGS_OFF: SiteFlags = { guest_voting: false };
+const FLAGS_OFF: SiteFlags = { guest_voting: false, comment_images: false };
 
 export const Route = createFileRoute("/topic/$id")({
   loader: async ({ context, params }) => {
@@ -162,7 +162,12 @@ function TopicPage() {
       ) : null}
       {topic.description ? <p className="text-muted-foreground">{topic.description}</p> : null}
 
-      <Discussion topic={topic} user={user} guestVoting={flags.guest_voting} />
+      <Discussion
+        topic={topic}
+        user={user}
+        guestVoting={flags.guest_voting}
+        commentImages={flags.comment_images}
+      />
     </div>
   );
 }

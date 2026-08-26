@@ -48,3 +48,44 @@ export const readGuestVotingEnabled = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return { enabled: data === true };
   });
+
+/**
+ * Attachments on takes. Off unless an admin has said otherwise: this is the
+ * switch that decides whether the site accepts user-supplied images at all,
+ * and the moderation cost of that is not something a fresh environment should
+ * take on by default.
+ */
+export const setCommentImagesEnabled = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { enabled: boolean }) => input)
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.rpc("set_app_setting", {
+      _key: "comment_images_enabled",
+      _value: data.enabled ? "on" : "off",
+    });
+    if (error) throw new Error(error.message);
+    return { enabled: data.enabled };
+  });
+
+/** The stored value, read past the public flag cache — see above. */
+export const readCommentImagesEnabled = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.rpc("comment_images_enabled");
+    if (error) throw new Error(error.message);
+    return { enabled: data === true };
+  });

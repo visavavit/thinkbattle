@@ -19,6 +19,23 @@
 export const COVER_WIDTHS = [480, 960, 1600] as const;
 
 /**
+ * Widths a comment attachment is rendered at, ascending.
+ *
+ * Stops at 960 where covers go to 1600: an attachment sits inside one debate
+ * column, which the arena caps at roughly 560 CSS pixels even on a wide
+ * screen, so 960 already covers a 2x phone and there is nothing above it worth
+ * paying for. Lightbox-style full-size viewing is deliberately not offered —
+ * the picture is evidence attached to an argument, not the argument.
+ */
+export const COMMENT_WIDTHS = [480, 960] as const;
+
+/**
+ * An attachment is full-bleed inside its column, and below lg only one column
+ * is on screen at a time.
+ */
+export const COMMENT_SIZES = "(min-width: 1024px) 520px, (min-width: 640px) 50vw, 100vw";
+
+/**
  * The cover slot is full-bleed on phones and capped by the feed grid above it,
  * so a viewport-width hint is accurate enough for the browser to choose well.
  */
@@ -26,24 +43,39 @@ export const COVER_SIZES = "(min-width: 1024px) 560px, (min-width: 640px) 50vw, 
 
 const RENDITION_PATTERN = /-w(\d+)\.(jpg|png|webp)$/;
 
-/** The widths actually uploaded for a stored cover URL, widest last. */
-export function coverWidthsFor(url: string): number[] | undefined {
+/** The widths actually uploaded for a stored URL on `ladder`, widest last. */
+function widthsFor(url: string, ladder: readonly number[]): number[] | undefined {
   const match = RENDITION_PATTERN.exec(url);
   if (!match) return undefined;
   const largest = Number(match[1]);
-  const widths = COVER_WIDTHS.filter((w) => w <= largest);
+  const widths = ladder.filter((w) => w <= largest);
   return widths.length > 0 ? widths : undefined;
 }
 
 /**
- * A srcset for a stored cover, or undefined when the image predates the
- * rendition ladder and only exists at one size.
+ * A srcset for a stored image, or undefined when it predates the rendition
+ * ladder — or was uploaded unsized — and only exists at one size.
  */
-export function coverSrcSet(url: string | null | undefined): string | undefined {
+function srcSetFor(url: string | null | undefined, ladder: readonly number[]): string | undefined {
   if (!url) return undefined;
-  const widths = coverWidthsFor(url);
+  const widths = widthsFor(url, ladder);
   if (!widths) return undefined;
   return widths.map((w) => `${url.replace(RENDITION_PATTERN, `-w${w}.$2`)} ${w}w`).join(", ");
+}
+
+/** The widths actually uploaded for a stored cover URL, widest last. */
+export function coverWidthsFor(url: string): number[] | undefined {
+  return widthsFor(url, COVER_WIDTHS);
+}
+
+/** A srcset for a stored cover. */
+export function coverSrcSet(url: string | null | undefined): string | undefined {
+  return srcSetFor(url, COVER_WIDTHS);
+}
+
+/** A srcset for a take's attachment. */
+export function attachmentSrcSet(url: string | null | undefined): string | undefined {
+  return srcSetFor(url, COMMENT_WIDTHS);
 }
 
 /** Builds the object key for one rendition of an upload. */

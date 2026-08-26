@@ -47,12 +47,14 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         body: [
           "คุณยังเป็นเจ้าของเนื้อหาที่โพสต์ และให้สิทธิ์เราแสดง จัดเก็บ และเผยแพร่เนื้อหานั้นบนเว็บไซต์",
           "ห้ามโพสต์: ถ้อยคำสร้างความเกลียดชัง การคุกคาม การข่มขู่ เนื้อหาผิดกฎหมาย ข้อมูลส่วนบุคคลของผู้อื่น สแปม โฆษณา หรือการปลอมตัวเป็นผู้อื่น",
+          "ในกรณีที่แนบรูปกับความเห็นได้ ข้อห้ามเดียวกันนี้ใช้กับรูปด้วย และคุณต้องมีสิทธิ์ในการเผยแพร่รูปนั้น ห้ามแนบรูปบุคคลที่ไม่ได้ยินยอมให้เผยแพร่ ภาพหน้าจอที่เปิดเผยข้อมูลส่วนบุคคลของผู้อื่น หรือเนื้อหาทางเพศ",
         ],
       },
       {
         heading: "4. การดูแลและการระงับบัญชี",
         body: [
           "ผู้ดูแลอาจซ่อนหรือลบความเห็น ปฏิเสธหัวข้อที่เสนอเข้ามา หรือระงับบัญชีที่ละเมิดข้อกำหนด โดยอาจไม่ได้แจ้งล่วงหน้า",
+          "การซ่อนความเห็นจะลบรูปที่แนบมากับความเห็นนั้นอย่างถาวรด้วย และการเลิกซ่อนจะไม่คืนรูปกลับมา",
           "ระบบจำกัดอัตราการโพสต์เพื่อป้องกันสแปม การพยายามหลบเลี่ยงถือเป็นการละเมิดข้อกำหนด",
         ],
       },
@@ -91,12 +93,14 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         body: [
           "You keep ownership of what you post and grant us the right to display, store and distribute it on the site.",
           "Do not post hate speech, harassment, threats, illegal content, other people's private information, spam, advertising, or impersonation.",
+          "Where images may be attached to a comment, the same rules apply to the picture, and you must have the right to post it. Do not attach images of people who have not agreed to appear, screenshots exposing someone's private information, or sexual content.",
         ],
       },
       {
         heading: "4. Moderation and bans",
         body: [
           "Admins may hide or remove comments, reject submitted topics, and ban accounts that break these terms, with or without notice.",
+          "Hiding a comment also deletes any image attached to it, permanently. Restoring the comment does not bring the image back.",
           "Rate limits apply to posting. Attempting to evade them is itself a violation.",
         ],
       },

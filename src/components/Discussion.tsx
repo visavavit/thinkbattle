@@ -6,6 +6,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link, useLocation } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Check,
   Clock,
@@ -19,6 +20,7 @@ import {
   Trash2,
   Reply,
   Pencil,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
@@ -31,6 +33,9 @@ import { useTopicClock } from "@/lib/topic-clock";
 import { commentsPageFilter, nextCommentsCursor, type CommentsCursor } from "@/lib/comments-cursor";
 import { pagesHave, removeRow, upsertRow } from "@/lib/comments-cache";
 import { castGuestVote } from "@/lib/guest.functions";
+import { sweepOrphanUploads } from "@/lib/uploads.functions";
+import { attachmentSrcSet, COMMENT_SIZES } from "@/lib/images";
+import { ImageUploadButton } from "./ImageUploadButton";
 import { readGuestVote, saveGuestVote } from "@/lib/guest-vote-store";
 import { ClosingNotice, DeadlineCountdown, DeadlineLine } from "./TopicDeadline";
 import { ResultPanel, type TopTake } from "./ResultPanel";
@@ -66,6 +71,12 @@ type CommentRow = {
   edited_at?: string | null;
   edit_count?: number;
   parent_id: string | null;
+  /** The take's attachment, if it has one and it has not been taken down.
+   *  Dimensions come from the stored rendition so the markup can reserve the
+   *  right box before the bytes arrive — see CommentAttachment. */
+  image_url?: string | null;
+  image_width?: number | null;
+  image_height?: number | null;
   /** Set by the synthetic-audience engine. Carried on the row but not
    *  surfaced anywhere in the UI — see CLAUDE.md before changing that. */
   is_synthetic?: boolean;
@@ -185,11 +196,14 @@ export function Discussion({
   topic,
   user,
   guestVoting = false,
+  commentImages = false,
 }: {
   topic: TopicCard;
   user: User | null;
   /** whether an anonymous reader may cast a vote; admin-controlled, off by default */
   guestVoting?: boolean;
+  /** whether a take may carry a picture; admin-controlled, off by default */
+  commentImages?: boolean;
 }) {
   const queryClient = useQueryClient();
   const { t, tError } = useI18n();
@@ -925,6 +939,7 @@ export function Discussion({
           isActive={activeSide === "a"}
           flashId={flashId}
           onPosted={onPosted}
+          commentImages={commentImages}
         />
         <CommentColumn
           side="b"
@@ -947,6 +962,7 @@ export function Discussion({
           isActive={activeSide === "b"}
           flashId={flashId}
           onPosted={onPosted}
+          commentImages={commentImages}
         />
       </div>
 
@@ -1166,6 +1182,7 @@ function CommentColumn({
   isActive,
   flashId,
   onPosted,
+  commentImages,
 }: {
   side: Side;
   title: string;
@@ -1193,10 +1210,13 @@ function CommentColumn({
   /** the take currently wearing the reveal ring, if it is in this column */
   flashId: string | null;
   onPosted: (row: CommentRow) => void;
+  /** whether the composer offers an attachment at all */
+  commentImages: boolean;
 }) {
   const [sort, setSort] = useState<SortKey>("top");
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
+  const [attachment, setAttachment] = useState<Attachment | null>(null);
   const queryClient = useQueryClient();
 
   /**
@@ -1245,7 +1265,17 @@ function CommentColumn({
     // rather than left for its author to go looking for
     const { data: inserted, error } = await supabase
       .from("comments")
-      .insert({ topic_id: topicId, user_id: user.id, side, body: text })
+      .insert({
+        topic_id: topicId,
+        user_id: user.id,
+        side,
+        body: text,
+        // The database re-checks that this upload is the poster's own and that
+        // attachments are switched on, so a stale page cannot smuggle one in.
+        image_url: attachment?.url ?? null,
+        image_width: attachment?.width ?? null,
+        image_height: attachment?.height ?? null,
+      })
       .select("*")
       .single();
     setPosting(false);
@@ -1254,6 +1284,7 @@ function CommentColumn({
       return;
     }
     setBody("");
+    setAttachment(null);
     if (inserted) onPosted(inserted as unknown as CommentRow);
     toast.success(t("comment.posted"));
     queryClient.invalidateQueries({ queryKey: ["comments", topicId] });
@@ -1305,6 +1336,9 @@ function CommentColumn({
             className="min-h-28 bg-background"
           />
           <CharCounter length={body.length} />
+          {commentImages ? (
+            <AttachmentPicker value={attachment} onChange={setAttachment} disabled={posting} />
+          ) : null}
           <Button onClick={submit} disabled={posting || body.trim().length < 2} className="w-full">
             {t("comment.post")}
           </Button>
@@ -1494,6 +1528,154 @@ function CharCounter({ length }: { length: number }) {
     >
       {t("comment.counter", { used: length, max: COMMENT_MAX_LENGTH })}
     </p>
+  );
+}
+
+/** A picture chosen in the composer but not yet posted. */
+type Attachment = { url: string; width: number | null; height: number | null };
+
+/**
+ * The composer's attachment slot: a button until something is picked, a
+ * thumbnail with a way out afterwards.
+ *
+ * One picture, not many. An attachment here is meant to be the receipt behind
+ * an argument — the screenshot, the chart, the quoted post — and the moment a
+ * take can carry a gallery the column stops being a debate and becomes a feed.
+ *
+ * Dropping a picked image only clears it locally. The bytes are already in the
+ * bucket, so they are left to the sweep, which collects any attachment upload
+ * still on no take an hour later.
+ */
+function AttachmentPicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: Attachment | null;
+  onChange: (next: Attachment | null) => void;
+  disabled: boolean;
+}) {
+  const t = useT();
+
+  if (value) {
+    return (
+      <div className="flex items-start gap-2 rounded-sm border border-border p-2">
+        <img
+          src={value.url}
+          alt=""
+          width={value.width ?? undefined}
+          height={value.height ?? undefined}
+          className="h-16 w-16 shrink-0 rounded-sm object-cover"
+        />
+        <p className="min-w-0 flex-1 text-xs text-muted-foreground">{t("comment.attachHint")}</p>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={disabled}
+          onClick={() => onChange(null)}
+          aria-label={t("comment.attachRemove")}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <ImageUploadButton
+      folder="comments"
+      variant="inline"
+      label={t("comment.attach")}
+      strings={{
+        busy: t("comment.attachBusy"),
+        success: t("comment.attachDone"),
+        tooLarge: t("comment.attachTooLarge"),
+      }}
+      onUploaded={(url, meta) => onChange({ url, width: meta.width, height: meta.height })}
+    />
+  );
+}
+
+/**
+ * A posted take's attachment.
+ *
+ * `width`/`height` are on the element on purpose. Takes load by keyset cursor
+ * and arrive mid-scroll, so an image that only claims its space once it decodes
+ * shoves everything under it down — which, in a column the reader is already
+ * reading, means losing their place. The stored dimensions let the browser
+ * reserve the box up front; they are null only for pictures whose ladder the
+ * uploader could not build, and those are rare enough to let reflow.
+ *
+ * Capped rather than opened into a lightbox: the picture supports the argument,
+ * it is not the argument, and a full-screen viewer is an invitation to post
+ * pictures that need one.
+ */
+function CommentAttachment({
+  row,
+  canRemove,
+  onRemoved,
+}: {
+  row: CommentRow;
+  canRemove: boolean;
+  onRemoved: (updated: CommentRow) => void;
+}) {
+  const { t, tError } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const sweep = useServerFn(sweepOrphanUploads);
+
+  if (!row.image_url) return null;
+
+  async function remove() {
+    if (busy || !confirm(t("comment.attachConfirmRemove"))) return;
+    setBusy(true);
+    const { data: updated, error } = await supabase
+      .from("comments")
+      .update({ image_url: null, image_width: null, image_height: null })
+      .eq("id", row.id)
+      .select("*")
+      .single();
+    if (error) {
+      setBusy(false);
+      toast.error(tError(describeError(error, t("comment.attachRemoveFailed"))));
+      return;
+    }
+    // The row now points at nothing and the ledger has marked the upload
+    // orphaned; this is what actually deletes the bytes. A failure here is not
+    // worth an error toast — the sweep runs again on the next moderation
+    // action and from the admin panel.
+    await sweep().catch(() => undefined);
+    setBusy(false);
+    toast.success(t("comment.attachRemoved"));
+    onRemoved(updated as unknown as CommentRow);
+  }
+
+  return (
+    <figure className="relative mt-3">
+      <img
+        src={row.image_url}
+        srcSet={attachmentSrcSet(row.image_url)}
+        sizes={COMMENT_SIZES}
+        width={row.image_width ?? undefined}
+        height={row.image_height ?? undefined}
+        alt={t("comment.attachmentAlt")}
+        loading="lazy"
+        decoding="async"
+        className="max-h-96 w-full rounded-sm border border-border bg-muted/40 object-contain"
+      />
+      {canRemove ? (
+        <button
+          type="button"
+          onClick={remove}
+          disabled={busy}
+          aria-label={t("comment.attachRemove")}
+          title={t("comment.attachRemove")}
+          className="absolute top-2 right-2 rounded-full border border-border bg-background/90 p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      ) : null}
+    </figure>
   );
 }
 
@@ -1806,7 +1988,14 @@ function CommentItem({
           }}
         />
       ) : (
-        <CommentBody body={row.body} className="mt-2" />
+        <>
+          <CommentBody body={row.body} className="mt-2" />
+          <CommentAttachment
+            row={row}
+            canRemove={canEdit}
+            onRemoved={(updated) => replaceCachedComment(queryClient, topicId, updated)}
+          />
+        </>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <ReactionButton
@@ -2177,9 +2366,15 @@ function ModeratorControls({
   const queryClient = useQueryClient();
   const { t, tError } = useI18n();
   const [busy, setBusy] = useState(false);
+  const sweep = useServerFn(sweepOrphanUploads);
 
   async function run(action: "hide" | "unhide" | "delete") {
     if (action === "delete" && !confirm(t("mod.confirmDelete", { name: authorName }))) return;
+    // Hiding a take with a picture on it takes the picture down for good — the
+    // database enforces that, and unhiding does not bring it back. A moderator
+    // reaching for the softer of the two actions should know that before they
+    // click, not after.
+    if (action === "hide" && comment.image_url && !confirm(t("mod.confirmHideImage"))) return;
     setBusy(true);
     const { data: session } = await supabase.auth.getUser();
     const actorId = session.user!.id;
@@ -2205,6 +2400,12 @@ function ModeratorControls({
         entity_id: comment.id,
         summary: comment.body.slice(0, 120),
       });
+    }
+    if (!error && (action === "hide" || action === "delete")) {
+      // The ledger has already marked the attachment orphaned; this is what
+      // deletes the bytes. Best effort — the sweep is idempotent and the admin
+      // panel can run it again.
+      await sweep().catch(() => undefined);
     }
     setBusy(false);
 

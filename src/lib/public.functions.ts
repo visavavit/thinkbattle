@@ -235,9 +235,9 @@ export const getHeadliners = createServerFn({ method: "GET" }).handler(async () 
 });
 
 /** Feature switches every visitor sees the same answer to. */
-export type SiteFlags = { guest_voting: boolean };
+export type SiteFlags = { guest_voting: boolean; comment_images: boolean };
 
-const FLAGS_OFF: SiteFlags = { guest_voting: false };
+const FLAGS_OFF: SiteFlags = { guest_voting: false, comment_images: false };
 
 async function fetchSiteFlags(): Promise<SiteFlags> {
   const supabase = publicClient(30);
@@ -248,7 +248,10 @@ async function fetchSiteFlags(): Promise<SiteFlags> {
   const { data, error } = await supabase.rpc("site_flags");
   if (error) throw new Error(error.message);
   const flags = data as unknown as Partial<SiteFlags> | null;
-  return { guest_voting: flags?.guest_voting === true };
+  return {
+    guest_voting: flags?.guest_voting === true,
+    comment_images: flags?.comment_images === true,
+  };
 }
 
 /**
