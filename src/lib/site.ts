@@ -51,3 +51,19 @@ export function seoTags(path: string, image?: string | null) {
     links: [{ rel: "canonical", href: url }],
   };
 }
+
+/**
+ * Share-intent URLs for the result panel. Pure string building — no UTM
+ * parameters, deliberately: a canonical `url` for every share keeps LINE and
+ * other scrapers converging on one OG cache entry per topic instead of
+ * fragmenting across query-string variants.
+ */
+export function shareUrls(url: string, text: string) {
+  const encodedUrl = encodeURIComponent(url);
+  const encodedText = encodeURIComponent(text);
+  return {
+    line: `https://line.me/R/msg/text/?${encodedText}%0A${encodedUrl}`,
+    x: `https://x.com/intent/post?text=${encodedText}&url=${encodedUrl}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+  };
+}

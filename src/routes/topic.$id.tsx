@@ -8,6 +8,7 @@ import { translate as tr, useT } from "@/lib/i18n";
 import { coverSrcSet } from "@/lib/images";
 import { ClosingBadge } from "@/components/TopicDeadline";
 import { seoTags } from "@/lib/site";
+import { readClock } from "@/lib/topic-clock";
 
 const topicQuery = (id: string) =>
   queryOptions({
@@ -25,6 +26,9 @@ export const Route = createFileRoute("/topic/$id")({
       choiceA: topic.choice_a,
       choiceB: topic.choice_b,
       cover: topic.cover_image_url,
+      closesAt: topic.closes_at,
+      votesA: topic.votes_a,
+      votesB: topic.votes_b,
     };
   },
   head: ({ loaderData }) => {
@@ -33,13 +37,33 @@ export const Route = createFileRoute("/topic/$id")({
         meta: [{ title: tr("meta.topic.unavailable") }, { name: "robots", content: "noindex" }],
       };
     }
-    const title = `${loaderData.title} — ถกเถียง`;
-    const description = tr("meta.topic.description", {
-      a: loaderData.choiceA,
-      b: loaderData.choiceB,
-    });
+    // Rendered HTML for an anonymous request is edge-cached briefly
+    // (see server.ts), so a closed topic's frozen numbers are safe to bake
+    // into the description — an open topic's live tallies are not: they
+    // would mint scraper-cache entries carrying numbers already stale by the
+    // time LINE or X actually fetch them. See stillOpen() in
+    // public.functions.ts for the same reasoning applied to caching reads.
+    const closed = readClock(loaderData.closesAt).isClosed;
+    const total = loaderData.votesA + loaderData.votesB;
+    const pctA = total === 0 ? 50 : Math.round((100 * loaderData.votesA) / total);
+
+    const title = closed
+      ? tr("meta.topic.resultTitle", { title: loaderData.title })
+      : `${loaderData.title} — ถกเถียง`;
+    const description = closed
+      ? total === 0
+        ? tr("meta.topic.resultDescriptionEmpty", { a: loaderData.choiceA, b: loaderData.choiceB })
+        : tr("meta.topic.resultDescription", {
+            a: loaderData.choiceA,
+            aPct: pctA,
+            b: loaderData.choiceB,
+            bPct: 100 - pctA,
+            n: total,
+          })
+      : tr("meta.topic.description", { a: loaderData.choiceA, b: loaderData.choiceB });
     // A debate's cover is its share card; topics without one fall back to the
-    // site card so a share is never a bare text link.
+    // site card so a share is never a bare text link. Closed or open, the
+    // card image itself does not change — only the title/description above.
     const seo = seoTags(`/topic/${loaderData.id}`, loaderData.cover);
     return {
       meta: [

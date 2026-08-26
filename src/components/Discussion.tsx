@@ -29,6 +29,7 @@ import { useI18n, useT, type TranslationKey } from "@/lib/i18n";
 import { getTopicCounts, type TopicCard } from "@/lib/public.functions";
 import { useTopicClock } from "@/lib/topic-clock";
 import { ClosingNotice, DeadlineCountdown, DeadlineLine } from "./TopicDeadline";
+import { ResultPanel, type TopTake } from "./ResultPanel";
 import { SplitBar } from "./SplitBar";
 import { Button } from "@/components/ui/button";
 import { AuthorAvatar, type Author } from "./AuthorAvatar";
@@ -116,6 +117,10 @@ const MIN_ROWS_FOR_PINS = 6;
 const FLASH_MS = 2500;
 
 const netOf = (r: CommentRow) => (r.likes_count ?? 0) - (r.dislikes_count ?? 0);
+
+/** Stable empty fallback for pinsQuery.data?.authors, so a missing query
+ *  result does not hand ResultPanel a fresh Map identity on every render. */
+const EMPTY_AUTHORS = new Map<string, Author>();
 
 // Every comparator falls through to recency. Without that last step ties were
 // left to sort stability, so a take's position depended on the order the page
@@ -329,6 +334,20 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
     for (const row of commentsQuery.data?.rows ?? []) pool.set(row.id, row);
     return [...pool.values()];
   }, [pinsQuery.data?.rows, commentsQuery.data?.rows]);
+
+  // The best case per side, for the closed-topic result panel. `pinsQuery`
+  // already ranks every side's takes by net score for the pinned rows at the
+  // top of each column, so this is a pick over data already in memory rather
+  // than a new query — reusing the same byNetScore comparator the Top sort
+  // uses, so "best case" here means the same thing it does everywhere else.
+  const topTakePerSide = useMemo(() => {
+    const rows = pinsQuery.data?.rows ?? [];
+    const pick = (side: Side): TopTake | undefined =>
+      rows
+        .filter((r) => r.side === side && r.parent_id === null && !r.is_hidden)
+        .sort(byNetScore)[0];
+    return { a: pick("a"), b: pick("b") };
+  }, [pinsQuery.data?.rows]);
 
   // A notification links straight at a take: /topic/$id#comment-<uuid>. The
   // target can sit past the loaded page, or in the column that is collapsed on
@@ -700,26 +719,34 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
 
       <ClosingNotice clock={clock} />
 
-      <section className="arena-panel p-5">
-        <SplitBar
-          pctA={pctA}
-          countA={votesA}
-          countB={votesB}
-          labelA={topic.choice_a}
-          labelB={topic.choice_b}
+      {isClosed ? (
+        <ResultPanel
+          topicId={topic.id}
+          choiceA={topic.choice_a}
+          choiceB={topic.choice_b}
+          votesA={votesA}
+          votesB={votesB}
           myVote={myVote}
-          size="lg"
+          clock={clock}
+          topTakeA={topTakePerSide.a}
+          topTakeB={topTakePerSide.b}
+          authors={pinsQuery.data?.authors ?? EMPTY_AUTHORS}
         />
-        {/* Below sm the vote buttons stack into the same shape as the comment
-            side switcher further down, and both carry the same two side
-            labels. This says which one of them casts the vote. */}
-        {/* A closed debate keeps the split and the labels but drops the vote
-            buttons entirely: the reader's own choice still shows on the bar
-            above, and there is nothing left to press. */}
-        <p className="mt-5 text-sm font-bold">
-          {isClosed ? t("closing.final") : t("vote.pickHeading")}
-        </p>
-        {isClosed ? null : (
+      ) : (
+        <section className="arena-panel p-5">
+          <SplitBar
+            pctA={pctA}
+            countA={votesA}
+            countB={votesB}
+            labelA={topic.choice_a}
+            labelB={topic.choice_b}
+            myVote={myVote}
+            size="lg"
+          />
+          {/* Below sm the vote buttons stack into the same shape as the
+              comment side switcher further down, and both carry the same two
+              side labels. This says which one of them casts the vote. */}
+          <p className="mt-5 text-sm font-bold">{t("vote.pickHeading")}</p>
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
             <VoteButton
               side="a"
@@ -736,36 +763,36 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
               onClick={() => castVote("b")}
             />
           </div>
-        )}
-        <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm text-muted-foreground">
-          <span>
-            {t("vote.totalVotes", { n: total })}
-            {isClosed ? null : user ? (
-              myVote ? (
-                t("vote.canSwitch")
+          <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm text-muted-foreground">
+            <span>
+              {t("vote.totalVotes", { n: total })}
+              {user ? (
+                myVote ? (
+                  t("vote.canSwitch")
+                ) : (
+                  t("vote.pickToUnlock")
+                )
               ) : (
-                t("vote.pickToUnlock")
-              )
-            ) : (
-              <>
-                {" — "}
-                <Link
-                  to="/auth"
-                  search={{ redirect: `/topic/${topic.id}` }}
-                  className="font-bold text-primary underline"
-                >
-                  {t("vote.signInToVote")}
-                </Link>
-              </>
-            )}
-          </span>
-          <DeadlineLine clock={clock} />
-        </p>
-        {/* the same deadline as the line above, but ticking */}
-        <div className="text-center">
-          <DeadlineCountdown clock={clock} />
-        </div>
-      </section>
+                <>
+                  {" — "}
+                  <Link
+                    to="/auth"
+                    search={{ redirect: `/topic/${topic.id}` }}
+                    className="font-bold text-primary underline"
+                  >
+                    {t("vote.signInToVote")}
+                  </Link>
+                </>
+              )}
+            </span>
+            <DeadlineLine clock={clock} />
+          </p>
+          {/* the same deadline as the line above, but ticking */}
+          <div className="text-center">
+            <DeadlineCountdown clock={clock} />
+          </div>
+        </section>
+      )}
 
       <SideSwitcher
         labelA={topic.choice_a}
