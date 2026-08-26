@@ -654,6 +654,7 @@ export type Database = {
           published_at: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          search_text: string | null
           status: Database["public"]["Enums"]["topic_status"]
           submitted_by: string | null
           title: string
@@ -677,6 +678,7 @@ export type Database = {
           published_at?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          search_text?: string | null
           status?: Database["public"]["Enums"]["topic_status"]
           submitted_by?: string | null
           title: string
@@ -700,6 +702,7 @@ export type Database = {
           published_at?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          search_text?: string | null
           status?: Database["public"]["Enums"]["topic_status"]
           submitted_by?: string | null
           title?: string
@@ -873,6 +876,7 @@ export type Database = {
           is_featured: boolean | null
           pct_a: number | null
           published_at: string | null
+          search_text: string | null
           status: Database["public"]["Enums"]["topic_status"] | null
           submitted_by: string | null
           tags: string[] | null
@@ -1021,12 +1025,18 @@ export type Database = {
         Args: { _actor: string; _recipient: string }
         Returns: boolean
       }
+      refresh_topic_search_text: {
+        Args: { _topic_id: string }
+        Returns: undefined
+      }
       refresh_trending_scores: { Args: never; Returns: undefined }
       resolve_tag_names: { Args: { _names: string[] }; Returns: string[] }
       set_app_setting: {
         Args: { _key: string; _value: string }
         Returns: undefined
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       topic_comment_authors: {
         Args: { _topic_id: string }
         Returns: {
@@ -1055,6 +1065,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      topic_search_text: { Args: { _topic_id: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user"
