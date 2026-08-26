@@ -248,8 +248,12 @@ async function fetchSiteFlags(): Promise<SiteFlags> {
   const { data, error } = await supabase.rpc("site_flags");
   if (error) throw new Error(error.message);
   const flags = data as unknown as Partial<SiteFlags> | null;
+  // The admin switch is only half the answer: without GUEST_COOKIE_SECRET the
+  // server cannot sign a device id, so cast_guest_vote fails closed. Reflect
+  // that here or the page offers a button that can only ever throw.
+  const canSignGuests = Boolean(process.env["GUEST_COOKIE_SECRET"]);
   return {
-    guest_voting: flags?.guest_voting === true,
+    guest_voting: flags?.guest_voting === true && canSignGuests,
     comment_images: flags?.comment_images === true,
   };
 }
