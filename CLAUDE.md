@@ -68,3 +68,68 @@ Rules for future agents:
   without first comparing the user id to the previous one.
 - If you add new auth-driven refresh logic, verify it by focusing another tab and
   returning: there should be no refetch burst.
+
+## Two migrations are written but NOT applied (2026-08-26)
+
+`supabase/migrations/20260826120000_*` (browse search) and `20260826130000_*` (guest
+voting) were authored in a session with no database access. Both carry a
+`NOT YET EXECUTED` header. The second alters `votes.user_id` to nullable on the live
+table holding the product's primary data.
+
+- Back up, and apply to a branch or staging project, before production.
+- `src/integrations/supabase/types.ts` was hand-edited to match them. Regenerate it
+  from the real schema once they are applied, and diff against the hand edit.
+- Guest voting also needs `GUEST_COOKIE_SECRET` in the server environment. Without it
+  the feature stays off no matter what the admin switch says — that is deliberate: an
+  unsigned device id would let one client claim any number of devices.
+
+## Guest voting: the cache rule (2026-08-26)
+
+Anonymous visitors can vote when an admin turns it on (Admin → Settings, default
+**off**). Commenting still requires an account.
+
+**Nothing in the SSR or document path may read or write the guest cookie.** `server.ts`
+skips document caching when `Set-Cookie` is present, but has no protection against a
+response that merely _varies_ by a request cookie. A loader reading `tt_gid` during SSR
+would put one device's "you voted A" into a shared edge entry served to everyone else in
+that colo, and it would fail silently.
+
+So the cookie is touched in exactly one place: the POST server functions in
+`src/lib/guest.functions.ts`, which dynamically import `src/lib/guest.server.ts`. Keep it
+that way.
+
+Rules for future agents:
+
+- Never import `guest.server.ts` from a loader, a route `head()`, or a GET server fn.
+- A guest's own vote comes from the localStorage mirror in `guest-vote-store.ts`, read in
+  an effect. Do not replace it with a "have I voted?" endpoint — that puts an uncacheable
+  round trip on every anonymous page view.
+- `cast_guest_vote` returns resolved tallies, not a delta. Keep it that way: a guest whose
+  storage was cleared but whose cookie survived cannot know their own prior side.
+- The merge on sign-up skips closed topics. Do not add a bypass to `guard_topic_closed`;
+  its value is that it holds on every write path including service_role.
+- Do not put a read policy on `app_settings` to expose a flag — it holds
+  `bot_tick_secret`. Add the key to the `site_flags()` definer function instead.
+- Anti-abuse here is best-effort by design. Do not describe it as preventing ballot
+  stuffing; `admin_purge_guest_votes` is the actual remedy.
+
+## Paging: comments and browse are cursor-based (2026-08-26)
+
+Both feeds page by keyset cursor, not a growing `limit`.
+
+- Comments: `src/lib/comments-cursor.ts` + `comments-cache.ts`, ordered
+  `created_at desc, id desc`. The old growing-limit version re-downloaded every prior row
+  and grew the reply `.in()` URL past what proxies accept at a few hundred takes.
+- Browse: `src/lib/feed-search.ts`, ordered by the sort column then `id`.
+
+Rules for future agents:
+
+- The `id` tiebreak is not decoration. Comment timestamps tie (the bot worker backdates
+  `created_at`) and vote counts tie constantly; a page boundary inside a tie skips or
+  repeats rows without it.
+- Pass cursor timestamps through verbatim. `toISOString()` truncates Postgres microseconds
+  to milliseconds and silently skips rows.
+- Browse search is ILIKE against `topics.search_text` with a pg_trgm index, **not**
+  tsvector: Postgres cannot segment Thai, so full-text search matches almost nothing.
+- Browse's _status_ filter stays client-side on purpose — deadline state is read from the
+  reader's clock because rows are cached for minutes.
