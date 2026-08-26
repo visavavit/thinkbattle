@@ -733,27 +733,6 @@ export type Database = {
           },
         ]
       }
-      user_bans: {
-        Row: {
-          banned_by: string
-          created_at: string
-          reason: string | null
-          user_id: string
-        }
-        Insert: {
-          banned_by: string
-          created_at?: string
-          reason?: string | null
-          user_id: string
-        }
-        Update: {
-          banned_by?: string
-          created_at?: string
-          reason?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       uploads: {
         Row: {
           bytes: number
@@ -793,6 +772,27 @@ export type Database = {
           url?: string | null
           user_id?: string
           widths?: number[]
+        }
+        Relationships: []
+      }
+      user_bans: {
+        Row: {
+          banned_by: string
+          created_at: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          banned_by: string
+          created_at?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          banned_by?: string
+          created_at?: string
+          reason?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1004,14 +1004,15 @@ export type Database = {
           author_id: string
           author_name: string
           body: string
+          controversy_score: number
           created_at: string
           dislikes_count: number
           hidden_reason: string
           id: string
+          image_url: string
           is_hidden: boolean
           is_synthetic: boolean
           likes_count: number
-          image_url: string | null
           open_reports: number
           side: string
           topic_id: string
@@ -1034,9 +1035,9 @@ export type Database = {
           author_id: string
           author_name: string
           comment_body: string
-          comment_image_url: string | null
           comment_dislikes: number
           comment_id: string
+          comment_image_url: string
           comment_is_hidden: boolean
           comment_likes: number
           comment_side: string
@@ -1072,6 +1073,10 @@ export type Database = {
           votes_count: number
         }[]
       }
+      begin_upload: {
+        Args: { _ext: string; _folder: string; _widths: number[] }
+        Returns: string
+      }
       cast_guest_vote: {
         Args: {
           _choice: string
@@ -1090,13 +1095,14 @@ export type Database = {
         Args: { _guest_id: string; _user_id: string }
         Returns: number
       }
+      clean_username: { Args: { _raw: string }; Returns: string }
       closed_trending_weight: { Args: { _closes_at: string }; Returns: number }
-      begin_upload: {
-        Args: { _ext: string; _folder: string; _widths: number[] }
-        Returns: string
-      }
       comment_images_enabled: { Args: never; Returns: boolean }
       ensure_my_profile: { Args: never; Returns: undefined }
+      ensure_profile_row: {
+        Args: { _email: string; _id: string; _meta: Json }
+        Returns: undefined
+      }
       finish_upload: {
         Args: { _bytes: number; _id: string; _url: string }
         Returns: undefined
@@ -1110,33 +1116,32 @@ export type Database = {
         Returns: boolean
       }
       is_banned: { Args: { _user_id: string }; Returns: boolean }
+      mark_uploads_purged: { Args: { _ids: string[] }; Returns: number }
       notify_wanted: {
         Args: { _actor: string; _recipient: string }
         Returns: boolean
       }
+      pending_upload_purges: { Args: never; Returns: number }
       refresh_topic_search_text: {
         Args: { _topic_id: string }
         Returns: undefined
       }
       refresh_trending_scores: { Args: never; Returns: undefined }
       resolve_tag_names: { Args: { _names: string[] }; Returns: string[] }
-      mark_uploads_purged: { Args: { _ids: string[] }; Returns: number }
-      pending_upload_purges: { Args: never; Returns: number }
       set_app_setting: {
         Args: { _key: string; _value: string }
         Returns: undefined
       }
-      show_limit: { Args: never; Returns: number }
-      username_available: { Args: { _name: string }; Returns: boolean }
-      show_trgm: { Args: { "": string }; Returns: string[] }
       set_my_username: {
         Args: { _name: string }
         Returns: {
           ok: boolean
-          reason: string | null
-          username: string | null
+          reason: string
+          username: string
         }[]
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       site_flags: { Args: never; Returns: Json }
       take_orphaned_uploads: {
         Args: { _limit?: number }
@@ -1176,6 +1181,7 @@ export type Database = {
         }[]
       }
       topic_search_text: { Args: { _topic_id: string }; Returns: string }
+      username_available: { Args: { _name: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
