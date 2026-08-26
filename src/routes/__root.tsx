@@ -15,6 +15,7 @@ import { reportAppError } from "../lib/error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { ScrollToTopButton } from "@/components/ScrollToTopButton";
+import { WebAnalytics } from "@/components/WebAnalytics";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageProvider, translate as tr, useT } from "@/lib/i18n";
@@ -140,6 +141,8 @@ function AppFrame() {
       <main key={pathname} className="route-enter flex-1">
         <Outlet />
       </main>
+      {/* Neither /admin nor /auth is public content worth counting as a visit. */}
+      {pathname.startsWith("/admin") || pathname === "/auth" ? null : <WebAnalytics />}
       <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">
         <p>{t("footer.tagline")}</p>
         <nav className="mt-2 flex flex-wrap justify-center gap-4">

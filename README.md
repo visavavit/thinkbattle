@@ -162,7 +162,9 @@ Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL`,
 non-prefixed server twins) before starting the dev server. `.env` is not tracked
 in git. Server-only secrets — `SUPABASE_SERVICE_ROLE_KEY`, the `R2_*`
 variables and `BOT_TICK_SECRET` — live in the deployment environment, never in
-the repository.
+the repository. `VITE_CF_BEACON_TOKEN` is optional and enables Cloudflare Web
+Analytics when set (see `src/components/WebAnalytics.tsx`); the site works
+the same without it.
 
 ```sh
 bun run build     # production build
