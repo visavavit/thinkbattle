@@ -1,0 +1,6 @@
+# Commits that are pure formatting/whitespace. Ignore them in blame:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub reads this file automatically.
+
+# Apply prettier formatting repo-wide
+90c5c0c5c1785e763d59fe05d2e68bca74427756
