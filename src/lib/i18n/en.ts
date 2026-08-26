@@ -76,6 +76,9 @@ export const en = {
   "browse.clearAll": "Clear filters",
   "browse.empty": "No debates match these filters.",
   "browse.emptyHint": "Try a broader search, or clear the filters to see everything.",
+  "browse.loadMore": "Load more topics",
+  "browse.moreBeyondFilter":
+    "Nothing on this page matches that status — there are more topics to load.",
 
   // ---- topic page
   "topic.backToFeed": "Back to the feed",

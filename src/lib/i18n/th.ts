@@ -78,6 +78,9 @@ export const th: Dictionary = {
   "browse.clearAll": "ล้างตัวกรอง",
   "browse.empty": "ไม่พบประเด็นที่ตรงกับตัวกรองนี้",
   "browse.emptyHint": "ลองใช้คำค้นที่กว้างขึ้น หรือล้างตัวกรองเพื่อดูทั้งหมด",
+  "browse.loadMore": "โหลดประเด็นเพิ่ม",
+  "browse.moreBeyondFilter":
+    "ไม่มีประเด็นในหน้านี้ที่ตรงกับสถานะที่เลือก แต่ยังมีประเด็นให้โหลดเพิ่ม",
 
   // ---- topic page
   "topic.backToFeed": "กลับไปหน้าแรก",

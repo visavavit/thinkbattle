@@ -1,14 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery, useQuery, queryOptions, keepPreviousData } from "@tanstack/react-query";
+import {
+  useSuspenseQuery,
+  useInfiniteQuery,
+  queryOptions,
+  infiniteQueryOptions,
+} from "@tanstack/react-query";
 import { Clock, Flame, Hourglass, Layers, Lock, Scale, Search, Star, Vote, X } from "lucide-react";
 import { z } from "zod";
-import { getFeed, getTaxonomy, type FeedTab, type TopicCard } from "@/lib/public.functions";
+import {
+  BROWSE_PAGE_SIZE,
+  getFeed,
+  getTaxonomy,
+  type FeedPage,
+  type FeedTab,
+  type TopicCard,
+} from "@/lib/public.functions";
+import type { FeedCursor } from "@/lib/feed-search";
 import { TopicCardItem } from "@/components/TopicCardItem";
 import { BrowseSkeleton, CardGridSkeleton } from "@/components/RouteSkeletons";
 import { readClock } from "@/lib/topic-clock";
 import { seoTags } from "@/lib/site";
 import { translate as tr, useT, type TranslationKey } from "@/lib/i18n";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -59,25 +73,43 @@ const taxonomyQuery = queryOptions({
   queryFn: () => getTaxonomy(),
 });
 
-/** Only sort and category reach the server — they decide which rows come back.
- *  Text and status narrow the rows already in hand, so typing never waits on a
- *  round trip and every refinement of one result set shares a single read. */
-const browseQuery = (sort: FeedTab, category?: string) =>
-  queryOptions({
-    queryKey: ["browse", sort, category ?? "all"],
-    queryFn: () => getFeed({ data: { tab: sort, category } }),
+/**
+ * Sort, category and the search text all reach the server, and the results
+ * page. Search used to run in the browser over whatever the feed had already
+ * loaded, which capped the whole catalogue at 60 topics: past that the rest
+ * silently stopped existing and search could not find what was never fetched.
+ *
+ * Status stays client-side, deliberately. Deadline state is read from the
+ * reader's own clock (see matchesStatus below) because rows are cached for
+ * minutes at a time, so a topic that expires mid-window has to move between
+ * "open" and "closed" on read rather than at query time.
+ */
+const browseQuery = (sort: FeedTab, category: string | undefined, q: string | undefined) =>
+  infiniteQueryOptions({
+    queryKey: ["browse", sort, category ?? "all", q ?? ""],
+    initialPageParam: null as FeedCursor | null,
+    getNextPageParam: (last: FeedPage) => last.next,
+    queryFn: ({ pageParam }) =>
+      getFeed({
+        data: { tab: sort, category, q, cursor: pageParam, limit: BROWSE_PAGE_SIZE },
+      }),
     staleTime: 60_000,
-    placeholderData: keepPreviousData,
   });
 
 export const Route = createFileRoute("/browse")({
   validateSearch: searchSchema,
-  loaderDeps: ({ search }) => ({ sort: search.sort ?? DEFAULT_SORT, category: search.category }),
+  loaderDeps: ({ search }) => ({
+    sort: search.sort ?? DEFAULT_SORT,
+    category: search.category,
+    q: search.q,
+  }),
   loader: async ({ context, deps }) => {
     // The feed is awaited on the server so the HTML ships with cards in it, but
     // a client navigation must not sit on a blank screen waiting for rows: the
     // page frame renders straight away and the grid fills in behind a skeleton.
-    const feed = context.queryClient.ensureQueryData(browseQuery(deps.sort, deps.category));
+    const feed = context.queryClient.ensureInfiniteQueryData(
+      browseQuery(deps.sort, deps.category, deps.q),
+    );
     if (typeof window === "undefined") await feed;
     else void feed.catch(() => {});
     await context.queryClient.ensureQueryData(taxonomyQuery);
@@ -101,24 +133,6 @@ export const Route = createFileRoute("/browse")({
   component: BrowsePage,
   pendingComponent: BrowseSkeleton,
 });
-
-/** Every word has to land somewhere — title, either side, blurb, category or a
- *  tag. Word-by-word rather than whole-string so "food thai" finds a debate
- *  that says them in the other order. */
-function matchesText(topic: TopicCard, words: string[]): boolean {
-  if (words.length === 0) return true;
-  const haystack = [
-    topic.title,
-    topic.description ?? "",
-    topic.choice_a,
-    topic.choice_b,
-    topic.category_name ?? "",
-    ...(topic.tags ?? []),
-  ]
-    .join(" ")
-    .toLowerCase();
-  return words.every((word) => haystack.includes(word));
-}
 
 /**
  * Deadline state is read from the reader's own clock, the same way the cards
@@ -144,7 +158,14 @@ function BrowsePage() {
   const sort = search.sort ?? DEFAULT_SORT;
 
   const { data: taxonomy } = useSuspenseQuery(taxonomyQuery);
-  const { data: rows = [], isPending: feedPending } = useQuery(browseQuery(sort, search.category));
+  const {
+    data: feed,
+    isPending: feedPending,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery(browseQuery(sort, search.category, search.q));
+  const rows = useMemo(() => (feed?.pages ?? []).flatMap((page) => page.rows), [feed?.pages]);
 
   // The box is typed into far faster than the URL should change, so it keeps
   // its own state and syncs both ways: down when the URL moves without it
@@ -175,14 +196,11 @@ function BrowsePage() {
     return () => clearTimeout(timer);
   }, [queryText, navigate]);
 
-  const words = useMemo(
-    () => queryText.trim().toLowerCase().split(/\s+/).filter(Boolean),
-    [queryText],
-  );
-
+  // Text matching now happens in the database. Status still narrows what came
+  // back, because it depends on the reader's clock rather than the query.
   const topics = useMemo(
-    () => rows.filter((topic) => matchesStatus(topic, search.status) && matchesText(topic, words)),
-    [rows, search.status, words],
+    () => rows.filter((topic) => matchesStatus(topic, search.status)),
+    [rows, search.status],
   );
 
   const setFilter = (patch: Partial<BrowseSearch>) =>
@@ -293,8 +311,16 @@ function BrowsePage() {
         </div>
       ) : (
         <div className="space-y-3 py-12 text-center">
-          <p className="text-lg">{t("browse.empty")}</p>
-          <p className="text-sm text-muted-foreground">{t("browse.emptyHint")}</p>
+          {/* The status filter narrows what came back rather than what was
+              asked for, so a page can be emptied by it while the catalogue
+              still has more to give. Say so, instead of claiming there is
+              nothing — the Load more below is the way out. */}
+          <p className="text-lg">
+            {hasNextPage ? t("browse.moreBeyondFilter") : t("browse.empty")}
+          </p>
+          {hasNextPage ? null : (
+            <p className="text-sm text-muted-foreground">{t("browse.emptyHint")}</p>
+          )}
           {hasFilters ? (
             <div className="flex justify-center pt-1">
               <ClearFiltersButton label={t("browse.clearAll")} onClick={clearFilters} />
@@ -302,6 +328,18 @@ function BrowsePage() {
           ) : null}
         </div>
       )}
+
+      {!feedPending && hasNextPage ? (
+        <div className="flex justify-center pt-2">
+          <Button
+            variant="outline"
+            disabled={isFetchingNextPage}
+            onClick={() => void fetchNextPage()}
+          >
+            {isFetchingNextPage ? t("browse.loading") : t("browse.loadMore")}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

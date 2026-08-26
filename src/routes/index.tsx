@@ -30,7 +30,8 @@ const DEFAULT_TAB: FeedTab = "trending";
 const feedQuery = (tab: FeedTab) =>
   queryOptions({
     queryKey: ["feed", tab],
-    queryFn: () => getFeed({ data: { tab } }),
+    // The home feed shows one page and never pages, so it keeps only the rows.
+    queryFn: async () => (await getFeed({ data: { tab } })).rows,
     staleTime: 60_000,
     placeholderData: keepPreviousData,
   });

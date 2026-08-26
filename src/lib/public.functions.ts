@@ -3,6 +3,13 @@ import { getRequestHeader, setResponseHeader } from "@tanstack/react-start/serve
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { cached, publicCacheControl, COUNTS_READ, PUBLIC_READ, TAXONOMY_READ } from "./cache";
+import {
+  feedPageFilter,
+  nextFeedCursor,
+  searchTerms,
+  type FeedCursor,
+  type FeedOrderColumn,
+} from "./feed-search";
 
 export type TopicCard = {
   id: string;
@@ -73,42 +80,109 @@ function feedOrder(tab: FeedTab): FeedOrder {
   return tab === "neck" ? "trending" : tab;
 }
 
-async function fetchFeedRows(order: FeedOrder, category?: string): Promise<TopicCard[]> {
+/** Which column each ordering sorts and pages on. */
+const ORDER_COLUMN: Record<FeedOrder, FeedOrderColumn> = {
+  trending: "trending_score",
+  top: "total_votes",
+  newest: "published_at",
+};
+
+/** The home feed shows one generous page and never pages. */
+const FEED_LIMIT = 60;
+
+/** Browse pages, so it takes a grid-friendly bite at a time. */
+export const BROWSE_PAGE_SIZE = 24;
+
+export type FeedPage = { rows: TopicCard[]; next: FeedCursor | null };
+
+type FeedArgs = {
+  order: FeedOrder;
+  category?: string | undefined;
+  terms: string[];
+  cursor: FeedCursor | null;
+  limit: number;
+};
+
+async function fetchFeedPage({
+  order,
+  category,
+  terms,
+  cursor,
+  limit,
+}: FeedArgs): Promise<FeedPage> {
   const supabase = publicClient(30);
-  let query = supabase.from("topic_cards").select("*").eq("status", "published").limit(60);
+  const column = ORDER_COLUMN[order];
+
+  let query = supabase.from("topic_cards").select("*").eq("status", "published");
 
   if (category) query = query.eq("category_slug", category);
 
-  if (order === "top") query = query.order("total_votes", { ascending: false });
-  else if (order === "newest") query = query.order("published_at", { ascending: false });
-  else query = query.order("trending_score", { ascending: false });
+  // Every word has to land somewhere in search_text — chained filters AND
+  // together, which is the same "all words match" rule the browser applied.
+  for (const term of terms) query = query.ilike("search_text", term);
 
-  const { data, error } = await query;
+  const filter = feedPageFilter(column, cursor);
+  if (filter) query = query.or(filter);
+
+  const { data, error } = await query
+    .order(column, { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit);
   if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as TopicCard[];
+
+  const rows = (data ?? []) as unknown as TopicCard[];
+  return { rows, next: nextFeedCursor(rows, column, limit) };
 }
 
 export const getFeed = createServerFn({ method: "GET" })
   .inputValidator(
-    (input: { tab?: FeedTab | undefined; category?: string | undefined }) => input ?? {},
+    (input: {
+      tab?: FeedTab | undefined;
+      category?: string | undefined;
+      q?: string | undefined;
+      cursor?: FeedCursor | null | undefined;
+      limit?: number | undefined;
+    }) => input ?? {},
   )
-  .handler(async ({ data }) => {
-    setResponseHeader("cache-control", publicCacheControl(PUBLIC_READ));
-
+  .handler(async ({ data }): Promise<FeedPage> => {
     const tab = data.tab ?? "trending";
     const order = feedOrder(tab);
+    const terms = searchTerms(data.q);
+    const cursor = data.cursor ?? null;
+    // Two allowed page sizes, not a number the caller picks: this is a public
+    // endpoint, and an arbitrary limit is an invitation to ask for all of it.
+    const limit = data.limit === BROWSE_PAGE_SIZE ? BROWSE_PAGE_SIZE : FEED_LIMIT;
+
+    const args: FeedArgs = { order, category: data.category, terms, cursor, limit };
+
+    // A search term is reader-supplied and unbounded, so caching per term
+    // would let anyone mint cache entries until the 500-entry store evicted
+    // the genuinely hot feed keys. Searches and deeper pages go straight to
+    // the database; the shared first page — which is the bulk of the traffic
+    // — keeps both cache layers.
+    if (terms.length > 0 || cursor) {
+      setResponseHeader("cache-control", "public, max-age=0, must-revalidate");
+      return fetchFeedPage(args);
+    }
+
+    setResponseHeader("cache-control", publicCacheControl(PUBLIC_READ));
 
     // Only the query is cached. Neck-and-neck narrowing runs per call against
     // the cached rows — it is pure array work, and keeping it outside means
     // both tabs that share an ordering also share one database read.
-    const rows = await cached(`feed:${order}:${data.category ?? "all"}`, PUBLIC_READ, () =>
-      fetchFeedRows(order, data.category),
+    const page = await cached(`feed:${order}:${data.category ?? "all"}:${limit}`, PUBLIC_READ, () =>
+      fetchFeedPage(args),
     );
 
-    if (tab !== "neck") return rows;
-    return rows
-      .filter((t) => t.total_votes > 0 && t.pct_a >= 45 && t.pct_a <= 55)
-      .sort((a, b) => Math.abs(50 - a.pct_a) - Math.abs(50 - b.pct_a));
+    if (tab !== "neck") return page;
+    return {
+      rows: page.rows
+        .filter((t) => t.total_votes > 0 && t.pct_a >= 45 && t.pct_a <= 55)
+        .sort((a, b) => Math.abs(50 - a.pct_a) - Math.abs(50 - b.pct_a)),
+      // Neck-and-neck narrows one page in JS, so there is no honest cursor to
+      // continue from — it is a home-feed tab, and the home feed never pages.
+      next: null,
+    };
   });
 
 /**
