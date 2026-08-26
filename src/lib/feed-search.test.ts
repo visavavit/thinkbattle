@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { escapeLikeLiteral, feedPageFilter, nextFeedCursor, searchTerms } from "./feed-search";
+import {
+  escapeLikeLiteral,
+  feedPageFilter,
+  nextFeedCursor,
+  parseFeedCursor,
+  searchTerms,
+} from "./feed-search";
 
 describe("escapeLikeLiteral", () => {
   test("escapes the three characters ILIKE treats specially", () => {
@@ -90,5 +96,35 @@ describe("nextFeedCursor", () => {
   test("stops rather than emit a cursor on a null sort value", () => {
     const withNull = [{ id: "a", published_at: null }];
     expect(nextFeedCursor(withNull, "published_at", 1)).toBeNull();
+  });
+});
+
+describe("parseFeedCursor", () => {
+  const ID = "11111111-2222-4333-8444-555555555555";
+
+  test("accepts the shapes the server actually issues", () => {
+    expect(parseFeedCursor({ value: "42", id: ID })).toEqual({ value: "42", id: ID });
+    expect(parseFeedCursor({ value: "0.5231", id: ID })?.value).toBe("0.5231");
+    expect(parseFeedCursor({ value: "-3", id: ID })?.value).toBe("-3");
+    expect(parseFeedCursor({ value: "2026-08-26T03:17:00.123456+00:00", id: ID })).not.toBeNull();
+    expect(parseFeedCursor({ value: "2026-08-26T03:17:00Z", id: ID })).not.toBeNull();
+  });
+
+  test("refuses anything that could splice into the filter group", () => {
+    // Each of these would otherwise add conditions inside or(...).
+    expect(parseFeedCursor({ value: "0,id.gt.0", id: ID })).toBeNull();
+    expect(parseFeedCursor({ value: "0),or(status.eq.pending", id: ID })).toBeNull();
+    expect(parseFeedCursor({ value: "0)&status=eq.pending&x=(1", id: ID })).toBeNull();
+    expect(parseFeedCursor({ value: "42", id: "not-a-uuid" })).toBeNull();
+    expect(parseFeedCursor({ value: "42", id: "*" })).toBeNull();
+  });
+
+  test("refuses malformed input entirely", () => {
+    expect(parseFeedCursor(null)).toBeNull();
+    expect(parseFeedCursor(undefined)).toBeNull();
+    expect(parseFeedCursor("42")).toBeNull();
+    expect(parseFeedCursor({ value: 42, id: ID })).toBeNull();
+    expect(parseFeedCursor({ id: ID })).toBeNull();
+    expect(parseFeedCursor({})).toBeNull();
   });
 });

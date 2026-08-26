@@ -49,6 +49,31 @@ export type FeedOrderColumn = "trending_score" | "total_votes" | "published_at";
 /** One position in a keyset-paginated feed. */
 export type FeedCursor = { value: string; id: string };
 
+const CURSOR_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Either a number (trending_score is numeric, total_votes an int) or an ISO
+// timestamp (published_at). Both are what the database itself handed out.
+const CURSOR_VALUE = /^-?\d+(\.\d+)?$|^\d{4}-\d{2}-\d{2}[T ][\d:.]+([+-]\d{2}:?\d{2}|Z)?$/;
+
+/**
+ * A cursor is echoed back by the client, so it arrives untrusted even though
+ * the server minted it.
+ *
+ * It is interpolated into a PostgREST filter string, and while that cannot
+ * reach SQL or smuggle a new query parameter — supabase-js percent-encodes `&`
+ * and `=`, so the AND-ed `status=eq.published` cannot be dropped, and RLS
+ * applies regardless — an unchecked value can still splice extra conditions
+ * into the `or(...)` group. Nothing is readable that way that anon could not
+ * already read, but a filter built from unvalidated input is not worth
+ * defending, so anything that is not shaped like a value we issued is refused.
+ */
+export function parseFeedCursor(input: unknown): FeedCursor | null {
+  if (!input || typeof input !== "object") return null;
+  const { value, id } = input as { value?: unknown; id?: unknown };
+  if (typeof value !== "string" || typeof id !== "string") return null;
+  if (!CURSOR_ID.test(id) || !CURSOR_VALUE.test(value)) return null;
+  return { value, id };
+}
+
 /**
  * The PostgREST `.or()` filter continuing past a cursor: strictly past it on
  * the sort column, or level with it and past it on id.

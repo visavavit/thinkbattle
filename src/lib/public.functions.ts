@@ -6,6 +6,7 @@ import { cached, publicCacheControl, COUNTS_READ, PUBLIC_READ, TAXONOMY_READ } f
 import {
   feedPageFilter,
   nextFeedCursor,
+  parseFeedCursor,
   searchTerms,
   type FeedCursor,
   type FeedOrderColumn,
@@ -148,7 +149,10 @@ export const getFeed = createServerFn({ method: "GET" })
     const tab = data.tab ?? "trending";
     const order = feedOrder(tab);
     const terms = searchTerms(data.q);
-    const cursor = data.cursor ?? null;
+    // The client echoes the cursor back, so it is untrusted even though the
+    // server issued it; anything not shaped like a value we minted is dropped
+    // rather than spliced into a filter string.
+    const cursor = parseFeedCursor(data.cursor);
     // Two allowed page sizes, not a number the caller picks: this is a public
     // endpoint, and an arbitrary limit is an invitation to ask for all of it.
     const limit = data.limit === BROWSE_PAGE_SIZE ? BROWSE_PAGE_SIZE : FEED_LIMIT;
