@@ -2,15 +2,13 @@
 
 A web application built around binary (2-choice) voting paired with polarized, highly gamified community debates. Unlike standard polling websites, comment sections are strictly bifurcated into two distinct columns corresponding to the user's chosen side ("Why Choice A?" vs. "Why Choice B?").
 
-The platform leverages a custom "Wild Takes" sorting algorithm—surface-ranking comments with high volumes of both likes and dislikes (controversy)—to lean into authentic, entertaining community discourse.
+Each column ranks its own arguments, so the strongest case for either side rises to the head of that side's column and the debate stays readable from both ends.
 
 2. Target Audience & Core Use Cases
 
 Casual Scanners: Users who want a quick pulse check on global trends, pop culture debates, and tech dilemmas via instant 2-choice voting.
 
 Debaters & Commenters: Users who cast their vote, defend their stance in the corresponding column, and engage in tactical upvoting/downvoting.
-
-Chaos Enthusiasts: Users who navigate straight to the Wild Takes tab to view the most roasted, unhinged, or heavily debated arguments on either side.
 
 Admins: Curators who publish topics, manage tags/categories, and review user-submitted topic suggestions.
 
@@ -38,7 +36,7 @@ Feed Filter Tabs:
 
 🕒 Newest: Chronologically sorted new topics.
 
-Topic Grid Cards: Display title, category badge, tag pills, live percentage progress bar (Choice A vs. Choice B), total vote count, and total "Wild Takes" count.
+Topic Grid Cards: Display title, category badge, tag pills, live percentage progress bar (Choice A vs. Choice B), total vote count, and comment count.
 
 B. Topic & Voting System
 
@@ -56,7 +54,7 @@ Users are permitted to switch their vote later, which dynamically recalculates p
 
 Closing Date (optional): A topic can carry a deadline, or run indefinitely. Once the deadline passes the debate is archived in place — the split, the tallies and every take on both sides stay fully readable, but voting, switching sides, commenting, replying and reacting all stop. A closed topic drops out of the Headliner rotation, since the hero exists to invite a vote, and its trending score is damped to a quarter so a just-concluded debate fades off the front page over a day rather than vanishing the moment it ends; Newest, Top Voted, Browse and its own page are unaffected. Clearing the deadline reopens it.
 
-C. The Bifurcated Comment & "Wild Takes" Engine
+C. The Bifurcated Comment Engine
 
 Mandatory Voting Gate: Users must cast their vote on a topic before unlocking the comment box for that topic.
 
@@ -64,9 +62,7 @@ Side-by-Side Layout: Comments are strictly separated into two columns: Why Choic
 
 Sorting Tabs Per Side:
 
-⭐ Top Liked: Sorted by net score (likes_count - dislikes_count), pinning the top 3 comments.
-
-🔥 Wild Takes: Sorted by engagement volume and controversy ratio (high combined count of likes and dislikes, with a close ratio). Pins the top 3 wild takes.
+⭐ Top Liked: Sorted by net score (likes_count - dislikes_count), pinning the top 3 comments over a newest-first feed.
 
 🕒 Newest: Reverse chronological order.
 
@@ -94,18 +90,6 @@ Backend & Database: Supabase (PostgreSQL) leveraging real-time subscriptions for
 Hosting / Deployment: Cloudflare Pages/Workers.
 
 
-7. Key Algorithms (Pseudo-Logic for Supabase/SQL)
-
-A. Controversy / "Wild Takes" Sorting Metric
-
-To calculate true internet chaos, rank comments by combining total engagement volume with a balance penalty (where likes and dislikes are close to equal):
-
-$$\text{Controversy Score} = (\text{likes} + \text{dislikes}) - \vert{}\text{likes} - \text{dislikes}\vert{}$$
-
-Example 1: 50 Likes, 45 Dislives $\rightarrow (95) - \vert{}5\vert{} = 90$ (High Wild Take Score 🔥)
-
-Example 2: 500 Likes, 2 Dislikes $\rightarrow (502) - \vert{}498\vert{} = 4$ (Low Wild Take Score)
-
 8. MVP Implementation Roadmap
 
 Phase 1 (Database & Auth): Initialize Supabase project, execute SQL schema, and configure user authentication.
@@ -114,7 +98,7 @@ Phase 2 (Admin Core): Build the admin dashboard to manually insert topics, choic
 
 Phase 3 (Frontend Voting): Implement homepage feeds, filter tabs, topic detail view, and binary voting mechanics with optimistic UI updates.
 
-Phase 4 (Bifurcated Comments & Wild Takes): Build side-by-side comment columns, comment voting, and the Top Liked / Wild Takes / Newest sorting switches.
+Phase 4 (Bifurcated Comments): Build side-by-side comment columns, comment voting, and the Top Liked / Newest sorting switches.
 
 Phase 5 (Community Polish): Implement user topic suggestion forms and submission moderation queues.
 
@@ -140,7 +124,7 @@ the past closes it on the spot.
 
 **Moderation** — the reports queue members file from any comment, plus a search
 across every comment in the arena. Comments can be *hidden* (reversible: pulled
-from public view and from the Wild Takes count, still visible to their author)
+from public view and from the topic's comment count, still visible to their author)
 or deleted outright, and an author can be banned in one step from either view.
 Admins also get hide/delete controls inline on topic pages.
 

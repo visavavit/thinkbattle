@@ -148,7 +148,6 @@ export const en = {
   "comment.loadMore": "Load more takes",
   "comment.loading": "Loading…",
   "sort.top": "Top Liked",
-  "sort.wild": "Wild Takes",
   "sort.newest": "Newest",
   "comment.placeholder": "Defend your side...",
   "comment.post": "Post your take",
@@ -167,7 +166,6 @@ export const en = {
   "comment.changedMind": "Changed their mind",
   "comment.changedMindTitle": "This reader has since switched to {label}.",
   "comment.hidden": "Hidden by a moderator",
-  "comment.wildTake": "Wild take",
   "comment.topTake": "Top take",
   "comment.sectionTop": "Top takes",
   "comment.sectionLatest": "Latest",
@@ -275,12 +273,11 @@ export const en = {
 
   // ---- card meta
   "card.votes": "{n} votes",
-  "card.wild": "{n} wild",
 
   // ---- head metadata
   "meta.home.title": "toktiang.com — Pick a Side, Defend It",
   "meta.home.description":
-    "Binary debates with bifurcated comment columns and a Wild Takes ranking that surfaces the most controversial arguments on both sides.",
+    "Binary debates with bifurcated comment columns where each side argues its case and the best takes rise to the top.",
   "meta.home.ogDescription":
     "Vote on 2-choice showdowns and fight it out in split comment columns.",
   "meta.browse.title": "Browse Debates by Category — toktiang.com",

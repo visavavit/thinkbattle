@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
-import { Eye, EyeOff, Flame, Search, ThumbsDown, ThumbsUp, Trash2, UserX } from "lucide-react";
+import { Eye, EyeOff, Search, ThumbsDown, ThumbsUp, Trash2, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   adminKeys,
@@ -157,7 +157,7 @@ function CommentActions({
             </Button>
           }
           title="Hide this comment?"
-          description="It disappears from the public thread and stops counting toward Wild Takes. The author still sees it, and you can restore it later."
+          description="It disappears from the public thread and stops counting toward the topic's comment total. The author still sees it, and you can restore it later."
           confirmLabel="Hide it"
           reasonLabel="Reason (kept in the audit log)"
           reasonPlaceholder="Personal attack…"
@@ -439,9 +439,6 @@ function CommentBrowser({ actorId }: { actorId: string }) {
             </span>
             <span className="inline-flex items-center gap-1">
               <ThumbsDown className="h-3.5 w-3.5" /> {c.dislikes_count}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Flame className="h-3.5 w-3.5" /> {c.controversy_score}
             </span>
           </div>
           <CommentActions

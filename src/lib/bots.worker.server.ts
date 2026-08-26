@@ -373,8 +373,8 @@ export async function runBotTick() {
           Math.floor(Math.random() * (preferred.length > 0 ? preferred.length : candidates.length))
         ]!;
         const sameSide = target.side === action.choice;
-        // agreeing mostly likes; disagreeing mostly dislikes — this is what
-        // organically feeds the controversy metric behind Wild Takes
+        // agreeing mostly likes; disagreeing mostly dislikes — the same shape
+        // real readers produce, so the ranking stays believable
         const value = sameSide
           ? Math.random() < 0.92
             ? 1

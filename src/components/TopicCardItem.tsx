@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Flame, MessageSquare, Users } from "lucide-react";
+import { MessageSquare, Users } from "lucide-react";
 import type { TopicCard } from "@/lib/public.functions";
 import { SplitBar } from "./SplitBar";
 import { useT } from "@/lib/i18n";
@@ -68,9 +68,6 @@ export function TopicCardItem({ topic }: { topic: TopicCard }) {
         </span>
         <span className="inline-flex items-center gap-1">
           <MessageSquare className="h-3.5 w-3.5" /> {topic.comments_count}
-        </span>
-        <span className="inline-flex items-center gap-1 text-side-b">
-          <Flame className="h-3.5 w-3.5" /> {t("card.wild", { n: topic.wild_takes_count })}
         </span>
       </div>
       </div>

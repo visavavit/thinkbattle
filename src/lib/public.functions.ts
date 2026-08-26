@@ -20,7 +20,6 @@ export type TopicCard = {
   category_emoji: string | null;
   cover_image_url: string | null;
   comments_count: number;
-  wild_takes_count: number;
   is_featured: boolean;
   /** deadline for voting and comments; null when the topic never expires */
   closes_at: string | null;

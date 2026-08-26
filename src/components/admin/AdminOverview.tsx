@@ -138,7 +138,7 @@ export function AdminOverview({ onJumpToReports }: { onJumpToReports: () => void
     queryFn: async () => {
       const { data, error } = await supabase
         .from("topic_cards")
-        .select("id, title, total_votes, pct_a, wild_takes_count, choice_a, choice_b")
+        .select("id, title, total_votes, pct_a, choice_a, choice_b")
         .eq("status", "published")
         .order("total_votes", { ascending: false })
         .limit(40);
@@ -258,7 +258,7 @@ export function AdminOverview({ onJumpToReports }: { onJumpToReports: () => void
               </span>
               <span className="min-w-0 flex-1 truncate">{t.title}</span>
               <span className="shrink-0 text-xs text-muted-foreground">
-                {(t.total_votes ?? 0).toLocaleString()} votes · {t.wild_takes_count ?? 0} wild
+                {(t.total_votes ?? 0).toLocaleString()} votes
               </span>
             </li>
           ))}

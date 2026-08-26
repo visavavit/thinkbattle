@@ -34,7 +34,7 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         heading: "เราทำอะไร",
         body: [
           "ถกเถียง (toktiang.com) คือเวทีโหวตแบบสองทางเลือก ทุกหัวข้อมีสองฝั่ง คุณเลือกฝั่งหนึ่ง แล้วอธิบายเหตุผลในคอลัมน์ของฝั่งนั้น",
-          "ความเห็นถูกจัดอันดับได้หลายแบบ ทั้งยอดนิยม ล่าสุด และ “Wild Takes” ซึ่งดันความเห็นที่คนถูกใจและไม่ถูกใจพอ ๆ กันขึ้นมา เพราะนั่นคือจุดที่การถกเถียงเกิดขึ้นจริง",
+          "ความเห็นจัดอันดับได้ทั้งแบบยอดนิยมและล่าสุด ความเห็นที่ได้รับการถูกใจมากที่สุดของแต่ละฝั่งจะถูกดันขึ้นไปอยู่ด้านบนของคอลัมน์",
         ],
       },
       {
@@ -53,7 +53,7 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
         heading: "What this is",
         body: [
           "toktiang.com is a binary voting arena. Every topic has exactly two sides: pick one, then argue for it in that side's column.",
-          "Comments can be ranked by top, newest, or “Wild Takes” — the ranking that surfaces comments people liked and disliked in roughly equal measure, because that is where the actual debate is.",
+          "Comments can be ranked by top or newest, and the best-liked takes on each side are pinned to the head of their column.",
         ],
       },
       {

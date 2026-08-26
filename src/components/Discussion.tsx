@@ -10,7 +10,6 @@ import {
   Check,
   Clock,
   Flag,
-  Flame,
   MessagesSquare,
   Star,
   ThumbsDown,
@@ -45,7 +44,7 @@ import {
 } from "@/components/ui/dialog";
 
 type Side = "a" | "b";
-type SortKey = "top" | "wild" | "newest";
+type SortKey = "top" | "newest";
 
 type CommentRow = {
   id: string;
@@ -55,7 +54,6 @@ type CommentRow = {
   body: string;
   likes_count: number;
   dislikes_count: number;
-  controversy_score: number;
   is_hidden: boolean;
   hidden_reason: string | null;
   created_at: string;
@@ -118,9 +116,6 @@ const FLASH_MS = 2500;
 
 const netOf = (r: CommentRow) => (r.likes_count ?? 0) - (r.dislikes_count ?? 0);
 
-const controversyOf = (r: CommentRow) =>
-  (r.likes_count ?? 0) + (r.dislikes_count ?? 0) - Math.abs(netOf(r));
-
 // Every comparator falls through to recency. Without that last step ties were
 // left to sort stability, so a take's position depended on the order the page
 // happened to arrive in.
@@ -128,11 +123,6 @@ const byNewest = (a: CommentRow, b: CommentRow) => b.created_at.localeCompare(a.
 
 const byNetScore = (a: CommentRow, b: CommentRow) =>
   netOf(b) - netOf(a) || b.likes_count - a.likes_count || byNewest(a, b);
-
-const byControversy = (a: CommentRow, b: CommentRow) =>
-  b.controversy_score - a.controversy_score ||
-  b.likes_count + b.dislikes_count - (a.likes_count + a.dislikes_count) ||
-  byNewest(a, b);
 
 /**
  * Brings one take on screen and marks it — used both by a notification deep
@@ -170,7 +160,6 @@ function revealComment(id: string, flash: (id: string) => void, tries = 8) {
 
 const SORTS: { key: SortKey; labelKey: TranslationKey; icon: typeof Star }[] = [
   { key: "top", labelKey: "sort.top", icon: Star },
-  { key: "wild", labelKey: "sort.wild", icon: Flame },
   { key: "newest", labelKey: "sort.newest", icon: Clock },
 ];
 
@@ -302,9 +291,9 @@ export function Discussion({ topic, user }: { topic: TopicCard; user: User | nul
 
   // The page above is ordered by recency, so on a long thread the genuinely
   // top-ranked takes can sit outside it entirely — which made "Top take" mean
-  // no more than "top of the last 50". This pulls them in by name: the best and
-  // the wildest of each side, plus their replies, so the ranking the reader
-  // sees is the whole debate's.
+  // no more than "top of the last 50". This pulls them in by name: the ranked
+  // takes of each side, plus their replies, so the ranking the reader sees is
+  // the whole debate's.
   const pinsQuery = useQuery({
     queryKey: ["comment-pins", topic.id],
     staleTime: 60_000,
@@ -1096,13 +1085,9 @@ function CommentColumn({
    * new takes are never seen, so they never earn likes, so they are never seen.
    * The pins keep the strongest arguments in the prime spot; everything under
    * them stays a live feed, which is also where a reader's own take lands.
-   *
-   * Wild is left as a pure ranking on purpose — it is an opt-in destination,
-   * and browsing the chaos in rank order is the whole point of that tab.
    */
   const { pinned, rest } = useMemo(() => {
     if (sort === "newest") return { pinned: [] as CommentRow[], rest: [...rows].sort(byNewest) };
-    if (sort === "wild") return { pinned: [] as CommentRow[], rest: [...rows].sort(byControversy) };
 
     // A hidden take is not an argument anyone can read, and one that has not
     // gone positive has not earned the badge — the same bar the highlight used.
@@ -1249,35 +1234,31 @@ function CommentColumn({
       ) : null}
 
       <ul className="space-y-3">
-        {rest.map((row, index) => {
-          // Wild keeps its ranked shape, so its badge is still positional.
-          const wild = sort === "wild" && index < PIN_COUNT && controversyOf(row) > 0;
-          return (
-            <CommentItem
-              key={row.id}
-              row={row}
-              replies={repliesByParent[row.id] ?? []}
-              authors={authors}
-              authorSides={authorSides}
-              side={side}
-              labelA={labelA}
-              labelB={labelB}
-              otherLabel={otherLabel}
-              myVote={myVote}
-              user={user}
-              topicId={topicId}
-              reactions={reactions}
-              onReact={onReact}
-              onPosted={onPosted}
-              isAdmin={isAdmin}
-              isBanned={isBanned}
-              isClosed={isClosed}
-              flashId={flashId}
-              highlighted={wild}
-              badge={wild ? t("comment.wildTake") : null}
-            />
-          );
-        })}
+        {rest.map((row) => (
+          <CommentItem
+            key={row.id}
+            row={row}
+            replies={repliesByParent[row.id] ?? []}
+            authors={authors}
+            authorSides={authorSides}
+            side={side}
+            labelA={labelA}
+            labelB={labelB}
+            otherLabel={otherLabel}
+            myVote={myVote}
+            user={user}
+            topicId={topicId}
+            reactions={reactions}
+            onReact={onReact}
+            onPosted={onPosted}
+            isAdmin={isAdmin}
+            isBanned={isBanned}
+            isClosed={isClosed}
+            flashId={flashId}
+            highlighted={false}
+            badge={null}
+          />
+        ))}
 
         {pinned.length === 0 && rest.length === 0 ? (
           <li className="py-6 text-center text-sm text-muted-foreground">{t("comment.empty")}</li>
@@ -1625,7 +1606,7 @@ function CommentItem({
   isBanned: boolean;
   isClosed: boolean;
   flashId: string | null;
-  /** carries the accent border — a pin, or a top-ranked wild take */
+  /** carries the accent border — reserved for a pinned top take */
   highlighted: boolean;
   /** what the highlight is claiming, shown opposite the author */
   badge: string | null;
@@ -1712,10 +1693,6 @@ function CommentItem({
           icon={<ThumbsDown className="h-3.5 w-3.5" />}
           disabled={isClosed}
         />
-        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-          <Flame className="h-3.5 w-3.5" /> {row.controversy_score}
-        </span>
-
         <span className="ml-auto flex items-center gap-1">
           {canEdit && !editing ? (
             <EditButton onClick={() => setEditing(true)} label={t("comment.edit")} />
@@ -1757,7 +1734,7 @@ function CommentItem({
 /**
  * One level of replies under a take. Anyone who voted on the topic can reply,
  * from either side, so each reply is tagged with its author's own side.
- * Replies never enter the Top/Wild ranking — they stay in posting order.
+ * Replies never enter the Top ranking — they stay in posting order.
  */
 function ReplyThread({
   parent,

@@ -150,7 +150,6 @@ export const th: Dictionary = {
   "comment.loadMore": "โหลดความเห็นเพิ่ม",
   "comment.loading": "กำลังโหลด…",
   "sort.top": "ถูกใจสูงสุด",
-  "sort.wild": "ความเห็นสุดขั้ว",
   "sort.newest": "ล่าสุด",
   "comment.placeholder": "อธิบายเหตุผลของฝ่ายคุณ...",
   "comment.post": "เผยแพร่ความเห็น",
@@ -169,7 +168,6 @@ export const th: Dictionary = {
   "comment.changedMind": "เปลี่ยนความคิด",
   "comment.changedMindTitle": "ผู้ใช้รายนี้เปลี่ยนไปโหวตให้ {label} แล้ว",
   "comment.hidden": "ถูกซ่อนโดยผู้ดูแล",
-  "comment.wildTake": "ความเห็นสุดขั้ว",
   "comment.topTake": "ความเห็นเด่น",
   "comment.sectionTop": "ความเห็นเด่น",
   "comment.sectionLatest": "ล่าสุด",
@@ -277,12 +275,11 @@ export const th: Dictionary = {
 
   // ---- card meta
   "card.votes": "{n} โหวต",
-  "card.wild": "สุดขั้ว {n}",
 
   // ---- head metadata
   "meta.home.title": "ถกเถียง.com — เลือกฝ่าย แล้วอธิบายเหตุผล",
   "meta.home.description":
-    "เวทีถกเถียงแบบสองทางเลือก พร้อมคอลัมน์ความเห็นแยกฝ่าย และการจัดอันดับความเห็นสุดขั้วจากทั้งสองฝั่ง",
+    "เวทีถกเถียงแบบสองทางเลือก พร้อมคอลัมน์ความเห็นแยกฝ่าย ให้แต่ละฝั่งอธิบายเหตุผลของตัวเอง และดันความเห็นที่ดีที่สุดขึ้นมา",
   "meta.home.ogDescription": "ร่วมโหวตประเด็นสองทางเลือก และถกเถียงในคอลัมน์ความเห็นแยกฝ่าย",
   "meta.browse.title": "สำรวจประเด็นตามหมวดหมู่ — ถกเถียง",
   "meta.browse.description":
