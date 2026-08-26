@@ -563,20 +563,23 @@ export type Database = {
         Row: {
           created_at: string
           id: number
+          ip_hash: string | null
           kind: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: number
+          ip_hash?: string | null
           kind: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: number
+          ip_hash?: string | null
           kind?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -654,6 +657,7 @@ export type Database = {
           published_at: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          search_text: string | null
           status: Database["public"]["Enums"]["topic_status"]
           submitted_by: string | null
           title: string
@@ -677,6 +681,7 @@ export type Database = {
           published_at?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          search_text?: string | null
           status?: Database["public"]["Enums"]["topic_status"]
           submitted_by?: string | null
           title: string
@@ -700,6 +705,7 @@ export type Database = {
           published_at?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          search_text?: string | null
           status?: Database["public"]["Enums"]["topic_status"]
           submitted_by?: string | null
           title?: string
@@ -764,29 +770,32 @@ export type Database = {
         Row: {
           choice: string
           created_at: string
+          guest_id: string | null
           id: string
           is_synthetic: boolean
           topic_id: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           choice: string
           created_at?: string
+          guest_id?: string | null
           id?: string
           is_synthetic?: boolean
           topic_id: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           choice?: string
           created_at?: string
+          guest_id?: string | null
           id?: string
           is_synthetic?: boolean
           topic_id?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -873,6 +882,7 @@ export type Database = {
           is_featured: boolean | null
           pct_a: number | null
           published_at: string | null
+          search_text: string | null
           status: Database["public"]["Enums"]["topic_status"] | null
           submitted_by: string | null
           tags: string[] | null
@@ -961,6 +971,7 @@ export type Database = {
         Args: { _campaign_id: string }
         Returns: undefined
       }
+      admin_purge_guest_votes: { Args: { _topic_id: string }; Returns: number }
       admin_report_queue: {
         Args: {
           _limit?: number
@@ -1008,7 +1019,26 @@ export type Database = {
           votes_count: number
         }[]
       }
+      cast_guest_vote: {
+        Args: {
+          _choice: string
+          _guest_id: string
+          _ip_hash: string
+          _topic_id: string
+        }
+        Returns: {
+          new_choice: string
+          old_choice: string
+          tally_a: number
+          tally_b: number
+        }[]
+      }
+      claim_guest_votes: {
+        Args: { _guest_id: string; _user_id: string }
+        Returns: number
+      }
       closed_trending_weight: { Args: { _closes_at: string }; Returns: number }
+      guest_voting_enabled: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1021,12 +1051,19 @@ export type Database = {
         Args: { _actor: string; _recipient: string }
         Returns: boolean
       }
+      refresh_topic_search_text: {
+        Args: { _topic_id: string }
+        Returns: undefined
+      }
       refresh_trending_scores: { Args: never; Returns: undefined }
       resolve_tag_names: { Args: { _names: string[] }; Returns: string[] }
       set_app_setting: {
         Args: { _key: string; _value: string }
         Returns: undefined
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      site_flags: { Args: never; Returns: Json }
       topic_comment_authors: {
         Args: { _topic_id: string }
         Returns: {
@@ -1055,6 +1092,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      topic_search_text: { Args: { _topic_id: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user"

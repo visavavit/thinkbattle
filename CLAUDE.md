@@ -69,20 +69,20 @@ Rules for future agents:
 - If you add new auth-driven refresh logic, verify it by focusing another tab and
   returning: there should be no refetch burst.
 
-## Two migrations are written but NOT applied (2026-08-26)
+## Browse search + guest voting migrations APPLIED (2026-08-26)
 
 `supabase/migrations/20260826120000_*` (browse search) and `20260826130000_*` (guest
-voting) were authored in a session with no database access. Both carry a
-`NOT YET EXECUTED` header. The second alters `votes.user_id` to nullable on the live
-table holding the product's primary data.
+voting) have now been executed against the live database. The `NOT YET EXECUTED`
+headers in those files are stale — do not re-apply them.
 
-- Back up, and apply to a branch or staging project, before production.
-- `src/integrations/supabase/types.ts` was hand-edited to match them. Regenerate it
-  from the real schema once they are applied, and diff against the hand edit.
-- Guest voting also needs `GUEST_COOKIE_SECRET` in the server environment. Without it
-  the feature stays off no matter what the admin switch says — that is deliberate: an
-  unsigned device id would let one client claim any number of devices.
-
+- The browse-search migration was applied with one edit: it referenced a
+  `topics.wild_takes_count` column that does not exist, which was dropped from the
+  `topic_cards` re-declaration.
+- `src/integrations/supabase/types.ts` was regenerated from the real schema, replacing
+  the earlier hand edit.
+- Guest voting still needs `GUEST_COOKIE_SECRET` in the server environment — it is NOT
+  set yet, so the feature stays off no matter what the admin switch says. That is
+  deliberate: an unsigned device id would let one client claim any number of devices.
 ## Guest voting: the cache rule (2026-08-26)
 
 Anonymous visitors can vote when an admin turns it on (Admin → Settings, default
