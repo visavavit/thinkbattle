@@ -58,6 +58,8 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
           "เราใช้ที่จัดเก็บในเบราว์เซอร์เพื่อรักษาสถานะการเข้าสู่ระบบ จดจำภาษาที่เลือก และหากคุณร่วมโหวตโดยไม่ได้เข้าสู่ระบบ จะจดจำฝั่งที่คุณเลือกไว้ในอุปกรณ์นี้ด้วย ไม่มีคุกกี้โฆษณา",
           "หากคุณร่วมโหวตโดยไม่ได้เข้าสู่ระบบ เราจะตั้งคุกกี้ที่มีรหัสอุปกรณ์แบบสุ่ม เพื่อให้หนึ่งอุปกรณ์นับเป็นหนึ่งคะแนนต่อหนึ่งประเด็น และเพื่อให้คุณเปลี่ยนใจได้ภายหลัง รหัสนี้ไม่ผูกกับตัวตนของคุณ และจะถูกลบเมื่อคุณเข้าสู่ระบบ",
           "เพื่อป้องกันการโหวตซ้ำโดยอัตโนมัติ เราบันทึกค่าแฮชของหมายเลขไอพีพร้อมวันที่ ไม่ใช่หมายเลขไอพีโดยตรง ค่าแฮชจะเปลี่ยนทุกวันจึงไม่สามารถเชื่อมโยงข้ามวันได้",
+          "ผู้ให้บริการโครงสร้างพื้นฐานตั้งคุกกี้อีกส่วนหนึ่งที่เราไม่ได้ตั้งเอง: Cloudflare ซึ่งอยู่หน้าเว็บไซต์ตั้งคุกกี้อายุสั้นราว 30 นาที (__cf_bm) เพื่อแยกทราฟฟิกอัตโนมัติออกจากผู้ใช้จริง ส่วนผู้ให้บริการโฮสติ้งตั้งคุกกี้ที่ระบุว่าเว็บไซต์รุ่นใดให้บริการหน้านั้น (__dpl) เพื่อให้ไฟล์ที่โหลดตามมาตรงรุ่นกัน และคุกกี้ระดับเซสชันสำหรับวัดประสิทธิภาพ",
+          "คุกกี้เหล่านี้ไม่บรรจุรหัสบัญชีหรือโปรไฟล์ของคุณ",
         ],
       },
       {
@@ -100,6 +102,8 @@ const CONTENT: Record<"th" | "en", LegalContent> = {
           "Browser storage is used to keep you signed in, to remember your language choice, and — if you vote without an account — to remember which side you picked on this device. No advertising cookies.",
           "If you vote without an account, we set a cookie holding a random device identifier. It exists so one device counts as one vote per debate and so you can change your mind later. It is not linked to your identity, and it is cleared when you sign in.",
           "To limit automated repeat voting we record a dated hash of your IP address rather than the address itself. The hash changes every day, so it cannot be linked across days.",
+          "Our infrastructure providers set a few cookies we do not set ourselves: Cloudflare, which sits in front of the site, sets a short-lived cookie (__cf_bm, about 30 minutes) used to tell automated traffic from human traffic, and our host sets a cookie recording which build served the page (__dpl) so that files loaded afterwards match it, plus a session-scoped flag used for performance measurement.",
+          "None of these carry an account or profile identifier.",
         ],
       },
       {
