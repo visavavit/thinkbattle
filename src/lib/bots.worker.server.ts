@@ -114,10 +114,15 @@ async function generateTakes(args: {
         {
           role: "system",
           content:
-            "You write short forum comments for a two-sided debate site. Voice: real people, " +
-            "not marketing. 4 to 25 words each. Mostly lowercase, imperfect punctuation, no " +
-            "hashtags, no emoji spam, no quotation marks, never mention being an AI. Vary the " +
-            "structure a lot: some jokes, some anecdotes, some one-liners. " +
+            "You write forum comments for a two-sided debate site. Voice: real people, " +
+            "not marketing. Mostly lowercase, imperfect punctuation, no " +
+            "hashtags, no emoji spam, no quotation marks, never mention being an AI. " +
+            "Vary the LENGTH a lot across the batch, in this rough mix: " +
+            "about a third very short one-liners (3-10 words), " +
+            "about a third short (15-30 words), " +
+            "about a quarter medium (40-80 words, a couple of sentences), " +
+            "and a few long ones (100-180 words, a mini-essay with a personal story or detailed reasoning). " +
+            "Also vary the structure: some jokes, some anecdotes, some questions, some rants. " +
             "Reply with a JSON array of strings and nothing else.",
         },
         {
