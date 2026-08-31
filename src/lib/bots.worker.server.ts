@@ -64,19 +64,25 @@ async function releaseLock() {
 
 const FALLBACKS: Record<string, string[]> = {
   calm: [
+    "fair point",
     "both sides have a point but this one just holds up better long term",
     "not a strong opinion, it's simply the more practical answer",
     "i've gone back and forth on this and landed here",
+    "honestly i used to think the other way on this. then i actually sat with it for a while, talked to a few people who deal with this stuff day to day, and it slowly became obvious that this side makes more sense in practice. it's not about which sounds nicer, it's about which one actually works when you're living with the consequences. that's really all my vote comes down to.",
   ],
   casual: [
+    "this lol",
     "idk how this is even a debate lol",
     "been saying this for years, glad someone gets it",
     "my whole group chat agrees with me on this one",
+    "ok so story time. brought this up at dinner last week and it turned into a full argument, my uncle was on the other side obviously. but by the end even he went quiet because every example he gave kinda proved my point instead. that's when i knew i was voting this way. sometimes you just need to say it out loud to realize which side holds up.",
   ],
   spicy: [
+    "obviously",
     "the other side is genuinely not okay",
     "wild that people vote the other way with a straight face",
     "losing my mind reading the other column rn",
+    "i scrolled through the entire other column looking for one single argument that made sense and i found nothing. not one. it's all the same recycled point dressed up slightly differently, and every time someone pushes back on it the answer is just vibes. meanwhile this side actually has receipts. i'm not even angry anymore, i'm just confused how this is still a debate in the year of our lord.",
   ],
 };
 
@@ -114,10 +120,15 @@ async function generateTakes(args: {
         {
           role: "system",
           content:
-            "You write short forum comments for a two-sided debate site. Voice: real people, " +
-            "not marketing. 4 to 25 words each. Mostly lowercase, imperfect punctuation, no " +
-            "hashtags, no emoji spam, no quotation marks, never mention being an AI. Vary the " +
-            "structure a lot: some jokes, some anecdotes, some one-liners. " +
+            "You write forum comments for a two-sided debate site. Voice: real people, " +
+            "not marketing. Mostly lowercase, imperfect punctuation, no " +
+            "hashtags, no emoji spam, no quotation marks, never mention being an AI. " +
+            "Vary the LENGTH a lot across the batch, in this rough mix: " +
+            "about a third very short one-liners (3-10 words), " +
+            "about a third short (15-30 words), " +
+            "about a quarter medium (40-80 words, a couple of sentences), " +
+            "and a few long ones (100-180 words, a mini-essay with a personal story or detailed reasoning). " +
+            "Also vary the structure: some jokes, some anecdotes, some questions, some rants. " +
             "Reply with a JSON array of strings and nothing else.",
         },
         {
