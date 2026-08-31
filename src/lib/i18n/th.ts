@@ -33,6 +33,9 @@ export const th: Dictionary = {
   "notif.minutesAgo": "{n} นาทีที่แล้ว",
   "notif.hoursAgo": "{n} ชั่วโมงที่แล้ว",
   "notif.daysAgo": "{n} วันที่แล้ว",
+  "notif.viewAll": "ดูการแจ้งเตือนทั้งหมด",
+  "notif.loadMore": "โหลดเพิ่ม",
+  "notif.loading": "กำลังโหลด…",
 
   // ---- error / not found
   "notFound.title": "ไม่พบหน้าที่ต้องการ",

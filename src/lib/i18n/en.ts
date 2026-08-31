@@ -31,6 +31,9 @@ export const en = {
   "notif.minutesAgo": "{n}m ago",
   "notif.hoursAgo": "{n}h ago",
   "notif.daysAgo": "{n}d ago",
+  "notif.viewAll": "View all notifications",
+  "notif.loadMore": "Load more",
+  "notif.loading": "Loading…",
 
   // ---- error / not found
   "notFound.title": "Page not found",
