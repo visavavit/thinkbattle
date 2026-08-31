@@ -206,12 +206,15 @@ function BrowsePage() {
   const setFilter = (patch: Partial<BrowseSearch>) =>
     navigate({ search: (prev: BrowseSearch) => ({ ...prev, ...patch }), resetScroll: false });
 
-  const hasFilters = Boolean(search.category || search.status || search.sort || queryText.trim());
+  const hasFilters = Boolean(search.category || search.status || queryText.trim());
 
   const clearFilters = () => {
     syncedQuery.current = "";
     setQueryText("");
-    navigate({ search: {}, resetScroll: false });
+    navigate({
+      search: (prev: BrowseSearch) => (prev.sort ? { sort: prev.sort } : {}),
+      resetScroll: false,
+    });
   };
 
   return (
