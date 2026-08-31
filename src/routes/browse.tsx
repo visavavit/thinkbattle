@@ -225,7 +225,7 @@ function BrowsePage() {
       </header>
 
       <section className="arena-panel space-y-4 p-4 sm:p-5">
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_11rem_11rem]">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_11rem]">
           <div className="relative">
             <Search
               aria-hidden="true"
@@ -252,15 +252,6 @@ function BrowsePage() {
               </button>
             ) : null}
           </div>
-
-          <FilterSelect
-            label={t("browse.sortLabel")}
-            options={SORT_OPTIONS}
-            value={sort}
-            onChange={(value) =>
-              setFilter({ sort: value === DEFAULT_SORT ? undefined : (value as FeedTab) })
-            }
-          />
 
           <FilterSelect
             label={t("browse.statusLabel")}
@@ -297,11 +288,23 @@ function BrowsePage() {
                 n: topics.length,
               })}
         </p>
-        {/* the empty state carries its own reset, so this one would only be a
-            second copy of the same button */}
-        {hasFilters && topics.length > 0 ? (
-          <ClearFiltersButton label={t("browse.clearAll")} onClick={clearFilters} />
-        ) : null}
+        <div className="flex items-center gap-3">
+          <div className="w-44">
+            <FilterSelect
+              label={t("browse.sortLabel")}
+              options={SORT_OPTIONS}
+              value={sort}
+              onChange={(value) =>
+                setFilter({ sort: value === DEFAULT_SORT ? undefined : (value as FeedTab) })
+              }
+            />
+          </div>
+          {/* the empty state carries its own reset, so this one would only be a
+              second copy of the same button */}
+          {hasFilters && topics.length > 0 ? (
+            <ClearFiltersButton label={t("browse.clearAll")} onClick={clearFilters} />
+          ) : null}
+        </div>
       </div>
 
       {feedPending ? (
