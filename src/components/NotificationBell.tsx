@@ -135,7 +135,7 @@ export function NotificationBell({ user }: { user: User | null }) {
                         </span>
                         <span className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
                           {row.kind === "topic_published" ? null : (
-                            <span className="truncate font-medium">{row.topic_title}</span>
+                            <span className="min-w-0 truncate font-medium">{row.topic_title}</span>
                           )}
                           <span>{relative(row.created_at)}</span>
                         </span>
