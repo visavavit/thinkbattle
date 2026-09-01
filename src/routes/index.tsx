@@ -196,7 +196,7 @@ function Home() {
         </Carousel>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {TABS.map(({ key, labelKey, icon: Icon }) => (
           <Link
             key={key}
@@ -204,7 +204,7 @@ function Home() {
             search={{ tab: key === DEFAULT_TAB ? undefined : key }}
             resetScroll={false}
             preload="intent"
-            className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`flex items-center justify-center gap-2 overflow-hidden rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
               tab === key
                 ? "border-foreground bg-foreground text-background"
                 : "border-border text-muted-foreground hover:text-foreground"

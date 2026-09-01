@@ -263,7 +263,11 @@ function BrowsePage() {
           />
         </div>
 
-        <div role="group" aria-label={t("browse.categoryLabel")} className="flex flex-wrap gap-2">
+        <div
+          role="group"
+          aria-label={t("browse.categoryLabel")}
+          className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+        >
           <FilterChip
             active={!search.category}
             label={t("browse.allCategories")}
@@ -424,7 +428,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+      className={`flex items-center justify-center overflow-hidden rounded-full border px-3 py-1 text-sm font-medium text-ellipsis whitespace-nowrap transition-colors ${
         active
           ? "border-foreground bg-foreground text-background"
           : "border-border text-muted-foreground hover:text-foreground"
